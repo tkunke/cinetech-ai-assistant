@@ -117,20 +117,6 @@
   }
 }
 
-/* Images */
-.image-tools-container {
-  position: absolute;
-  top: 20px; /* Adjust the top position as needed */
-  display: flex;
-  justify-content: center;
-  width: 100%;
-}
-
-.image-tools-container img {
-  max-width: 100%; /* Ensure the image is responsive */
-  height: auto; /* Maintain aspect ratio */
-}
-
 .overlay-image-container {
   position: absolute;
   top: 50%; /* Center vertically */
@@ -255,17 +241,6 @@
   }
 }
 
-.button-tools {
-  size: 3rem;
-  background-color: silver;
-  border-radius: 9999px;
-  padding: 10px;
-  border: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
 body {
   background-color: rgba(255, 255, 255, 0.8);
   background-size: cover;
@@ -306,24 +281,6 @@ thead th {
   background-color: lightgray; /* Background color for contrast */
 }
 
-/* Ensure the charts are responsive */
-.chart-container {
-  position: relative;
-  width: 100%;
-  max-width: 600px; /* You can adjust the max-width as needed */
-  margin: 20px auto; /* Center the chart and add some margin */
-  padding: 10px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a slight shadow for better visibility */
-  border-radius: 8px; /* Optional: Add rounded corners */
-  background-color: #fff; /* Optional: Set a background color */
-}
-
-/* Optional: Style for the chart canvas */
-.chart-container canvas {
-  width: 100% !important; /* Make the canvas take full width of the container */
-  height: auto !important; /* Maintain aspect ratio */
-}
-
 .content {
   margin-left: 16rem; /* 64 * 0.25rem */
 }
@@ -336,17 +293,6 @@ nav a {
 
 nav a:hover {
   background-color: #4a5568; /* gray-700 */
-}
-
-.form-container {
-  display: flex;
-  flex-direction: column-reverse;
-  width: 100%;
-}
-
-.textarea-container {
-  width: 100%;
-  display: flex;
 }
 
 .hover\\:bg-gray-800:hover {

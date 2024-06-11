@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import styles from '../styles/assistant-message.module.css';
+import styles from '@/styles/assistant-message.module.css';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { AiOutlineDownload } from 'react-icons/ai';
@@ -95,7 +95,7 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
     ),
     img: ({ src, alt }) => (
       <div className="relative-container" style={{ position: 'relative' }}>
-        <Image src={src} alt={alt} className="mx-auto my-2 rounded-lg" />
+        <img src={src} alt={alt} className="mx-auto my-2 rounded-lg" />
         <div
           className="download-button"
           onClick={() => handleDownloadImage(src)}

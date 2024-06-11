@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import CinetechAssistantMessage from './assistant-message';
 import InputForm from './input-form';
-import styles from '../styles/cinetech-assistant.module.css';
+import styles from '@/styles/cinetech-assistant.module.css';
 
 function containsMarkdown(content) {
   return /(\*\*|__|`|#|\*|-|\||\n[\-=\*]{3,}\s*$)/.test(content.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, ''));

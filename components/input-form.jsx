@@ -1,7 +1,7 @@
 import React from 'react';
 import { AiOutlineSend } from 'react-icons/ai';
 import CinetechSpinner from './message-spinner';
-import styles from '../styles/input-form.module.css';
+import styles from '@/styles/input-form.module.css';
 
 const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputRef }) => {
   

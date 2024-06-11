@@ -1,24 +1,25 @@
 .selfStart {
-    align-self: flex-start;
+  align-self: flex-start;
 }
   
 .selfCenter {
-    align-self: center;
+  align-self: center;
 }
   
 .messageContainer {
-    flex-direction: column;
-    border-radius: 0.5rem;
-    background: rgba(255, 255, 255, 0.9); /* Adjust as needed */
-    margin: 0.5rem; /* Add margin for better spacing on small screens */
-    word-wrap: break-word; /* Ensure long words break to fit small screens */
+  flex-direction: column;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.9); /* Adjust as needed */
+  margin: 0.5rem; /* Add margin for better spacing on small screens */
+  word-wrap: break-word; /* Ensure long words break to fit small screens */
 }
   
 .messageContainer img {
-    max-width: 100%;
-    height: auto;
-    display: block;
-    margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+  border-radius: 0.5rem;
 }
 
 .messageContainer button {
@@ -37,20 +38,20 @@
 }
 
 @media (max-width: 768px) {
-    .messageContainer {
-      padding: 1rem; /* Adjust padding for better readability */
-    }
+  .messageContainer {
+    padding: 1rem; /* Adjust padding for better readability */
+  }
 }
   
 @media (max-width: 360px) {
-    .messageContainer {
-      padding: 0.5rem; /* Reduce padding for extra small screens */
-      font-size: 0.875rem; /* Adjust font size for better readability */
-    }
+  .messageContainer {
+    padding: 0.5rem; /* Reduce padding for extra small screens */
+    font-size: 0.875rem; /* Adjust font size for better readability */
+  }
     
-    .text-4xl {
-      font-size: 1.5rem; /* Reduce font size for role display */
-    }
+  .text-4xl {
+    font-size: 1.5rem; /* Reduce font size for role display */
+  }
 }
 
 .download-button {

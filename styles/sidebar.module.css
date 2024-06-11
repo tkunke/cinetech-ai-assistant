@@ -1,82 +1,81 @@
 .sidebar {
-    width: 16rem; /* 64 * 0.25rem */
-    height: 100vh;
-    background-image: url('/background_landscape.png');
-    color: #ffffff; /* white */
-    position: fixed;
-    left: 0;
-    top: 0;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between; /* Distribute space between top and bottom sections */
-    padding: 1rem;
-    transition: transform 0.3s ease;
-    transform: translateX(-100%); /* Hide by default on small screens */
-    z-index: 999;
-  }
+  width: 16rem; /* 64 * 0.25rem */
+  height: 100vh;
+  background-image: url('/background_landscape.png');
+  color: #ffffff; /* white */
+  position: fixed;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Distribute space between top and bottom sections */
+  padding: 1rem;
+  transition: transform 0.3s ease;
+  transform: translateX(-100%); /* Hide by default on small screens */
+  z-index: 999;
+}
   
+.sidebar.visible {
+  transform: translateX(0);
+}
+  
+.hamburger {
+  display: none;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  font-size: 24px;
+  cursor: pointer;
+}
+  
+@media (max-width: 768px) {
+  .hamburger {
+    display: block;
+  }
+
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
   .sidebar.visible {
     transform: translateX(0);
   }
+}
   
-  .hamburger {
-    display: none;
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    z-index: 1000;
-    font-size: 24px;
-    cursor: pointer;
-  }
+.sidebar .expandedSection {
+  margin-top: 10px;
+  padding: 10px; /* Add padding to separate the content from the border */
+  border-radius: 4px; /* Optional: Add rounded corners for a nicer look */
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
+  background-color: rgba(255, 255, 255, 0.1); /* Optional: Slightly different background color for contrast */
+}
   
-  @media (max-width: 768px) {
-    .hamburger {
-      display: block;
-    }
+.sidebarButton {
+  display: flex;
+  align-items: center; /* Ensure proper alignment */
+  background-color: transparent;
+  color: white;
+  padding: 10px;
+  border: none;
+  width: 100%;
+  text-align: left; /* Ensure left alignment of text */
+  margin-bottom: 5px;
+  cursor: pointer;
+}
   
-    .sidebar {
-      transform: translateX(-100%);
-    }
+.sidebarButton:hover {
+  background-color: #5a6268;
+}
   
-    .sidebar.visible {
-      transform: translateX(0);
-    }
-  }
+.sidebarButton svg {
+  margin-right: 8px;
+}
   
-  .sidebar .expandedSection {
-    margin-top: 10px;
-    padding: 10px; /* Add padding to separate the content from the border */
-    border-radius: 4px; /* Optional: Add rounded corners for a nicer look */
-    box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
-    background-color: rgba(255, 255, 255, 0.1); /* Optional: Slightly different background color for contrast */
-  }
+.thumbnailContainer {
+  margin-bottom: 10px;
+}
   
-  .sidebarButton {
-    display: flex;
-    align-items: left;
-    background-color: transparent;
-    color: white;
-    padding: 10px;
-    border: none;
-    width: 100%;
-    text-align: left;
-    margin-bottom: 5px;
-    cursor: pointer;
-  }
-  
-  .sidebarButton:hover {
-    background-color: #5a6268;
-  }
-  
-  .sidebarButton svg {
-    margin-right: 8px;
-  }
-  
-  .thumbnailContainer {
-    margin-bottom: 10px;
-  }
-  
-  .thumbnail {
-    border-radius: 4px;
-  }
-  
+.thumbnail {
+  border-radius: 4px;
+}

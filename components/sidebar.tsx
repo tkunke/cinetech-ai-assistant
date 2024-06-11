@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import styles from '../styles/sidebar.module.css';
+import styles from '@/styles/sidebar.module.css';
 import { FaFilm } from 'react-icons/fa';
 
 interface SidebarProps {
