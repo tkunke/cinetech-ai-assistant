@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processSearchResults } from '../../../../utils/processSearchResults';
+import { processSearchResults } from '@/utils/processSearchResults';
 
 export const runtime = 'edge';
 

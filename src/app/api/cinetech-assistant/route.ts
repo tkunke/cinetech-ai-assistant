@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai/index.mjs';
-import { performBingSearch } from '../../../../utils/performBingSearch'; // Adjust the import path as needed
-import { processSearchResults } from '../../../../utils/processSearchResults'; // Adjust the import path as needed
-import { generateImage } from '../../../../utils/generateImage'; // Adjust the import path as needed
+import { performBingSearch } from '@/utils/performBingSearch';
+import { processSearchResults } from '@/utils/processSearchResults';
+import { generateImage } from '@/utils/generateImage';
 import { AssistantStream } from 'openai/lib/AssistantStream';
 
 // This enables Edge Functions in Vercel

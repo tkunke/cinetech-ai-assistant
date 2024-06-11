@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { performBingSearch } from '../../../../utils/performBingSearch';
+import { performBingSearch } from '@/utils/performBingSearch';
 
 export async function POST(request: NextRequest) {
   try {

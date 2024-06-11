@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
-import CinetechAssistant from '../../../components/cinetech-assistant';
-import Sidebar from '../../../components/sidebar';
-import styles from '../../../styles/assistant.module.css';
-import { generatePdfWithSelectedMessages } from '../../../utils/generateShotSheet';
+import CinetechAssistant from '@/components/cinetech-assistant';
+import Sidebar from '@/components/sidebar';
+import styles from '@/styles/assistant.module.css';
+import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
 
 interface Message {
   id: string;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateImage } from '../../../../utils/generateImage';
+import { generateImage } from '@/utils/generateImage';
 
 // This enables Edge Functions in Vercel
 export const runtime = 'edge';
