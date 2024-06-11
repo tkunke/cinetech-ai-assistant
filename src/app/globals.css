@@ -1,0 +1,362 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Headers */
+.header-homepage {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.header-homepage .header-content {
+  height: 5rem;
+  max-width: var(--max-w-custom);
+  margin: 0 auto;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  background-color: var(--color-background);
+}
+
+.header-homepage h1 {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  font-size: 2rem;
+  line-height: 1;
+  font-family: 'Limelight', sans-serif;
+  letter-spacing: normal;
+}
+
+@media (min-width: 640px) {
+  .header-homepage h1 {
+    font-size: 3rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .header-homepage h1 {
+    font-size: 3rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .header-homepage h1 {
+    font-size: 4rem;
+    letter-spacing: 10px;
+  }
+}
+
+/* Footers */
+.footer-homepage {
+  text-align: center;
+  margin-bottom: 3rem;
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+}
+
+.footer-homepage .footer-content {
+  height: 5rem;
+  max-width: var(--max-w-custom);
+  margin: 0 auto;
+  background-color: var(--color-background);
+}
+
+.footer-homepage h1 {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 2rem;
+  line-height: 1;
+  font-family: 'Limelight', sans-serif;
+  letter-spacing: normal;
+}
+
+@media (min-width: 360px) {
+  .footer-homepage h1 {
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .footer-homepage h1 {
+    font-size: 2rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .footer-homepage h1 {
+    font-size: 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .footer-homepage h1 {
+    font-size: 2rem;
+    letter-spacing: 2px;
+  }
+}
+
+/* Images */
+.image-tools-container {
+  position: absolute;
+  top: 20px; /* Adjust the top position as needed */
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.image-tools-container img {
+  max-width: 100%; /* Ensure the image is responsive */
+  height: auto; /* Maintain aspect ratio */
+}
+
+.overlay-image-container {
+  position: absolute;
+  top: 50%; /* Center vertically */
+  left: 50%; /* Center horizontally */
+  transform: translate(-50%, -50%); /* Adjust for exact centering */
+  width: 60%; /* Or any other size depending on your design */
+  z-index: 10; /* Ensures it stays on top of the background */
+}
+
+.overlay-image {
+  width: 100%;
+  height: auto;
+  display: block; /* Remove any extra space below the image */
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 768px) { /* Adjust this breakpoint as needed */
+  .overlay-image-container {
+    width: 80%; /* Increase width on smaller screens */
+  }
+}
+
+/* Additional responsive handling for very small screens */
+@media (max-width: 360px) {
+  .overlay-image-container {
+    width: 90%; /* Even larger on very small screens */
+  }
+}
+
+.max-w-custom {
+  max-width: 80%; /* Adjust the value as needed */
+}
+
+/* openai CSS */
+.openai-text p {
+  margin-bottom: 1rem;
+}
+
+
+.openai-text h1 {
+  font-size: large;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+.openai-text h2 {
+  font-size: large;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+
+.openai-text h3 {
+  font-size: large;
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+.openai-text code {
+  font-size: small;
+  padding: 1rem;
+  overflow-x: auto;
+  display: block;
+  background-color: black;
+  color: white;
+}
+
+/* Backgrounds */
+.page-background {
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+  background-image: url('/background-image_backlit.png'); /* Adjust path as needed */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.page-background-portrait {
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+  background-image: url('/background-image_backlit_port.png'); /* Adjust path as needed */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.page-tools-background {
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+  background-color: rgb(137, 190, 201);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.page-tools-background-portrait {
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+  background-color: rgb(137, 190, 201);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.overlay-button-container {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%);
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+@media (max-width: 360px) {
+  .overlay-button-container {
+    position: relative;
+    width: 80%;
+  }
+}
+
+.button-tools {
+  size: 3rem;
+  background-color: silver;
+  border-radius: 9999px;
+  padding: 10px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+body {
+  background-color: rgba(255, 255, 255, 0.8);
+  background-size: cover;
+  background-repeat: no-repeat;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #212529;
+}
+
+.main {
+  margin-left: 16rem; /* Offset by sidebar width */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow: auto;
+  margin-bottom: 4.5rem; /* Adjust margin-bottom to match the footer height */
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,td {
+  border: 1px solid black;
+  padding: 8px;
+  text-align: left;
+  background-color: rgba(142, 192, 207, 0.8);
+}
+
+thead th {
+  color: black; /* Header text color */
+  background-color: lightgray; /* Background color for contrast */
+}
+
+/* Ensure the charts are responsive */
+.chart-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px; /* You can adjust the max-width as needed */
+  margin: 20px auto; /* Center the chart and add some margin */
+  padding: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a slight shadow for better visibility */
+  border-radius: 8px; /* Optional: Add rounded corners */
+  background-color: #fff; /* Optional: Set a background color */
+}
+
+/* Optional: Style for the chart canvas */
+.chart-container canvas {
+  width: 100% !important; /* Make the canvas take full width of the container */
+  height: auto !important; /* Maintain aspect ratio */
+}
+
+.content {
+  margin-left: 16rem; /* 64 * 0.25rem */
+}
+
+nav a {
+  display: block;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+nav a:hover {
+  background-color: #4a5568; /* gray-700 */
+}
+
+.form-container {
+  display: flex;
+  flex-direction: column-reverse;
+  width: 100%;
+}
+
+.textarea-container {
+  width: 100%;
+  display: flex;
+}
+
+.hover\\:bg-gray-800:hover {
+  background-color: #2d3748;
+}
+
+.focus\\:outline-none:focus {
+  outline: none;
+}
+
+.focus\\:shadow-outline:focus {
+  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+}

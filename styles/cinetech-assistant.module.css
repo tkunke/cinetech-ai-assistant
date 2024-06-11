@@ -1,0 +1,25 @@
+.footer {
+    position: fixed;
+    display: flex;
+    flex: 1;
+    flex-direction: column-reverse;
+    bottom: 0;
+    left: 16rem; /* Offset by sidebar width */
+    width: calc(100% - 16rem); /* Full width minus sidebar width */
+    background-color: #ffffff;
+    padding: 0.5rem 1rem;
+    height: 4.5rem; /* Set a fixed height for the footer */
+}
+
+@media (max-width: 360px) {
+    .footer {
+        left: 0;
+        width: 100%;
+    }
+}
+@media (max-width: 768px) {
+    .footer {
+      left: 0;
+      width: 100%;
+    }
+}
