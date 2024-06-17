@@ -27,6 +27,7 @@ export default function CinetechAssistant({
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const [chunkCounter, setChunkCounter] = useState(0);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   const greetingMessage = {
     role: 'assistant',
@@ -35,10 +36,16 @@ export default function CinetechAssistant({
 
   const bufferRef = useRef('');
 
-  async function initializeThread() {
+  async function initializeThread(file) {
     try {
+      const formData = new FormData();
+      if (file) {
+        formData.append('file', file);
+      }
+
       const response = await fetch('/api/thread-init', {
         method: 'POST',
+        body: formData,
       });
       const data = await response.json();
       setThreadId(data.threadId);
@@ -48,8 +55,10 @@ export default function CinetechAssistant({
     }
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function handleSubmit(event) {
+    if (event && event.preventDefault) {
+      event.preventDefault();
+    }
 
     setStreamingMessage({
       role: 'assistant',
@@ -67,6 +76,7 @@ export default function CinetechAssistant({
       },
     ]);
     setPrompt('');
+    setSelectedFile(null); // Clear the file input after submission
     // Reset the height of the textarea
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
@@ -76,16 +86,21 @@ export default function CinetechAssistant({
       let currentThreadId = threadId;
 
       if (!currentThreadId) {
-        currentThreadId = await initializeThread();
+        currentThreadId = await initializeThread(selectedFile);
+      }
+
+      // Prepare form data
+      const formData = new FormData();
+      formData.append('assistantId', assistantId);
+      formData.append('threadId', currentThreadId);
+      formData.append('content', prompt);
+      if (selectedFile) {
+        formData.append('file', selectedFile);
       }
 
       const response = await fetch('/api/cinetech-assistant', {
         method: 'POST',
-        body: JSON.stringify({
-          assistantId: assistantId,
-          threadId: currentThreadId,
-          content: prompt,
-        }),
+        body: formData,
       });
 
       const reader = response.body.getReader();
@@ -161,6 +176,7 @@ export default function CinetechAssistant({
     }
   }
 
+
   async function fetchMessages(threadId) {
     try {
       const messagesResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
@@ -213,6 +229,10 @@ export default function CinetechAssistant({
     setPrompt(e.target.value);
   }
 
+  function handleFileChange(file) {
+    setSelectedFile(file);
+  }
+
   return (
     <div className="flex flex-col h-full justify-between">
       <div className="flex flex-col mb-10 items-center justify-center">
@@ -240,6 +260,7 @@ export default function CinetechAssistant({
           prompt={prompt}
           isLoading={isLoading}
           inputRef={inputRef}
+          handleFileChange={handleFileChange}
         />
       </footer>
     </div>

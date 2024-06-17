@@ -4,13 +4,14 @@
   flex-direction: column-reverse;
   align-items: center;
 }
-  
+
 .textarea-container {
   width: 50%;
   display: flex;
   justify-content: center;
+  align-items: center; /* Ensure items are centered vertically */
 }
-  
+
 .textarea {
   width: 100%;
   flex-grow: 1;
@@ -18,9 +19,9 @@
   box-sizing: border-box;
   border: 2px solid rgba(82, 132, 147, 0.8);
   margin-right: 0.5rem;
-  padding-left: 0.5rem;
+  padding-left: 0.5rem; /* Add padding to the left */
 }
-  
+
 .button {
   border: 2px solid rgba(82, 132, 147, 0.8); /* Custom border color */
   background-color: rgba(82, 132, 147, 0.8); /* Background color */
@@ -31,15 +32,23 @@
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
-  
+
 .button:hover {
   background-color: rgba(112, 162, 177, 1); /* Darker shade on hover */
 }
-  
+
 .button:disabled {
   background-color: rgba(112, 162, 177, 0.5); /* Lighter shade when disabled */
 }
-  
+
+.hidden-input {
+  display: none !important; /* Hide the file input */
+}
+
+.file-attach-button:hover {
+  cursor: pointer;
+}
+
 @media (max-width: 768px) {
   .textarea-container {
     width: 90%; /* Make the textarea-container wider on small screens */

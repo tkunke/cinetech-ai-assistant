@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai/index.mjs';
+import fs from 'fs';
+import path from 'path';
 import { performBingSearch } from '@/utils/performBingSearch';
 import { processSearchResults } from '@/utils/processSearchResults';
 import { generateImage } from '@/utils/generateImage';
 import { AssistantStream } from 'openai/lib/AssistantStream';
-
-// This enables Edge Functions in Vercel
-//export const runtime = 'edge';
 
 // Define the RunStatus type
 interface RunStatus {
@@ -45,6 +44,22 @@ type ImageContent = {
 
 type MessageContent = TextContent | ImageContent;
 
+// Define the MessageCreateParams type
+interface FileSearch {
+  type: 'file_search';
+}
+
+interface Attachment {
+  file_id: string;
+  tools: FileSearch[];
+}
+
+interface MessageCreateParams {
+  role: 'user' | 'assistant';
+  content: string;
+  attachments?: Attachment[];
+}
+
 // In-memory store for run statuses
 interface RunStatusStore {
   [key: string]: RunStatus; // Define the type of the store
@@ -52,35 +67,71 @@ interface RunStatusStore {
 
 const runStatusStore: RunStatusStore = {}; // Initialize the store with the proper type
 
+// Disable Edge Runtime
+export const config = {
+  runtime: 'nodejs',
+};
+
 // Post a new message and stream OpenAI Assistant response
 export async function POST(request: NextRequest) {
   console.log('POST request received');
-  
-  // Parse message from post
-  const newMessage = await request.json();
-  console.log('Parsed new message:', newMessage);
 
   // Create OpenAI client
   const openai = new OpenAI();
 
+  // Parse form data for file attachments
+  const formData = await request.formData();
+  const content = formData.get('content') as string;
+  const assistantId = formData.get('assistantId') as string;
+  let threadId = formData.get('threadId') as string | null;
+  const file = formData.get('file') as File | null;
+
+  // Define newMessage with proper typing
+  let newMessage: MessageCreateParams = {
+    role: 'user',
+    content,
+    attachments: [],
+  };
+
+  // Handle file upload if there's a file attached
+  if (file) {
+    const fileData = await file.arrayBuffer();
+    const fileBuffer = Buffer.from(fileData);
+
+    // Save the file temporarily to disk for uploading
+    const filePath = `/tmp/${file.name}`;
+    fs.writeFileSync(filePath, fileBuffer);
+
+    const fileUploadResponse = await openai.files.create({
+      file: fs.createReadStream(filePath),
+      purpose: 'assistants',
+    });
+
+    console.log('File uploaded:', fileUploadResponse.id);
+
+    // Remove the temporary file
+    fs.unlinkSync(filePath);
+
+    // Add the file attachment to the new message
+    newMessage.attachments = [{ file_id: fileUploadResponse.id, tools: [{ type: 'file_search' }] }];
+  }
+
   // If no thread id then create a new openai thread
-  if (newMessage.threadId == null) {
+  if (!threadId) {
     console.log('Creating a new thread');
     const thread = await openai.beta.threads.create();
-    newMessage.threadId = thread.id;
+    threadId = thread.id;
   }
-  console.log('Thread ID:', newMessage.threadId);
+  console.log('Thread ID:', threadId);
 
   // Add new message to thread
-  await openai.beta.threads.messages.create(newMessage.threadId, {
-    role: 'user',
-    content: newMessage.content,
-  });
-  console.log('Message added to thread');
+  console.log('Message to be added to thread:', JSON.stringify(newMessage, null, 2));
+  await openai.beta.threads.messages.create(threadId, newMessage);
+  console.log('Message added to thread', newMessage);
 
   // Create a run and stream it
-  const runStream = openai.beta.threads.runs.stream(newMessage.threadId, {
-    assistant_id: newMessage.assistantId
+  const runStream = openai.beta.threads.runs.stream(threadId, {
+    assistant_id: assistantId,
   });
 
   const assistantStream = runStream; // Use runStream directly if it supports the necessary methods
@@ -118,10 +169,10 @@ export async function POST(request: NextRequest) {
           const functionName = toolCall.function.name;
           const args = JSON.parse(toolCall.function.arguments);
           let output;
-  
+
           try {
             if (functionName === 'performBingSearch') {
-              const searchResults = await performBingSearch(args.user_request); 
+              const searchResults = await performBingSearch(args.user_request);
               const searchResultsString = JSON.stringify(searchResults);
               console.log('Search results string:', searchResultsString);
               output = await processSearchResults(args.user_request, searchResultsString);
@@ -130,7 +181,7 @@ export async function POST(request: NextRequest) {
               const imageUrl = await generateImage(args.content);
               output = imageUrl ?? undefined;
             }
-  
+
             toolOutputs.push({
               tool_call_id: toolCall.id,
               output: output,
@@ -159,7 +210,7 @@ export async function POST(request: NextRequest) {
           tool_outputs: toolOutputs,
         });
         console.log('Tool outputs submitted for thread ID:', runStatus.thread_id);
-        
+
         // Retrieve the latest run status using runId
         runStatus = await openai.beta.threads.runs.retrieve(runStatus.thread_id, runId!);
         console.log('Run status retrieved:', runStatus);
@@ -177,7 +228,7 @@ export async function POST(request: NextRequest) {
 
       // Fetch the current run status again from the assistantStream
       runStatus = assistantStream.currentRun();
-      console.log('Run status updated:', runStatus);
+      //console.log('Run status updated:', runStatus);
 
       // Check if the runStatus is null or undefined
       if (!runStatus) {
