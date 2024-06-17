@@ -68,9 +68,7 @@ interface RunStatusStore {
 const runStatusStore: RunStatusStore = {}; // Initialize the store with the proper type
 
 // Disable Edge Runtime
-export const config = {
-  runtime: 'nodejs',
-};
+export const runtime = 'nodejs';
 
 // Post a new message and stream OpenAI Assistant response
 export async function POST(request: NextRequest) {
