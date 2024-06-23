@@ -5,6 +5,7 @@ import path from 'path';
 import { performBingSearch } from '@/utils/performBingSearch';
 import { processSearchResults } from '@/utils/processSearchResults';
 import { generateImage } from '@/utils/generateImage';
+import { imageRecognition } from '@/utils/imageRecognition';
 import { AssistantStream } from 'openai/lib/AssistantStream';
 
 // Define the RunStatus type
@@ -51,7 +52,7 @@ interface FileSearch {
 
 interface Attachment {
   file_id: string;
-  tools: FileSearch[];
+  tools: FileSearch[] | any[]; // Allow different tool types
 }
 
 interface MessageCreateParams {
@@ -66,6 +67,16 @@ interface RunStatusStore {
 }
 
 const runStatusStore: RunStatusStore = {}; // Initialize the store with the proper type
+
+// In-memory store for temporarily stored files
+interface FileStore {
+  [key: string]: {
+    filePath: string;
+    fileType: string;
+  };
+}
+
+const fileStore: FileStore = {}; // Initialize the file store
 
 // Disable Edge Runtime
 export const runtime = 'nodejs';
@@ -96,22 +107,14 @@ export async function POST(request: NextRequest) {
     const fileData = await file.arrayBuffer();
     const fileBuffer = Buffer.from(fileData);
 
-    // Save the file temporarily to disk for uploading
-    const filePath = `/tmp/${file.name}`;
-    fs.writeFileSync(filePath, fileBuffer);
-
-    const fileUploadResponse = await openai.files.create({
-      file: fs.createReadStream(filePath),
-      purpose: 'assistants',
-    });
-
-    console.log('File uploaded:', fileUploadResponse.id);
-
-    // Remove the temporary file
-    fs.unlinkSync(filePath);
-
-    // Add the file attachment to the new message
-    newMessage.attachments = [{ file_id: fileUploadResponse.id, tools: [{ type: 'file_search' }] }];
+    // Determine the appropriate tool based on the file type
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    if (fileExtension && ['png', 'jpeg', 'jpg', 'webp', 'gif'].includes(fileExtension)) {
+      // Save the file temporarily to disk for later use
+      const filePath = `/tmp/${file.name}`;
+      fs.writeFileSync(filePath, fileBuffer);
+      fileStore[threadId || ''] = { filePath, fileType: file.type };
+    }
   }
 
   // If no thread id then create a new openai thread
@@ -178,6 +181,20 @@ export async function POST(request: NextRequest) {
             } else if (functionName === 'generateImage') {
               const imageUrl = await generateImage(args.content);
               output = imageUrl ?? undefined;
+            } else if (functionName === 'imageRecognition') {
+              // Check if the file is stored for image recognition
+              const storedFile = fileStore[runStatus.thread_id];
+              if (storedFile) {
+                const { filePath, fileType } = storedFile;
+                const imageRecognitionResponse = await imageRecognition(filePath, args.content);
+                output = imageRecognitionResponse ?? undefined;
+                // Clean up the temporary file after use
+                fs.unlinkSync(filePath);
+                delete fileStore[runStatus.thread_id];
+              } else {
+                console.error('No file provided for image recognition');
+                continue;
+              }
             }
 
             toolOutputs.push({
