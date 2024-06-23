@@ -79,7 +79,7 @@ interface FileStore {
 const fileStore: FileStore = {}; // Initialize the file store
 
 // Disable Edge Runtime
-export const runtime = 'nodejs';
+//export const runtime = 'nodejs';
 
 // Post a new message and stream OpenAI Assistant response
 export async function POST(request: NextRequest) {

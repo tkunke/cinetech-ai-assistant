@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateImage } from '@/utils/generateImage';
 
 // This enables Edge Functions in Vercel
-export const runtime = 'edge';
+//export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   console.log('Received request:', req.method);
