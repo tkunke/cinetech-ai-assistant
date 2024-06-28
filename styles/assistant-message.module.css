@@ -26,15 +26,15 @@
   display: block;
   margin: 0.5rem auto;
   padding: 0.5rem 1rem;
-  background-color: #007bff;
-  color: rgb(216, 38, 38);
+  background-color: #c8daec;
+  color: black;
   border: none;
   border-radius: 4px;
   cursor: pointer;
 }
 
 .messageContainer button:hover {
-  background-color: #0056b3;
+  background-color: #c8daec;
 }
 
 @media (max-width: 768px) {
@@ -86,3 +86,46 @@
   display: inline-block;
 }
 
+/* Styles for Helpful Tips Button */
+.helpfulTipsButton {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #9a9d9f;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.helpfulTipsButton:hover {
+  background-color: #75797e;
+}
+
+.helpfulTips {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: white;
+  color: black;
+  border: 1px solid #ddd;
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+  width: 200px;
+}
+
+.helpfulTips p {
+  margin: 0;
+  font-weight: bold;
+}
+
+.helpfulTips ul {
+  padding-left: 20px;
+}
+
+.helpfulTips li {
+  margin-bottom: 5px;
+}

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import Image from 'next/image';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -11,6 +11,7 @@ import { FaFilm, FaImages } from 'react-icons/fa';
 export default function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, addToImageLibrary }) {
   const tableRef = useRef(null);
   const buttonRef = useRef(null);
+  const [showTips, setShowTips] = useState(false);
 
   if (!message) return null;
   if (!message.role) return null;
@@ -151,7 +152,7 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
         message.role === 'user' ? styles.selfStart : isImageMessage ? styles.selfCenter : styles.selfStart
       } text-gray-700 text-left px-4 py-2 m-2 bg-opacity-100`}
     >
-      <div className="flex flex-col items-start">
+      <div className="flex flex-col items-start relative">
         <div className="text-4xl" style={{ userSelect: 'text' }}>{displayRole(message.role)}</div>
         {(isImageMessage || isBreakdownMessage) && (
           <div
@@ -166,6 +167,23 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
           >
             <FaFilm />
           </div>
+        )}
+        {message.content.includes('difficulty completing') && (
+          <button
+            className="helpfulTipsButton"
+            onMouseEnter={() => setShowTips(true)}
+            onMouseLeave={() => setShowTips(false)}
+          >
+            Helpful Tips
+            {showTips && (
+              <div className="helpfultips">
+                <p className>Tip #1:</p>
+                <ul>
+                  <li>If you are asking the assistant to perform image recognition and image generation in a single request, try breaking those into two separate requests.</li>
+                </ul>
+              </div>
+            )}
+          </button>
         )}
       </div>
         <ReactMarkdown components={renderers} remarkPlugins={[remarkGfm]}>

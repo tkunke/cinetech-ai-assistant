@@ -197,15 +197,31 @@ export default function CinetechAssistant({
         }));
         const { messages, runStatus } = await statusResponse.json();
         setMessages(messages);
-
-        if (runStatus && runStatus.status === 'completed') {
-          clearInterval(interval);
+  
+        if (runStatus) {
+          console.log('Polling run status:', runStatus);
+  
+          if (runStatus.status === 'completed' || runStatus.failed) {
+            clearInterval(interval);
+  
+            if (runStatus.failed) {
+              console.log('Run failed detected');
+              setMessages(prevMessages => [
+                ...prevMessages,
+                {
+                  id: `error_${Date.now()}`,
+                  role: 'assistant',
+                  content: "It looks like I had difficulty completing that last task. Please try it again."
+                }
+              ]);
+            }
+          }
         }
       } catch (error) {
         console.error('Error polling for run status:', error);
       }
     }, 1000);
-  }
+  }    
 
   useEffect(() => {
     if (messagesEndRef.current) {
