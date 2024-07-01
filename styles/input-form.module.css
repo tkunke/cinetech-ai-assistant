@@ -10,6 +10,8 @@
   display: flex;
   justify-content: center;
   align-items: center; /* Ensure items are centered vertically */
+  position: relative; /* Ensure relative positioning */
+  flex-direction: column; /* Ensure vertical stacking of elements */
 }
 
 .textarea {
@@ -20,6 +22,8 @@
   border: 2px solid rgba(82, 132, 147, 0.8);
   margin-right: 0.5rem;
   padding-left: 0.5rem; /* Add padding to the left */
+  padding-right: 3rem; /* Add padding to the right to make room for the thumbnail */
+  margin-bottom: 0.5rem; /* Add space between textareas */
 }
 
 .button {
@@ -49,6 +53,22 @@
   cursor: pointer;
 }
 
+.file-preview {
+  background-color: white;
+  border: 1px solid #ccc;
+  border-style: dotted;
+  border-radius: 0.25rem;
+  display: flex;
+  left: 0;
+}
+
+.thumbnail {
+  max-width: 50px;
+  max-height: 50px;
+  border: 1px solid #ccc;
+  border-radius: 0.25rem;
+}
+
 @media (max-width: 768px) {
   .textarea-container {
     width: 90%; /* Make the textarea-container wider on small screens */
@@ -56,5 +76,6 @@
 
   .textarea {
     width: 100%; /* Ensure the textarea takes the full width of the container */
+    padding-right: 3rem; /* Ensure padding on the right to accommodate the thumbnail */
   }
 }

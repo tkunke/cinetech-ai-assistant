@@ -36,6 +36,22 @@ export default function CinetechAssistant({
 
   const bufferRef = useRef('');
 
+  useEffect(() => {
+    // Load messages from local storage when the component mounts
+    const savedMessages = sessionStorage.getItem('chatMessages');
+    if (savedMessages) {
+      const parsedMessages = JSON.parse(savedMessages);
+      console.log('Parsed messages from session storage:', parsedMessages);
+      setMessages(parsedMessages);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save messages to local storage whenever they change
+    console.log('Saving messages to session storage:', messages);
+    sessionStorage.setItem('chatMessages', JSON.stringify(messages));
+  }, [messages]);
+
   async function initializeThread(file) {
     try {
       const formData = new FormData();
