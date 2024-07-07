@@ -3,7 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import CinetechAssistantMessage from './assistant-message';
 import InputForm from './input-form';
+import Sidebar from './sidebar';
 import styles from '@/styles/cinetech-assistant.module.css';
+import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
 
 function containsMarkdown(content) {
   return /(\*\*|__|`|#|\*|-|\||\n[\-=\*]{3,}\s*$)/.test(content.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, ''));
@@ -14,12 +16,13 @@ export default function CinetechAssistant({
   greeting = 'I am a helpful chat assistant. How can I help you?',
   selectedMessages,
   setSelectedMessages,
-  addToImageLibrary,
 }) {
   const [isLoading, setIsLoading] = useState(false);
-  const [threadId, setThreadId] = useState(null); // Default to null
+  const [threadId, setThreadId] = useState(null);
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState([]);
+  const [messagesLibrary, setMessagesLibrary] = useState([]);
+  const [imageLibrary, setImageLibrary] = useState([]);
   const [streamingMessage, setStreamingMessage] = useState({
     role: 'assistant',
     content: 'Thinking...',
@@ -37,7 +40,7 @@ export default function CinetechAssistant({
   const bufferRef = useRef('');
 
   useEffect(() => {
-    // Load messages from local storage when the component mounts
+    // Load messages from session storage when the component mounts
     const savedMessages = sessionStorage.getItem('chatMessages');
     if (savedMessages) {
       const parsedMessages = JSON.parse(savedMessages);
@@ -47,10 +50,32 @@ export default function CinetechAssistant({
   }, []);
 
   useEffect(() => {
-    // Save messages to local storage whenever they change
+    // Save messages to session storage whenever they change
     console.log('Saving messages to session storage:', messages);
     sessionStorage.setItem('chatMessages', JSON.stringify(messages));
   }, [messages]);
+
+  const addToMessagesLibrary = (message) => {
+    setMessagesLibrary((prevLibrary) => {
+      const updatedLibrary = [...prevLibrary, message];
+      console.log('Updated messages library:', updatedLibrary); // Debugging line
+      return updatedLibrary;
+    });
+  };
+
+  const addToImageLibrary = (image) => {
+    setImageLibrary((prevLibrary) => {
+      const updatedLibrary = [...prevLibrary, image];
+      console.log('Updated image library:', updatedLibrary); // Debugging line
+      return updatedLibrary;
+    });
+  };
+
+  const handleGeneratePdf = () => {
+    console.log('Selected messages:', selectedMessages);
+    generatePdfWithSelectedMessages(selectedMessages);
+    setSelectedMessages([]); // Deselect messages after PDF generation
+  };
 
   async function initializeThread(file) {
     try {
@@ -121,16 +146,8 @@ export default function CinetechAssistant({
 
       const reader = response.body.getReader();
       let contentSnapshot = '';
-      let processingCompleted = false;
       const decoder = new TextDecoder();
-
-      const updateContent = () => {
-        setStreamingMessage((prevMessage) => ({
-          ...prevMessage,
-          content: contentSnapshot,
-        }));
-        setChunkCounter((prevCounter) => prevCounter + 1);
-      };
+      let processingCompleted = false;
 
       while (true) {
         const { value, done } = await reader.read();
@@ -150,8 +167,11 @@ export default function CinetechAssistant({
                 case 'thread.message.delta':
                   if (serverEvent.data.delta.content[0].text && serverEvent.data.delta.content[0].text.value) {
                     contentSnapshot += serverEvent.data.delta.content[0].text.value;
-                    bufferRef.current = contentSnapshot;
-                    updateContent();
+                    setStreamingMessage((prevMessage) => ({
+                      ...prevMessage,
+                      content: contentSnapshot,
+                    }));
+                    setChunkCounter((prevCounter) => prevCounter + 1);
                   }
 
                   if (serverEvent.data.delta.content[0].image && serverEvent.data.delta.content[0].image.url) {
@@ -163,9 +183,10 @@ export default function CinetechAssistant({
                       imageUrl: imageUrl,
                     };
 
-                    setMessages((prevMessages) => {
-                      return [...prevMessages, newImageMessage];
-                    });
+                    setMessages((prevMessages) => [
+                      ...prevMessages,
+                      newImageMessage,
+                    ]);
                     setChunkCounter((prevCounter) => prevCounter + 1);
                   }
                   break;
@@ -192,7 +213,6 @@ export default function CinetechAssistant({
     }
   }
 
-
   async function fetchMessages(threadId) {
     try {
       const messagesResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
@@ -213,13 +233,13 @@ export default function CinetechAssistant({
         }));
         const { messages, runStatus } = await statusResponse.json();
         setMessages(messages);
-  
+
         if (runStatus) {
           console.log('Polling run status:', runStatus);
-  
+
           if (runStatus.status === 'completed' || runStatus.failed) {
             clearInterval(interval);
-  
+
             if (runStatus.failed) {
               console.log('Run failed detected');
               setMessages(prevMessages => [
@@ -237,7 +257,7 @@ export default function CinetechAssistant({
         console.error('Error polling for run status:', error);
       }
     }, 1000);
-  }    
+  }
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -277,14 +297,20 @@ export default function CinetechAssistant({
               isMarkdown: containsMarkdown(m.content),
               imageUrl: m.imageUrl,
             }}
-            selectedMessages={selectedMessages || []} // Pass selectedMessages
-            setSelectedMessages={setSelectedMessages} // Pass setSelectedMessages
+            selectedMessages={selectedMessages || []}
+            setSelectedMessages={setSelectedMessages}
             addToImageLibrary={addToImageLibrary}
+            addToMessagesLibrary={addToMessagesLibrary}
           />
         ))}
         {isLoading && <CinetechAssistantMessage message={streamingMessage} />}
         <div ref={messagesEndRef} style={{ height: '1px' }}></div>
       </div>
+      <Sidebar
+        generatePdf={handleGeneratePdf}
+        imageLibrary={imageLibrary}
+        messagesLibrary={messagesLibrary}
+      />
       <footer className={styles.footer}>
         <InputForm
           handleSubmit={handleSubmit}

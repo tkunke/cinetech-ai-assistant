@@ -49,6 +49,8 @@
   border-radius: 4px; /* Optional: Add rounded corners for a nicer look */
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.3);
   background-color: rgba(255, 255, 255, 0.1); /* Optional: Slightly different background color for contrast */
+  max-height: 150px;
+  overflow-y: auto;
 }
   
 .sidebarButton {
@@ -73,9 +75,59 @@
 }
   
 .thumbnailContainer {
-  margin-bottom: 10px;
+  width: 50px;
+  height: 50px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
 }
-  
+
+.thumbnailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  gap: 8px;
+}
+
 .thumbnail {
   border-radius: 4px;
+}
+
+.messageContent {
+  margin-top: 20px;
+}
+
+.messageWindow {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 70%;
+  border: 1px double dodgerblue;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  z-index: 1001;
+}
+
+.closeButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: gray;
+  color: white;
+  border: none;
+  border-radius: 2px;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.topSection {
+  padding: 20px;
+}
+
+.bottomSection {
+  padding: 20px;
 }

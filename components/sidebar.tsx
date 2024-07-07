@@ -1,4 +1,3 @@
-'use client';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -7,14 +6,21 @@ import { FaFilm } from 'react-icons/fa';
 
 interface SidebarProps {
   generatePdf: () => void;
-  imageLibrary: string[];
+  imageLibrary: { imageUrl: string; thumbnailUrl: string }[];
+  messagesLibrary: { content: string; thumbnailUrl: string }[];
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary }) => {
+interface Message {
+  content: string;
+  thumbnailUrl: string;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messagesLibrary = [] }) => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isCreativeExpanded, setIsCreativeExpanded] = useState(false);
-  const [isExpertExpanded, setIsExpertExpanded] = useState(false);
+  const [isMessagesLibExpanded, setIsMessagesLibExpanded] = useState(false);
   const [isImageLibraryExpanded, setIsImageLibraryExpanded] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -24,8 +30,8 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary }) => {
     setIsCreativeExpanded(!isCreativeExpanded);
   };
 
-  const toggleExpertExpand = () => {
-    setIsExpertExpanded(!isExpertExpanded);
+  const toggleMessagesLibExpand = () => {
+    setIsMessagesLibExpanded(!isMessagesLibExpanded);
   };
 
   const toggleImageLibraryExpand = () => {
@@ -46,6 +52,14 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary }) => {
 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  const handleThumbnailClick = (message: Message) => {
+    setSelectedMessage(message);
+  };
+
+  const handleCloseMessageWindow = () => {
+    setSelectedMessage(null);
+  };
 
   return (
     <>
@@ -77,21 +91,20 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary }) => {
           )}
           <button
             className="mt-4 w-full bg-opacity:100 hover:bg-gray-700 text-left text-white font-bold py-2 px-4 rounded"
-            onClick={toggleExpertExpand}
+            onClick={toggleMessagesLibExpand}
           >
-            Expert Tools
+            Messages Library
           </button>
-          {isExpertExpanded && (
-            <div className={styles.expandedSection}>
-              <button className={styles.sidebarButton} onClick={() => alert('Tool 1 clicked')}>
-                Lens Lore
-              </button>
-              <button className={styles.sidebarButton} onClick={() => alert('Tool 2 clicked')}>
-                CineMetric Toolkit
-              </button>
-              <button className={styles.sidebarButton} onClick={() => alert('Tool 3 clicked')}>
-                Color Science
-              </button>
+          {isMessagesLibExpanded && (
+            <div className={`${styles.expandedSection} ${styles.thumbnailGrid}`}>
+              {messagesLibrary.map((message, index) => (
+                <div
+                  key={index}
+                  className={styles.thumbnailContainer}
+                  onClick={() => handleThumbnailClick(message)}
+                  style={{ backgroundImage: `url(${message.thumbnailUrl})` }}
+                ></div>
+              ))}
             </div>
           )}
           <button
@@ -101,11 +114,11 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary }) => {
             Image Library
           </button>
           {isImageLibraryExpanded && (
-            <div className={styles.expandedSection}>
-              {imageLibrary.map((url: string, index: number) => (
+            <div className={`${styles.expandedSection} ${styles.thumbnailGrid}`}>
+              {imageLibrary.map((image, index) => (
                 <div key={index} className={styles.thumbnailContainer}>
-                  <a href={url} target="_blank" rel="noopener noreferrer">
-                    <Image src={url} alt={`Image ${index + 1}`} width="50" height="50" className={styles.thumbnail} />
+                  <a href={image.imageUrl} target="_blank" rel="noopener noreferrer">
+                    <Image src={image.thumbnailUrl} alt={`Image ${index + 1}`} width="50" height="50" className={styles.thumbnail} />
                   </a>
                 </div>
               ))}
@@ -120,8 +133,16 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary }) => {
           </nav>
         </div>
       </div>
+      {selectedMessage && (
+        <div className={styles.messageWindow}>
+          <button className={styles.closeButton} onClick={handleCloseMessageWindow}>X</button>
+          <div className={styles.messageContent}>
+            <p>{selectedMessage.content}</p>
+          </div>
+        </div>
+      )}
     </>
   );
 };
 
-export default Sidebar as React.FC<SidebarProps>;
+export default Sidebar;

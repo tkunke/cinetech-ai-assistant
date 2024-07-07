@@ -1,11 +1,11 @@
 .selfStart {
   align-self: flex-start;
 }
-  
+
 .selfCenter {
   align-self: center;
 }
-  
+
 .messageContainer {
   flex-direction: column;
   border-radius: 0.5rem;
@@ -13,7 +13,7 @@
   margin: 0.5rem; /* Add margin for better spacing on small screens */
   word-wrap: break-word; /* Ensure long words break to fit small screens */
 }
-  
+
 .messageContainer img {
   max-width: 100%;
   height: auto;
@@ -42,16 +42,60 @@
     padding: 1rem; /* Adjust padding for better readability */
   }
 }
-  
+
 @media (max-width: 360px) {
   .messageContainer {
     padding: 0.5rem; /* Reduce padding for extra small screens */
     font-size: 0.875rem; /* Adjust font size for better readability */
   }
-    
+
   .text-4xl {
     font-size: 1.5rem; /* Reduce font size for role display */
   }
+}
+
+.imageMessageContainer {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+.image {
+  max-width: 100%;
+}
+
+.buttonSidebar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  margin-right: 10px;
+}
+
+.iconButton {
+  cursor: pointer;
+  margin: 5px;
+  font-size: 1.5rem;
+}
+
+.iconButton:hover {
+  color: black;
+}
+
+.relative-container {
+  position: relative;
+  display: inline-block;
+}
+
+/* Styles for Message Sidebar */
+.messageSidebar {
+  display: flex;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+  padding: 5px;
+  border-radius: 5px;
+  margin-bottom: 10px; /* Add margin to separate from the message content */
 }
 
 .download-button {
@@ -79,11 +123,6 @@
 .download-button .icon-class {
   font-size: 2.5rem !important; /* Ensure priority */
   cursor: pointer !important;  /* Ensure hover effect */
-}
-
-.relative-container {
-  position: relative;
-  display: inline-block;
 }
 
 /* Styles for Helpful Tips Button */
