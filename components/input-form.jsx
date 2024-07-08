@@ -47,9 +47,11 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
 
   const onSubmit = (e) => {
     e.preventDefault();
+    console.log('Submitting with selectedFile:', selectedFile);
     handleSubmit(e);
     setSelectedFile(null); // Clear the file input after submission
     setFilePreview(null); // Clear the file preview after submission
+    console.log('After submission, selectedFile:', selectedFile);
   };
 
   const renderFilePreview = () => {

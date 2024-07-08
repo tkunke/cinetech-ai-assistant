@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import styles from '@/styles/sidebar.module.css';
 import { FaFilm } from 'react-icons/fa';
+import ReactMarkdown from 'react-markdown';
 
 interface SidebarProps {
   generatePdf: () => void;
@@ -137,7 +138,7 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messa
         <div className={styles.messageWindow}>
           <button className={styles.closeButton} onClick={handleCloseMessageWindow}>X</button>
           <div className={styles.messageContent}>
-            <p>{selectedMessage.content}</p>
+            <ReactMarkdown>{selectedMessage.content}</ReactMarkdown>
           </div>
         </div>
       )}

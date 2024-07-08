@@ -5,7 +5,7 @@ import styles from '@/styles/assistant-message.module.css';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { AiOutlineDownload } from 'react-icons/ai';
-import { FaFilm, FaImages } from 'react-icons/fa';
+import { FaFilm, FaImages, FaEnvelope, FaNewspaper } from 'react-icons/fa';
 
 export default function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, addToImageLibrary, addToMessagesLibrary }) {
   const tableRef = useRef(null);
@@ -156,6 +156,8 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
 
   const isImageMessage = hasImages(message.content);
   const isBreakdownMessage = message.content.includes('Storyboard Breakdown');
+  const isInitialMessage = message.content.trim() === 'Hey there! How can I help?';
+
 
   return (
     <div
@@ -166,16 +168,18 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
     >
       <div className="flex flex-col items-start relative">
         <div className="text-4xl" style={{ userSelect: 'text' }}>{displayRole(message.role)}</div>
-        {message.role === 'assistant' && (
+        {message.role === 'assistant' && !isInitialMessage && (
           <div className={styles.messageSidebar}>
             {(isBreakdownMessage || isImageMessage) && (
               <div className={styles.iconButton} onClick={() => handleMessageSelect(message)} title="Select Message">
                 <FaFilm style={{ color: selectedMessages.some(m => m.id === message.id) ? 'red' : 'gray' }} />
               </div>
             )}
-            <div className={styles.iconButton} onClick={() => handleSaveMessage(message.content)} title="Save Message">
-              <FaImages />
-            </div>
+            {!hasImages(message.content) && (  // Conditionally render based on presence of images
+              <div className={styles.iconButton} onClick={() => handleSaveMessage(message.content)} title="Save Message">
+                <FaNewspaper />
+              </div>
+            )}
           </div>
         )}
         {message.content.includes('difficulty completing') && (

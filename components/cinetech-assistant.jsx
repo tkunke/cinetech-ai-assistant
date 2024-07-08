@@ -6,6 +6,7 @@ import InputForm from './input-form';
 import Sidebar from './sidebar';
 import styles from '@/styles/cinetech-assistant.module.css';
 import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
+import SpinningReels from './spinning-reels';
 
 function containsMarkdown(content) {
   return /(\*\*|__|`|#|\*|-|\||\n[\-=\*]{3,}\s*$)/.test(content.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, ''));
@@ -305,6 +306,7 @@ export default function CinetechAssistant({
         ))}
         {isLoading && <CinetechAssistantMessage message={streamingMessage} />}
         <div ref={messagesEndRef} style={{ height: '1px' }}></div>
+        {isLoading && <SpinningReels />}
       </div>
       <Sidebar
         generatePdf={handleGeneratePdf}
