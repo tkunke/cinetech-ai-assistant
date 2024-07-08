@@ -14,7 +14,8 @@ interface Message {
 export default function Home() {
   const [screenOrientation, setScreenOrientation] = useState<string>("portrait");
   const [selectedMessages, setSelectedMessages] = useState<Message[]>([]);
-  const [imageLibrary, setImageLibrary] = useState<string[]>([]);
+  const [imageLibrary, setImageLibrary] = useState<{ imageUrl: string; thumbnailUrl: string }[]>([]);
+  const [messagesLibrary, setMessagesLibrary] = useState<{ content: string; thumbnailUrl: string }[]>([]);
 
   useEffect(() => {
     const getScreenOrientation = (): string => {
@@ -35,8 +36,12 @@ export default function Home() {
   }, []);
 
   const addToImageLibrary = (imageUrl: string) => {
-    setImageLibrary((prevLibrary) => [...prevLibrary, imageUrl]);
-  };
+  setImageLibrary((prevLibrary) => [
+    ...prevLibrary,
+    { imageUrl, thumbnailUrl: `/path/to/thumbnail/${prevLibrary.length + 1}` }, // Example thumbnailUrl
+  ]);
+};
+
 
   const handleGeneratePdfClick = async () => {
     console.log('Selected Messages:', selectedMessages);
@@ -50,7 +55,7 @@ export default function Home() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar generatePdf={handleGeneratePdfClick} imageLibrary={imageLibrary} />
+      <Sidebar generatePdf={handleGeneratePdfClick} imageLibrary={imageLibrary} messagesLibrary={messagesLibrary} />
       <div className="flex-1 flex flex-col ml-0 md:ml-64">
         <header className={styles.header}></header>
         <main className={styles.main}>
@@ -59,7 +64,6 @@ export default function Home() {
             greeting="Hey there! How can I help?"
             setSelectedMessages={setSelectedMessages}
             selectedMessages={selectedMessages}
-            addToImageLibrary={addToImageLibrary}
           />
         </main>
       </div>
