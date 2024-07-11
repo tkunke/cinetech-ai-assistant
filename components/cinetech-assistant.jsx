@@ -1,5 +1,6 @@
 'use client';
 
+import { useSession } from 'next-auth/react';
 import { useState, useEffect, useRef } from 'react';
 import CinetechAssistantMessage from './assistant-message';
 import InputForm from './input-form';
@@ -17,9 +18,12 @@ export default function CinetechAssistant({
   greeting = 'I am a helpful chat assistant. How can I help you?',
   selectedMessages,
   setSelectedMessages,
+  setThreadId,
+  setRunId
 }) {
+  const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(false);
-  const [threadId, setThreadId] = useState(null);
+  const [threadId, setThreadIdLocal] = useState(null);
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState([]);
   const [messagesLibrary, setMessagesLibrary] = useState([]);
@@ -32,10 +36,15 @@ export default function CinetechAssistant({
   const inputRef = useRef(null);
   const [chunkCounter, setChunkCounter] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [tokenUsage, setTokenUsage] = useState(null);
+
+  const dynamicGreeting = session?.user.defaultGreeting || greeting;
+  const assistantName = session?.user.assistantName || 'Your Assistant';
 
   const greetingMessage = {
+    id: 'initial_greeting',
     role: 'assistant',
-    content: greeting,
+    content: dynamicGreeting,
   };
 
   const bufferRef = useRef('');
@@ -91,6 +100,7 @@ export default function CinetechAssistant({
       });
       const data = await response.json();
       setThreadId(data.threadId);
+      setThreadIdLocal(data.threadId);
       return data.threadId;
     } catch (error) {
       console.error('Error initializing thread:', error);
@@ -164,6 +174,7 @@ export default function CinetechAssistant({
               switch (serverEvent.event) {
                 case 'thread.message.created':
                   setThreadId(serverEvent.data.thread_id);
+                  setThreadIdLocal(serverEvent.data.thread_id);
                   break;
                 case 'thread.message.delta':
                   if (serverEvent.data.delta.content[0].text && serverEvent.data.delta.content[0].text.value) {
@@ -226,21 +237,60 @@ export default function CinetechAssistant({
     }
   }
 
+  const fetchCurrentTokenCount = async (userId) => {
+    try {
+      const response = await fetch(`/api/fetch-tokens?userId=${userId}`);
+      const data = await response.json();
+      if (response.ok) {
+        //console.log(`Fetched current token count for user ${userId}: ${data.tokenCount}`);
+        return data.tokenCount;
+      } else {
+        console.error('Failed to fetch current token count:', data.error);
+        return null;
+      }
+    } catch (error) {
+      console.error('Error fetching current token count:', error);
+      return null;
+    }
+  };
+  
+  const updateTokensInDatabase = async (userId, newTokenCount) => {
+    try {
+      //console.log(`Updating tokens in database for user: ${userId} with new token count: ${newTokenCount}`);
+      const response = await fetch('/api/fetch-tokens', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, tokensUsed: newTokenCount }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        //console.log('Token count updated successfully:', result);
+      } else {
+        console.error('Failed to update token count:', result.message);
+      }
+    } catch (error) {
+      console.error('Error updating token count:', error);
+    }
+  };  
+
   async function pollForRunStatus(threadId) {
     const interval = setInterval(async () => {
       try {
         const statusResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
           threadId: threadId
         }));
-        const { messages, runStatus } = await statusResponse.json();
+        const { messages, runStatus, tokenUsage } = await statusResponse.json();
         setMessages(messages);
-
+  
         if (runStatus) {
           console.log('Polling run status:', runStatus);
-
-          if (runStatus.status === 'completed' || runStatus.failed) {
+          setRunId(runStatus.id);
+  
+          if ((runStatus.status === 'completed' && tokenUsage) || runStatus.failed) {
             clearInterval(interval);
-
+  
             if (runStatus.failed) {
               console.log('Run failed detected');
               setMessages(prevMessages => [
@@ -251,6 +301,28 @@ export default function CinetechAssistant({
                   content: "It looks like I had difficulty completing that last task. Please try it again."
                 }
               ]);
+            } else {
+              // Handle token usage data received
+              setTokenUsage(tokenUsage);
+              //console.log('Token usage:', tokenUsage);
+  
+              // Ensure tokenUsage contains valid values
+              if (tokenUsage && tokenUsage.total_tokens !== undefined) {
+                // Fetch the current token count
+                const currentTokenCount = await fetchCurrentTokenCount(session.user.name);
+                if (currentTokenCount !== null) {
+                  // Calculate the new token count
+                  const newTokenCount = currentTokenCount - tokenUsage.total_tokens;
+                  //console.log(`Current token count: ${currentTokenCount}`);
+                  //console.log(`Tokens used: ${tokenUsage.total_tokens}`);
+                  //console.log(`Calculated new token count: ${newTokenCount}`);
+  
+                  // Update the token count in the database
+                  await updateTokensInDatabase(session.user.name, newTokenCount);
+                }
+              } else {
+                console.error('Invalid tokenUsage:', tokenUsage);
+              }
             }
           }
         }
@@ -258,7 +330,7 @@ export default function CinetechAssistant({
         console.error('Error polling for run status:', error);
       }
     }, 1000);
-  }
+  }         
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -286,10 +358,14 @@ export default function CinetechAssistant({
     setSelectedFile(file);
   }
 
+  //console.log('Rendering CinetechAssistant with tokenUsage:', tokenUsage);
   return (
     <div className="flex flex-col h-full justify-between">
       <div className="flex flex-col mb-10 items-center justify-center">
-        <CinetechAssistantMessage message={greetingMessage} />
+        <CinetechAssistantMessage 
+          message={greetingMessage}
+          assistantName={assistantName}
+        />
         {messages.map((m) => (
           <CinetechAssistantMessage
             key={m.id}
@@ -302,16 +378,18 @@ export default function CinetechAssistant({
             setSelectedMessages={setSelectedMessages}
             addToImageLibrary={addToImageLibrary}
             addToMessagesLibrary={addToMessagesLibrary}
+            assistantName={assistantName}
           />
         ))}
         {isLoading && <CinetechAssistantMessage message={streamingMessage} />}
         <div ref={messagesEndRef} style={{ height: '1px' }}></div>
-        {isLoading && <SpinningReels />}
+        {isLoading}
       </div>
       <Sidebar
         generatePdf={handleGeneratePdf}
         imageLibrary={imageLibrary}
         messagesLibrary={messagesLibrary}
+        tokenUsage={tokenUsage}
       />
       <footer className={styles.footer}>
         <InputForm

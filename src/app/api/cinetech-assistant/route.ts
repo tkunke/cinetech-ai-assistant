@@ -19,6 +19,14 @@ interface RunStatus {
   thread_id: string;
   id: string;
   failed?: boolean;
+  usage?: RunUsage | null;
+}
+
+// Define the RunUsage interface
+interface RunUsage {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
 }
 
 // Define the ToolCall type (ensure this matches your actual type)
@@ -255,7 +263,7 @@ export async function POST(request: NextRequest) {
   
         // Retrieve the latest run status using runId
         runStatus = await openai.beta.threads.runs.retrieve(runStatus.thread_id, runId!);
-        //console.log('Run status retrieved:', runStatus);
+        console.log('Run status retrieved:', runStatus);
   
         // Check if the run status is completed and break the loop if it is
         if (runStatus.status === 'completed') {
@@ -283,7 +291,7 @@ export async function POST(request: NextRequest) {
   
       // Fetch the current run status again from the assistantStream
       runStatus = assistantStream.currentRun();
-      //console.log('Run status updated:', runStatus);
+      console.log('Run status updated:', runStatus);
   
       // Check if the runStatus is null or undefined
       if (!runStatus) {
@@ -331,43 +339,65 @@ export async function GET(request: NextRequest) {
   const threadId = searchParams.get('threadId');
 
   if (threadId == null) {
-    throw Error('Missing threadId');
+    throw new Error('Missing threadId');
   }
 
   // Create OpenAI client
   const openai = new OpenAI();
 
-  // Get thread and messages
-  const threadMessages = await openai.beta.threads.messages.list(threadId);
+  try {
+    // Get thread and messages
+    const threadMessages = await openai.beta.threads.messages.list(threadId);
 
-  // Only transmit the data that we need
-  const cleanMessages = threadMessages.data.map((m) => {
-    let content = '';
-    if (m.content && Array.isArray(m.content) && m.content.length > 0) {
-      const messageContent = m.content[0] as MessageContent;
-      if (messageContent.type === 'text') {
-        content = messageContent.text.value;
-      } else if (messageContent.type === 'image_file' || 'image_url') {
-        content = messageContent.image.url;
+    // Only transmit the data that we need
+    const cleanMessages = threadMessages.data.map((m) => {
+      let content = '';
+      if (m.content && Array.isArray(m.content) && m.content.length > 0) {
+        const messageContent = m.content[0] as MessageContent;
+        if (messageContent.type === 'text') {
+          content = messageContent.text.value;
+        } else if (messageContent.type === 'image_file' || messageContent.type === 'image_url') {
+          content = messageContent.image.url;
+        }
       }
+      return {
+        id: m.id,
+        role: m.role,
+        content: content,
+        createdAt: m.created_at,
+      };
+    });
+
+    // Reverse chronology
+    cleanMessages.reverse();
+
+    // Retrieve the current run status from the in-memory store
+    const runStatus = runStatusStore[threadId];
+
+    // Check if run is completed or failed
+    if (runStatus && (runStatus.status === 'completed' || runStatus.failed)) {
+      // Fetch token usage information from the runStatus object if available
+      const tokenUsage = {
+        prompt_tokens: runStatus.usage?.prompt_tokens ?? 0,
+        completion_tokens: runStatus.usage?.completion_tokens ?? 0,
+        total_tokens: runStatus.usage?.total_tokens ?? 0,
+      };
+
+      // Return messages, runStatus, and tokenUsage to client
+      return NextResponse.json({
+        messages: cleanMessages,
+        runStatus: runStatus,
+        tokenUsage: tokenUsage, // Include tokenUsage in the response
+      });
     }
-    return {
-      id: m.id,
-      role: m.role,
-      content: content,
-      createdAt: m.created_at,
-    };
-  });
 
-  // Reverse chronology
-  cleanMessages.reverse();
-
-  // Retrieve the current run status from the in-memory store
-  const runStatus = runStatusStore[threadId];
-
-  // Return back to client
-  return NextResponse.json({
-    messages: cleanMessages,
-    runStatus: runStatus,
-  });
+    // Return messages and runStatus without tokenUsage if run is ongoing
+    return NextResponse.json({
+      messages: cleanMessages,
+      runStatus: runStatus,
+    });
+  } catch (error) {
+    console.error('Error fetching messages and run status:', error);
+    throw new Error('Failed to fetch messages and run status');
+  }
 }

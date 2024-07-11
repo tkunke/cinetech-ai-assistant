@@ -126,6 +126,18 @@
   cursor: pointer;
 }
 
+.logoutButton {
+  background-color: transparent;
+  font-weight: bold;
+  color: white;
+  border: none;
+  padding: 0.25rem .5rem;
+  margin: 0.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
 .topSection {
   padding: 20px;
 }
@@ -133,3 +145,15 @@
 .bottomSection {
   padding: 20px;
 }
+
+.bottomSection nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px; /* Adjust the gap value to increase or decrease space */
+}
+
+.bottomSection a, .bottomSection button {
+  flex: 1; /* Optional: Makes both buttons take equal width */
+  text-align: center;
+}
+

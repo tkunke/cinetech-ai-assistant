@@ -4,11 +4,21 @@ import Image from 'next/image';
 import styles from '@/styles/sidebar.module.css';
 import { FaFilm } from 'react-icons/fa';
 import ReactMarkdown from 'react-markdown';
+import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+
+// Define JSX.IntrinsicElements interface
+declare namespace JSX {
+  interface IntrinsicElements {
+    [elemName: string]: any;
+  }
+}
 
 interface SidebarProps {
   generatePdf: () => void;
   imageLibrary: { imageUrl: string; thumbnailUrl: string }[];
   messagesLibrary: { content: string; thumbnailUrl: string }[];
+  userId: string; // Pass the user ID to the Sidebar
 }
 
 interface Message {
@@ -16,12 +26,13 @@ interface Message {
   thumbnailUrl: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messagesLibrary = [] }) => {
+const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messagesLibrary = [], userId }) => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isCreativeExpanded, setIsCreativeExpanded] = useState(false);
   const [isMessagesLibExpanded, setIsMessagesLibExpanded] = useState(false);
   const [isImageLibraryExpanded, setIsImageLibraryExpanded] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const router = useRouter();
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -60,6 +71,12 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messa
 
   const handleCloseMessageWindow = () => {
     setSelectedMessage(null);
+  };
+
+  const handleLogout = () => {
+    signOut({
+      callbackUrl: '/logout'
+    });
   };
 
   return (
@@ -127,10 +144,11 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messa
           )}
         </div>
         <div className={styles.bottomSection}>
-          <nav className="flex flex-col space-y-2">
+          <nav className="flex justify-between space-x-2">
             <Link href="/contact" className="hover:bg-gray-700 p-2 rounded">
               Contact
             </Link>
+            <button onClick={handleLogout} className="logout-button">Logout</button>
           </nav>
         </div>
       </div>

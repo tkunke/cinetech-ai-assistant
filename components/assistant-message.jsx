@@ -7,7 +7,7 @@ import html2canvas from 'html2canvas';
 import { AiOutlineDownload } from 'react-icons/ai';
 import { FaFilm, FaImages, FaEnvelope, FaNewspaper } from 'react-icons/fa';
 
-export default function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, addToImageLibrary, addToMessagesLibrary }) {
+export default function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, addToImageLibrary, addToMessagesLibrary, assistantName }) {
   const tableRef = useRef(null);
   const buttonRef = useRef(null);
   const [showTips, setShowTips] = useState(false);
@@ -32,7 +32,7 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
       case 'user':
         return <span style={roleStyle}>User</span>;
       case 'assistant':
-        return <span style={roleStyle}>CT Assistant</span>;
+        return <span style={roleStyle}>{assistantName}</span>;
       default:
         return null;
     }
@@ -168,7 +168,7 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
     >
       <div className="flex flex-col items-start relative">
         <div className="text-4xl" style={{ userSelect: 'text' }}>{displayRole(message.role)}</div>
-        {message.role === 'assistant' && !isInitialMessage && (
+        {message.role === 'assistant' && message.id !== 'initial_greeting' && (
           <div className={styles.messageSidebar}>
             {(isBreakdownMessage || isImageMessage) && (
               <div className={styles.iconButton} onClick={() => handleMessageSelect(message)} title="Select Message">
