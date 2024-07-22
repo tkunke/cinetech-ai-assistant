@@ -21,8 +21,32 @@ export default function Home() {
   const [messagesLibrary, setMessagesLibrary] = useState<{ content: string; thumbnailUrl: string }[]>([]);
   const [runId, setRunId] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string | null>(null);
+  const [fetchTokenTrigger, setFetchTokenTrigger] = useState(false);
 
   const userId = session?.user?.id || ''; // Ensure userId is available
+
+  const updateTokensInDatabase = async (userId: string, newTokenCount: number) => {
+    try {
+      console.log(`Updating tokens in database for user: ${userId} with new token count: ${newTokenCount}`);
+      const response = await fetch('/api/fetch-tokens', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, tokensUsed: newTokenCount }),
+      });
+      const result = await response.json();
+      if (response.ok) {
+        console.log('Token count updated successfully:', result);
+        // Trigger token fetch update
+        setFetchTokenTrigger(prev => !prev);
+      } else {
+        console.error('Failed to update token count:', result.message);
+      }
+    } catch (error) {
+      console.error('Error updating token count:', error);
+    }
+  };
 
   const addToImageLibrary = (imageUrl: string) => {
     setImageLibrary((prevLibrary) => [
@@ -70,9 +94,7 @@ export default function Home() {
   return (
     <div className="flex h-screen">
       <Sidebar 
-        generatePdf={handleGeneratePdfClick} 
-        imageLibrary={imageLibrary} 
-        messagesLibrary={messagesLibrary}
+        generatePdf={handleGeneratePdfClick}
         userId={userId} // Pass the user ID to Sidebar
       />
       <div className="flex-1 flex flex-col ml-0 md:ml-64">
@@ -81,7 +103,7 @@ export default function Home() {
             <button onClick={handleCancelRun} className={styles.cancelButton}>Cancel Run</button>
           </div>
           <div className={styles.rightSection}>
-            <TokenCounter userId={userId} />
+            <TokenCounter userId={userId} fetchTokenTrigger={fetchTokenTrigger} />
           </div>
         </header>
         <main className={styles.main}>

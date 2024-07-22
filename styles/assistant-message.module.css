@@ -12,6 +12,7 @@
   background: rgba(255, 255, 255, 0.9); /* Adjust as needed */
   margin: 0.5rem; /* Add margin for better spacing on small screens */
   word-wrap: break-word; /* Ensure long words break to fit small screens */
+  padding-bottom: 2rem;
 }
 
 .messageContainer img {
@@ -62,7 +63,9 @@
 }
 
 .image {
+  display: block;
   max-width: 100%;
+  height: auto;
 }
 
 .buttonSidebar {
@@ -167,4 +170,12 @@
 
 .helpfulTips li {
   margin-bottom: 5px;
+}
+
+.imageEngine {
+  position: absolute;
+  top: -20px; /* Adjust based on the desired space above the image */
+  right: 0;
+  font-size: 12px;
+  color: #555;
 }

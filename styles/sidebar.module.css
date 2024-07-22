@@ -77,16 +77,16 @@
 .thumbnailContainer {
   width: 50px;
   height: 50px;
-  background-size: cover;
-  background-position: center;
-  border: 1px solid #ddd;
+  background-size: cover; /* Ensure the background image covers the container */
+  background-position: center; /* Center the background image */
   border-radius: 4px;
   cursor: pointer;
+  background-repeat: no-repeat; /* Ensure the background image does not repeat */
 }
 
 .thumbnailGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+  grid-template-columns: repeat(3, 1fr); /* Change to three columns */
   gap: 8px;
 }
 
@@ -99,19 +99,13 @@
 }
 
 .messageWindow {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 70%;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   border: 1px double dodgerblue;
   border-radius: 10px;
-  background: white;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  z-index: 1001;
-  max-height: 300px;
-  overflow-y: auto;
 }
 
 .closeButton {
@@ -155,5 +149,33 @@
 .bottomSection a, .bottomSection button {
   flex: 1; /* Optional: Makes both buttons take equal width */
   text-align: center;
+}
+
+.textList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.textLine {
+  padding: 4px;
+  background-color: transparent;
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+}
+
+.textLine:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.resizableBox {
+  border: 1px solid #ddd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  background: white;
+  z-index: 1001;
+  padding: 10px;
 }
 

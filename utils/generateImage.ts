@@ -1,25 +1,16 @@
-import OpenAI from 'openai';
-const openai = new OpenAI();
+import { generateImageFromOpenAI } from './generateImageFromOpenAI';
 
-export async function generateImage(content: string): Promise<string | null> {
-  console.log('Assistant prompt:', content)
-  try {
-    const response = await openai.images.generate({
-      model: "dall-e-3",
-      prompt: content,
-    });
+export async function generateImage(content: string): Promise<string> {
+  let result: string | null;
+  let engine: string;
 
-    console.log('OpenAI response:', response);
+  // Use OpenAI (DALL-E)
+  result = await generateImageFromOpenAI(content);
+  engine = 'DALL-E';
+  console.log(`Generated image from OpenAI: ${result}` )
 
-    if (response.data && response.data.length > 0) {
-      const url = response.data[0].url ?? null; // Ensure the URL is either a string or null
-      return url;
-    } else {
-      console.log('No data found in the response');
-      return null;
-    }
-  } catch (error) {
-    console.error('Error generating image:', error);
-    return null;
-  }
+  // Log the result and engine together
+  console.log(`Result: ${result}, Engine: ${engine}`);
+
+  return JSON.stringify({ result, engine });
 }

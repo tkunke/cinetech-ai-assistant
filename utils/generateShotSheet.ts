@@ -19,10 +19,10 @@ interface Storyboard {
 }
 
 export async function generatePdfWithSelectedMessages(messages: Message[]) {
-  if (messages.length !== 2) {
-    console.error('Exactly two messages must be selected: one breakdown message and one image message');
-    return;
-  }
+  //if (messages.length !== 2) {
+  //  console.error('Exactly two messages must be selected: one breakdown message and one image message');
+  //  return;
+  //}
 
   const hasImages = (content: string) => {
     const imagePattern = /!\[.*\]\((.*)\)/;

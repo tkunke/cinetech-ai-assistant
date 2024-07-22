@@ -6,6 +6,11 @@ const nextConfig = {
             protocol: 'https',
             hostname: 'oaidalleapiprodscus.blob.core.windows.net',
             pathname: '/*/**',
+          },
+          {
+            protocol: 'https',
+            hostname: 'ylq6raulhsuqgkok.public.blob.vercel-storage.com',
+            pathname: '/*',
           }
         ]
     },

@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 
 interface TokenCounterProps {
   userId: string;
+  fetchTokenTrigger: boolean; // Add a trigger prop to determine when to fetch tokens
 }
 
-const TokenCounter: React.FC<TokenCounterProps> = ({ userId }) => {
+const TokenCounter: React.FC<TokenCounterProps> = ({ userId, fetchTokenTrigger }) => {
   const [tokens, setTokens] = useState<number | null>(null);
 
   const fetchTokens = () => {
-    //console.log('Fetching tokens for user:', userId);
+    console.log('Fetching tokens for user:', userId);
     fetch(`/api/fetch-tokens?userId=${userId}`)
       .then(response => {
         if (!response.ok) {
@@ -17,7 +18,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId }) => {
         return response.json();
       })
       .then(data => {
-        //console.log('Fetched tokens in TokenCounter:', data.tokenCount);
+        console.log('Fetched tokens in TokenCounter:', data.tokenCount);
         setTokens(data.tokenCount);
       })
       .catch(error => {
@@ -29,13 +30,11 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId }) => {
   useEffect(() => {
     if (userId) {
       fetchTokens();
-      const interval = setInterval(fetchTokens, 10000); // Fetch tokens every 60 seconds
-      return () => clearInterval(interval);
     }
-  }, [userId]);
+  }, [fetchTokenTrigger]); // Fetch tokens whenever the trigger changes
 
   useEffect(() => {
-    //console.log('Token state updated:', tokens); // Log the token state
+    console.log('Token state updated:', tokens); // Log the token state
   }, [tokens]);
 
   return (

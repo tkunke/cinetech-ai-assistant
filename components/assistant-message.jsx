@@ -6,11 +6,17 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { AiOutlineDownload } from 'react-icons/ai';
 import { FaFilm, FaImages, FaEnvelope, FaNewspaper } from 'react-icons/fa';
+import { useSession } from 'next-auth/react';
+import { upload } from '@vercel/blob/client';
+import { useLibrary } from '@/context/LibraryContext';
 
-export default function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, addToImageLibrary, addToMessagesLibrary, assistantName }) {
+export default function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, addToImageLibrary, addToMessagesLibrary, assistantName, imageEngineMap }) {
   const tableRef = useRef(null);
   const buttonRef = useRef(null);
   const [showTips, setShowTips] = useState(false);
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+  const { fetchImages, fetchMessages } = useLibrary();
 
   if (!message) return null;
   if (!message.role) return null;
@@ -70,32 +76,119 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
   };
 
   const handleAddToImageLibrary = async (imageUrl) => {
+    if (!userId) {
+      console.error('User ID is missing from session');
+      return;
+    }
+
     try {
       const response = await fetch(`/api/fetch-image?url=${encodeURIComponent(imageUrl)}`);
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const img = new Image();
-      img.src = url;
+      const fileName = `generated-image.png`;
+      const prefixedFileName = `${userId}-img-${fileName}`;
+      const file = new File([blob], prefixedFileName, { type: 'image/png' });
 
-      img.onload = async () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        const thumbnailWidth = 100; // Desired thumbnail width
-        const thumbnailHeight = 100; // Desired thumbnail height
+      console.log('File name being sent:', file.name); // Log the file name
+      console.log('Prefixed file name being sent:', prefixedFileName); // Log the prefixed file name
 
-        canvas.width = thumbnailWidth;
-        canvas.height = thumbnailHeight;
+      // Send the prefixed file name to the server to generate the client token
+      const tokenResponse = await fetch('/api/image-store', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pathname: prefixedFileName,
+        }),
+      });
 
-        ctx.drawImage(img, 0, 0, thumbnailWidth, thumbnailHeight);
+      const responseData = await tokenResponse.json();
+      console.log('Response data:', responseData);
 
-        const thumbnailUrl = canvas.toDataURL('image/png');
-        addToImageLibrary({ imageUrl, thumbnailUrl });
-        window.URL.revokeObjectURL(url);
-      };
+      const { clientToken } = responseData;
+
+      if (!clientToken) {
+        throw new Error('Failed to retrieve client token');
+      }
+
+      const newBlob = await upload(prefixedFileName, file, {
+        access: 'public',
+        handleUploadUrl: '/api/image-store',
+        clientToken,
+      });
+
+      console.log('Image uploaded successfully:', newBlob);
+
+      // Fetch updated images
+      fetchImages(userId);
     } catch (error) {
-      console.error('Error adding to image library:', error);
+      console.error('Error uploading image:', error);
+      if (error.response) {
+        const errorData = await error.response.json();
+        console.error('Error response data:', errorData);
+      }
     }
   };
+
+  const handleSaveMessage = async (messageContent) => {
+    if (!userId) {
+      console.error('User ID is missing from session');
+      return;
+    }
+  
+    try {
+      const canvas = await html2canvas(document.body.querySelector(`#message-${message.id}`));
+      const thumbnailUrl = canvas.toDataURL('image/png');
+  
+      const timestamp = generateTimestamp(); // Generate the timestamp
+  
+      const messageData = { content: messageContent, thumbnailUrl, timestamp }; // Include the timestamp
+      const blob = new Blob([JSON.stringify(messageData)], { type: 'application/json' });
+      const fileName = `message-${Math.random().toString(36).substr(2, 9)}.json`;
+      const prefixedFileName = `${userId}-message-${fileName}`;
+      const file = new File([blob], prefixedFileName, { type: 'application/json' });
+  
+      console.log('File name being sent:', file.name); // Log the file name
+      console.log('Prefixed file name being sent:', prefixedFileName); // Log the prefixed file name
+  
+      // Send the prefixed file name to the server to generate the client token
+      const tokenResponse = await fetch('/api/message-store', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pathname: prefixedFileName,
+        }),
+      });
+  
+      const responseData = await tokenResponse.json();
+      console.log('Response data:', responseData);
+  
+      const { clientToken } = responseData;
+  
+      if (!clientToken) {
+        throw new Error('Failed to retrieve client token');
+      }
+  
+      const newBlob = await upload(prefixedFileName, file, {
+        access: 'public',
+        handleUploadUrl: '/api/message-store',
+        clientToken,
+      });
+  
+      console.log('Message uploaded successfully:', newBlob);
+  
+      // Trigger a refresh of the messages library
+      fetchMessages(userId);
+    } catch (error) {
+      console.error('Error uploading message:', error);
+      if (error.response) {
+        const errorData = await error.response.json();
+        console.error('Error response data:', errorData);
+      }
+    }
+  };                
 
   const handleMessageSelect = (message) => {
     setSelectedMessages((prevSelectedMessages) =>
@@ -105,11 +198,11 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
     );
   };
 
-  const handleSaveMessage = async (messageContent) => {
-    const canvas = await html2canvas(document.body.querySelector(`#message-${message.id}`));
-    const thumbnailUrl = canvas.toDataURL('image/png');
-    addToMessagesLibrary({ content: messageContent, thumbnailUrl });
+  const generateTimestamp = () => {
+    const now = new Date();
+    return now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
+  
 
   const renderers = {
     table: ({ node, children }) => (
@@ -127,19 +220,26 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
         </div>
       </div>
     ),
-    img: ({ src, alt }) => (
-      <div className={styles.imageMessageContainer}>
-        <div className={styles.buttonSidebar}>
-          <div className={styles.iconButton} onClick={() => handleDownloadImage(src)} title="Download as png">
-            <AiOutlineDownload />
+    img: ({ src, alt }) => {
+      return (
+        <div className={styles.imageMessageContainer}>
+          <div className={styles.buttonSidebar}>
+            <div className={styles.iconButton} onClick={() => handleDownloadImage(src)} title="Download as png">
+              <AiOutlineDownload />
+            </div>
+            <div className={styles.iconButton} onClick={() => handleAddToImageLibrary(src)} title="Add to Image Library">
+              <FaImages />
+            </div>
           </div>
-          <div className={styles.iconButton} onClick={() => handleAddToImageLibrary(src)} title="Add to Image Library">
-            <FaImages />
-          </div>
+          <img src={src} alt={alt} className={styles.image} />
+          {imageEngineMap && imageEngineMap[src] && (
+            <div className={styles.imageEngine}>
+              Generated by: {imageEngineMap[src]}
+            </div>
+          )}
         </div>
-        <img src={src} alt={alt} className={styles.image} />
-      </div>
-    ),
+      );
+    },
     p: ({ node, children }) => {
       const hasImage = node.children.some(child => child.tagName === 'img');
       if (hasImage) {
@@ -157,7 +257,6 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
   const isImageMessage = hasImages(message.content);
   const isBreakdownMessage = message.content.includes('Storyboard Breakdown');
   const isInitialMessage = message.content.trim() === 'Hey there! How can I help?';
-
 
   return (
     <div

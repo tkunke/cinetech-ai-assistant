@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateImage } from '@/utils/generateImage';
+import { generateImageFromStability } from '@/utils/generateImageFromStability';
 
 // This enables Edge Functions in Vercel
 //export const runtime = 'edge';
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ message: 'Prompt is required' }, { status: 400 });
     }
 
-    const url = await generateImage(content);
+    const url = await generateImageFromStability(content);
     if (url) {
       console.log('Generated image URL:', url);
       return NextResponse.json({ url }, { status: 200 });

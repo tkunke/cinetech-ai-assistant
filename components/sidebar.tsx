@@ -1,37 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import Draggable from 'react-draggable';
+import { ResizableBox } from 'react-resizable';
 import styles from '@/styles/sidebar.module.css';
 import { FaFilm } from 'react-icons/fa';
 import ReactMarkdown from 'react-markdown';
 import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-
-// Define JSX.IntrinsicElements interface
-declare namespace JSX {
-  interface IntrinsicElements {
-    [elemName: string]: any;
-  }
-}
+import { useLibrary } from '@/context/LibraryContext';
+import 'react-resizable/css/styles.css';
 
 interface SidebarProps {
   generatePdf: () => void;
-  imageLibrary: { imageUrl: string; thumbnailUrl: string }[];
-  messagesLibrary: { content: string; thumbnailUrl: string }[];
   userId: string; // Pass the user ID to the Sidebar
 }
 
 interface Message {
   content: string;
-  thumbnailUrl: string;
+  url: string;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messagesLibrary = [], userId }) => {
+const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
+  const { fetchedImages, fetchedMessages, fetchImages, fetchMessages } = useLibrary();
+
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isCreativeExpanded, setIsCreativeExpanded] = useState(false);
   const [isMessagesLibExpanded, setIsMessagesLibExpanded] = useState(false);
   const [isImageLibraryExpanded, setIsImageLibraryExpanded] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
+  const [messagesWithContent, setMessagesWithContent] = useState<Message[]>([]);
+
   const router = useRouter();
 
   const toggleSidebar = () => {
@@ -65,7 +64,32 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messa
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleThumbnailClick = (message: Message) => {
+  useEffect(() => {
+    if (isImageLibraryExpanded) {
+      console.log('Image library expanded, fetching images...');
+      fetchImages(userId); // Fetch images when expanded
+    }
+  }, [isImageLibraryExpanded, userId, fetchImages]);
+
+  useEffect(() => {
+    if (isMessagesLibExpanded) {
+      console.log('Messages library expanded, fetching messages...');
+      fetchMessages(userId).then(() => {
+        fetchMessageContents();
+      });
+    }
+  }, [isMessagesLibExpanded, userId, fetchMessages]);
+
+  const fetchMessageContents = async () => {
+    const messages = await Promise.all(fetchedMessages.map(async (message) => {
+      const response = await fetch(message.url);
+      const data = await response.json();
+      return { ...message, content: data.content };
+    }));
+    setMessagesWithContent(messages);
+  };
+
+  const handleTextLineClick = (message: Message) => {
     setSelectedMessage(message);
   };
 
@@ -77,6 +101,13 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messa
     signOut({
       callbackUrl: '/logout'
     });
+  };
+
+  const truncateText = (text: string, maxLength: number) => {
+    if (text.length <= maxLength) {
+      return text;
+    }
+    return text.slice(0, maxLength) + '...';
   };
 
   return (
@@ -114,14 +145,15 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messa
             Messages Library
           </button>
           {isMessagesLibExpanded && (
-            <div className={`${styles.expandedSection} ${styles.thumbnailGrid}`}>
-              {messagesLibrary.map((message, index) => (
+            <div className={`${styles.expandedSection} ${styles.textList}`}>
+              {messagesWithContent.map((message, index) => (
                 <div
                   key={index}
-                  className={styles.thumbnailContainer}
-                  onClick={() => handleThumbnailClick(message)}
-                  style={{ backgroundImage: `url(${message.thumbnailUrl})` }}
-                ></div>
+                  className={styles.textLine}
+                  onClick={() => handleTextLineClick(message)}
+                >
+                  {truncateText(message.content, 30)}
+                </div>
               ))}
             </div>
           )}
@@ -133,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messa
           </button>
           {isImageLibraryExpanded && (
             <div className={`${styles.expandedSection} ${styles.thumbnailGrid}`}>
-              {imageLibrary.map((image, index) => (
+              {fetchedImages.map((image, index) => (
                 <div key={index} className={styles.thumbnailContainer}>
                   <a href={image.imageUrl} target="_blank" rel="noopener noreferrer">
                     <Image src={image.thumbnailUrl} alt={`Image ${index + 1}`} width="50" height="50" className={styles.thumbnail} />
@@ -153,12 +185,23 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, imageLibrary = [], messa
         </div>
       </div>
       {selectedMessage && (
-        <div className={styles.messageWindow}>
-          <button className={styles.closeButton} onClick={handleCloseMessageWindow}>X</button>
-          <div className={styles.messageContent}>
-            <ReactMarkdown>{selectedMessage.content}</ReactMarkdown>
-          </div>
-        </div>
+        <Draggable>
+          <ResizableBox
+            className={styles.resizableBox}
+            width={500}
+            height={300}
+            minConstraints={[100, 100]}
+            maxConstraints={[1200, 1200]}
+            resizeHandles={['se']}
+          >
+            <div className={styles.messageWindow}>
+              <button className={styles.closeButton} onClick={handleCloseMessageWindow}>X</button>
+              <div className={styles.messageContent}>
+                <ReactMarkdown>{selectedMessage.content}</ReactMarkdown>
+              </div>
+            </div>
+          </ResizableBox>
+        </Draggable>
       )}
     </>
   );
