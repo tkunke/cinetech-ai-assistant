@@ -9,6 +9,7 @@ import { Analytics } from '@vercel/analytics/react';
 import React from 'react';
 import { SessionProvider } from 'next-auth/react';
 import { LibraryProvider } from '@/context/LibraryContext';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -25,6 +26,7 @@ export default function RootLayout({
             {children}
           </LibraryProvider>
         </SessionProvider>
+        <SpeedInsights />
       </body>
     </html>
   );
