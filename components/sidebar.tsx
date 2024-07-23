@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import Draggable from 'react-draggable';
@@ -22,14 +22,15 @@ interface Message {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
-  const { fetchedImages, fetchedMessages, fetchImages, fetchMessages } = useLibrary();
-
+  const { fetchedImages, fetchedMessages, fetchImages, fetchMessages: libraryFetchMessages } = useLibrary();
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isCreativeExpanded, setIsCreativeExpanded] = useState(false);
   const [isMessagesLibExpanded, setIsMessagesLibExpanded] = useState(false);
   const [isImageLibraryExpanded, setIsImageLibraryExpanded] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [messagesWithContent, setMessagesWithContent] = useState<Message[]>([]);
+  const [hasFetchedMessages, setHasFetchedMessages] = useState(false);
+  const [hasFetchedImages, setHasFetchedImages] = useState(false);
 
   const router = useRouter();
 
@@ -64,30 +65,41 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const fetchMessageContents = useCallback(async (messages: Message[]) => {
+    try {
+      console.log('Messages to fetch content for:', messages);
+      const messagesWithContent = await Promise.all(messages.map(async (message) => {
+        console.log('Fetching content for message:', message);
+        const response = await fetch(message.url);
+        const data = await response.json();
+        console.log('Fetched message content:', data);
+        return { ...message, content: data.content };
+      }));
+      console.log('Messages with content:', messagesWithContent);
+      setMessagesWithContent(messagesWithContent);
+    } catch (error) {
+      console.error('Error fetching message contents:', error);
+    }
+  }, []);
+
   useEffect(() => {
-    if (isImageLibraryExpanded) {
+    if (isImageLibraryExpanded && !hasFetchedImages) {
       console.log('Image library expanded, fetching images...');
-      fetchImages(userId); // Fetch images when expanded
+      fetchImages(userId);
+      setHasFetchedImages(true);
     }
-  }, [isImageLibraryExpanded, userId, fetchImages]);
+  }, [isImageLibraryExpanded, userId, fetchImages, hasFetchedImages]);
 
   useEffect(() => {
-    if (isMessagesLibExpanded) {
+    if (isMessagesLibExpanded && !hasFetchedMessages) {
       console.log('Messages library expanded, fetching messages...');
-      fetchMessages(userId).then(() => {
-        fetchMessageContents();
+      libraryFetchMessages(userId).then((formattedMessages) => {
+        console.log('Messages fetched, fetching message contents...');
+        fetchMessageContents(formattedMessages);
       });
+      setHasFetchedMessages(true);
     }
-  }, [isMessagesLibExpanded, userId, fetchMessages]);
-
-  const fetchMessageContents = async () => {
-    const messages = await Promise.all(fetchedMessages.map(async (message) => {
-      const response = await fetch(message.url);
-      const data = await response.json();
-      return { ...message, content: data.content };
-    }));
-    setMessagesWithContent(messages);
-  };
+  }, [isMessagesLibExpanded, userId, libraryFetchMessages, fetchMessageContents, hasFetchedMessages]);
 
   const handleTextLineClick = (message: Message) => {
     setSelectedMessage(message);

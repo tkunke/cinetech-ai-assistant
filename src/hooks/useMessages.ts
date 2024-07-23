@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 export function useMessages(threadId: string | null, runCompleted: boolean) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     if (!threadId) return;
     setLoading(true);
     try {
@@ -20,7 +20,7 @@ export function useMessages(threadId: string | null, runCompleted: boolean) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [threadId, messages]);
 
   useEffect(() => {
     fetchMessages();
@@ -31,7 +31,7 @@ export function useMessages(threadId: string | null, runCompleted: boolean) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [threadId]);
+  }, [threadId, fetchMessages]);
 
   useEffect(() => {
     if (runCompleted && intervalRef.current) {

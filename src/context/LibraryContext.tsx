@@ -15,7 +15,7 @@ interface LibraryContextType {
   fetchedImages: Image[];
   fetchedMessages: Message[];
   fetchImages: (userId: string) => Promise<void>;
-  fetchMessages: (userId: string) => Promise<void>;
+  fetchMessages: (userId: string) => Promise<Message[]>;
 }
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
@@ -63,13 +63,16 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
       const response = await fetch(`/api/get-lib-messages?userId=${userId}`);
       const data = await response.json();
       if (response.ok) {
+        console.log('API response data:', data);
         if (Array.isArray(data.blobs)) {
           const formattedMessages = data.blobs.map((blob: any) => ({
-            content: blob.url, // Placeholder for the content; will be fetched when clicked
+            content: '', // Placeholder for the content; will be fetched when clicked
             thumbnailUrl: blob.url.replace('.json', '.png'), // Adjust this if you have a separate thumbnail URL
             url: blob.url,
           }));
+          console.log('Formatted messages:', formattedMessages);
           setFetchedMessages(formattedMessages);
+          return formattedMessages;
         } else {
           console.error('API response blobs is not an array:', data.blobs);
         }
@@ -79,6 +82,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
+    return [];
   }, []);   
 
   return (

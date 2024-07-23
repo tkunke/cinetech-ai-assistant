@@ -31,7 +31,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, fetchTokenTrigger }
     if (userId) {
       fetchTokens();
     }
-  }, [fetchTokenTrigger]); // Fetch tokens whenever the trigger changes
+  }, [fetchTokenTrigger, fetchTokens, userId]); // Fetch tokens whenever the trigger changes
 
   useEffect(() => {
     console.log('Token state updated:', tokens); // Log the token state
