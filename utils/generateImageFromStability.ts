@@ -1,6 +1,6 @@
 import axios from 'axios';
 import FormData from 'form-data';
-import { saveImageLocally } from './saveImageLocally';
+import { put } from '@vercel/blob';
 
 type PayloadType = {
   prompt: string;
@@ -48,7 +48,6 @@ export async function generateImageFromStability(content: string): Promise<strin
   formData.append('cfg_scale', payload.cfg_scale.toString());
   formData.append('samples', payload.samples.toString());
 
-  // Handling text_prompts array separately
   payload.text_prompts.forEach((prompt, index) => {
     formData.append(`text_prompts[${index}][text]`, prompt.text);
     formData.append(`text_prompts[${index}][weight]`, prompt.weight.toString());
@@ -57,7 +56,7 @@ export async function generateImageFromStability(content: string): Promise<strin
   console.log('FormData created.');
 
   const headers = {
-    Authorization: `sk-bgDdWHYcp4AyH7ADGOl7EspretJihbxjodqwqJ5AnzbWHZeE`,
+    Authorization: `Bearer ${process.env.STABILITY_API_KEY}`,
     Accept: "image/*",
     ...formData.getHeaders(),
   };
@@ -82,15 +81,14 @@ export async function generateImageFromStability(content: string): Promise<strin
     const imageBuffer = Buffer.from(response.data);
     const imageBase64 = imageBuffer.toString('base64');
 
-    // Save the image locally
-    const fileName = `generated_image_${Date.now()}.webp`;
-    const filePath = await saveImageLocally(imageBase64, fileName);
+    // Upload the image to Vercel Blob
+    const fileName = `stability-tmp-img_${Date.now()}.webp`;
+    const blob = await put(fileName, Buffer.from(imageBase64, 'base64'), {
+      access: 'public',
+    });
 
-    // Assuming you are serving images from the 'public/images' directory
-    const imageUrl = `http://localhost:3000/images/${fileName}`;
-
-    console.log('Generated Image URL:', imageUrl);
-    return imageUrl;
+    console.log('Generated Image URL:', blob.url);
+    return blob.url;
   } catch (error) {
     console.error('Error generating image:', error);
     return null;
