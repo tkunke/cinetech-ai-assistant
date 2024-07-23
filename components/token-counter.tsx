@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface TokenCounterProps {
   userId: string;
@@ -8,7 +8,7 @@ interface TokenCounterProps {
 const TokenCounter: React.FC<TokenCounterProps> = ({ userId, fetchTokenTrigger }) => {
   const [tokens, setTokens] = useState<number | null>(null);
 
-  const fetchTokens = () => {
+  const fetchTokens = useCallback(() => {
     console.log('Fetching tokens for user:', userId);
     fetch(`/api/fetch-tokens?userId=${userId}`)
       .then(response => {
@@ -25,7 +25,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, fetchTokenTrigger }
         console.error('Failed to fetch tokens:', error);
         setTokens(null); // Indicate an error state
       });
-  };
+  }, [userId]);
 
   useEffect(() => {
     if (userId) {
