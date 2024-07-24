@@ -346,7 +346,7 @@ export default function CinetechAssistant({
         clearInterval(pollForRunStatus(threadId));
       }
     };
-  }, [threadId]);
+  }, [threadId, pollForRunStatus]);
 
   useEffect(() => {
     const fetchEngineInfo = async (imageUrl) => {
