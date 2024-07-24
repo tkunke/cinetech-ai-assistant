@@ -1,14 +1,15 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface TokenCounterProps {
   userId: string;
-  fetchTokenTrigger: boolean; // Add a trigger prop to determine when to fetch tokens
 }
 
-const TokenCounter: React.FC<TokenCounterProps> = ({ userId, fetchTokenTrigger }) => {
+const TokenCounter: React.FC<TokenCounterProps> = ({ userId }) => {
   const [tokens, setTokens] = useState<number | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fetchTokens = useCallback(() => {
+  const fetchTokens = () => {
     console.log('Fetching tokens for user:', userId);
     fetch(`/api/fetch-tokens?userId=${userId}`)
       .then(response => {
@@ -25,13 +26,28 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, fetchTokenTrigger }
         console.error('Failed to fetch tokens:', error);
         setTokens(null); // Indicate an error state
       });
-  }, [userId]);
+  };
 
   useEffect(() => {
     if (userId) {
       fetchTokens();
+      intervalRef.current = setInterval(fetchTokens, 10000); // Fetch tokens every 10 seconds
+      timeoutRef.current = setTimeout(() => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+      }, 30000); // Stop polling after 30 seconds
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      };
     }
-  }, [fetchTokenTrigger, fetchTokens, userId]); // Fetch tokens whenever the trigger changes
+  }, [userId]);
 
   useEffect(() => {
     console.log('Token state updated:', tokens); // Log the token state

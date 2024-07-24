@@ -21,7 +21,8 @@ export default function CinetechAssistant({
   selectedMessages,
   setSelectedMessages,
   setThreadId,
-  setRunId
+  setRunId,
+  setTokenUsage
 }) {
   const { data: session } = useSession();
   const userId = session?.user?.id;
@@ -38,7 +39,6 @@ export default function CinetechAssistant({
   const inputRef = useRef(null);
   const [chunkCounter, setChunkCounter] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [tokenUsage, setTokenUsage] = useState(null);
   const [imageEngineMap, setImageEngineMap] = useState({});
   const [runCompleted, setRunCompleted] = useState(false);
   const { messages, fetchMessages, loading, setMessages } = useMessages(threadId, runCompleted);
@@ -264,7 +264,7 @@ export default function CinetechAssistant({
   
   const updateTokensInDatabase = async (userId, newTokenCount) => {
     try {
-      //console.log(`Updating tokens in database for user: ${userId} with new token count: ${newTokenCount}`);
+      console.log(`Updating tokens in database for user: ${userId} with new token count: ${newTokenCount}`);
       const response = await fetch('/api/fetch-tokens', {
         method: 'POST',
         headers: {
@@ -285,30 +285,25 @@ export default function CinetechAssistant({
   
 
   async function pollForRunStatus(threadId) {
-    const interval = setInterval(async () => {
+    const intervalId = setInterval(async () => {
       try {
         const statusResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
           threadId: threadId
         }));
         const { messages: newMessages, runStatus, tokenUsage } = await statusResponse.json();
-        // Log retrieved messages
-        console.log('Retrieved messages:', newMessages);
+  
         setMessages(newMessages);
   
         if (runStatus) {
-          console.log('Polling run status:', runStatus);
           setRunId(runStatus.id);
   
-          if (runStatus.status === 'completed' || runStatus.failed) {
-            console.log('Received completed or failed run status:', runStatus);
-            clearInterval(interval); // Stop polling
+          if (runStatus.status === 'completed' && tokenUsage || runStatus.failed) {
+            clearInterval(intervalId);
             setRunCompleted(true);
-
-            // Final check for messages after stopping polling
+  
             await fetchMessages();
   
             if (runStatus.failed) {
-              console.log('Run failed detected');
               setMessages(prevMessages => [
                 ...prevMessages,
                 {
@@ -318,22 +313,14 @@ export default function CinetechAssistant({
                 }
               ]);
             } else {
-              // Handle token usage data received
+              console.log('Token usage from server:', tokenUsage);
               setTokenUsage(tokenUsage);
-              console.log('Token usage:', tokenUsage);
   
-              // Ensure tokenUsage contains valid values
               if (tokenUsage && tokenUsage.total_tokens !== undefined) {
-                // Fetch the current token count
                 const currentTokenCount = await fetchCurrentTokenCount(session.user.name);
                 if (currentTokenCount !== null) {
-                  // Calculate the new token count
                   const newTokenCount = currentTokenCount - tokenUsage.total_tokens;
-                  console.log(`Current token count: ${currentTokenCount}`);
-                  console.log(`Tokens used: ${tokenUsage.total_tokens}`);
-                  console.log(`Calculated new token count: ${newTokenCount}`);
   
-                  // Update the token count in the database
                   await updateTokensInDatabase(session.user.name, newTokenCount);
                 }
               } else {
@@ -341,7 +328,6 @@ export default function CinetechAssistant({
               }
             }
   
-            // Final check for messages after stopping polling
             await fetchMessages();
           }
         }
@@ -350,7 +336,17 @@ export default function CinetechAssistant({
         console.error('Error polling for run status:', error);
       }
     }, 5000);
+  
+    return intervalId;
   }
+
+  useEffect(() => {
+    return () => {
+      if (threadId) {
+        clearInterval(pollForRunStatus(threadId));
+      }
+    };
+  }, [threadId]);
 
   useEffect(() => {
     const fetchEngineInfo = async (imageUrl) => {
@@ -435,7 +431,6 @@ export default function CinetechAssistant({
         generatePdf={handleGeneratePdf}
         imageLibrary={imageLibrary}
         messagesLibrary={messagesLibrary}
-        tokenUsage={tokenUsage}
         userId={userId}
       />
       <footer className={styles.footer}>

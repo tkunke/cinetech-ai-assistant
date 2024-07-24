@@ -23,15 +23,17 @@ export function useMessages(threadId: string | null, runCompleted: boolean) {
   }, [threadId, messages]);
 
   useEffect(() => {
-    fetchMessages();
-    intervalRef.current = setInterval(fetchMessages, 5000); // Poll every 5 seconds
+    if (!runCompleted) {
+      fetchMessages();
+      intervalRef.current = setInterval(fetchMessages, 5000); // Poll every 5 seconds
+    }
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [threadId, fetchMessages]);
+  }, [threadId, fetchMessages, runCompleted]);
 
   useEffect(() => {
     if (runCompleted && intervalRef.current) {

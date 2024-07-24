@@ -202,6 +202,7 @@ async function handleRunStatusEvent(event: { status: string, threadId: string, r
 // Simulate event subscription
 async function simulateEventSubscription(threadId: string, runId: string) {
   const openai = new OpenAI();
+  let finalRunStatus: RunStatus | null = null;
 
   // Simulate receiving events. Replace this with actual event subscription logic.
   while (true) {
@@ -216,8 +217,14 @@ async function simulateEventSubscription(threadId: string, runId: string) {
       // Emit the thread.processing.completed event to the client
       //console.log('Emitting thread.processing.completed event');
       process.stdout.write(`event: thread.processing.completed\ndata: ${JSON.stringify({ threadId, runId })}\n\n`);
-      runStatusStore[threadId] = { status: 'completed', thread_id: threadId, id: runId };
+      runStatusStore[threadId] = { 
+        status: 'completed', 
+        thread_id: threadId, 
+        id: runId,
+        usage: runStatus.usage
+      };
       console.log('runStatusStore updated: ', runStatus);
+      finalRunStatus = runStatus;
       break;
     }
 
@@ -225,11 +232,14 @@ async function simulateEventSubscription(threadId: string, runId: string) {
   }
 
   // Ensure to store the final run status in memory or database so the client can fetch it
-  runStatusStore[threadId] = {
-    status: 'completed',
-    thread_id: threadId,
-    id: runId,
-  };
+  if (finalRunStatus) {
+    runStatusStore[threadId] = {
+      status: 'completed',
+      thread_id: threadId,
+      id: runId,
+      usage: finalRunStatus.usage
+    };
+  }
 }
 
 // Post a new message and stream OpenAI Assistant response
@@ -376,6 +386,7 @@ export async function GET(request: NextRequest) {
         total_tokens: runStatus.usage?.total_tokens ?? 0,
       };
 
+      console.log('Message usage:', tokenUsage);
       return NextResponse.json({
         messages: cleanMessages,
         messageCount: cleanMessages.length,
