@@ -66,7 +66,7 @@ export default function CinetechAssistant({
 
   useEffect(() => {
     // Save messages to session storage whenever they change
-    //console.log('Saving messages to session storage:', messages);
+    console.log('Saving messages to session storage:', messages);
     sessionStorage.setItem('chatMessages', JSON.stringify(messages));
   }, [messages]);
 
@@ -130,14 +130,14 @@ export default function CinetechAssistant({
 
     setIsLoading(true);
 
-    setMessages([
-      ...messages,
-      {
-        id: 'temp_user',
-        role: 'user',
-        content: prompt,
-      },
-    ]);
+    // Add user message to the messages state
+    const newUserMessage = {
+      id: `user_${Date.now()}`,
+      role: 'user',
+      content: prompt,
+    };
+
+    setMessages((prevMessages) => [...prevMessages, newUserMessage]);
     setPrompt('');
     setSelectedFile(null); // Clear the file input after submission
     // Reset the height of the textarea
@@ -220,7 +220,7 @@ export default function CinetechAssistant({
                       ...prevMap,
                       [imageUrl]: engine,
                     }));
-                    console.log('Image Engine Set: ', engine)
+                    console.log('Image Engine Set: ', engine);
 
                     setChunkCounter((prevCounter) => prevCounter + 1);
                   }
@@ -399,7 +399,6 @@ export default function CinetechAssistant({
     setSelectedFile(file);
   }
 
-  //console.log('Rendering CinetechAssistant with tokenUsage:', tokenUsage);
   return (
     <div className="flex flex-col h-full justify-between">
       <div className="flex flex-col mb-10 items-center justify-center">
