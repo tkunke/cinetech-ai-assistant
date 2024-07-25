@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 export function useMessages(threadId: string | null, runCompleted: boolean) {
+  // Initialize state with messages from session storage, if available
+  const initialMessages = JSON.parse(sessionStorage.getItem('chatMessages') || '[]');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -13,6 +15,7 @@ export function useMessages(threadId: string | null, runCompleted: boolean) {
       const data = await response.json();
       // Only update if there are new messages
       if (JSON.stringify(data.messages) !== JSON.stringify(messages)) {
+        console.log('Fetched messages:', data.messages);
         setMessages(data.messages);
       }
     } catch (error) {

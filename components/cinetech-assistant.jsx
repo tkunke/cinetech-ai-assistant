@@ -53,19 +53,8 @@ export default function CinetechAssistant({
   };
 
   const bufferRef = useRef('');
-
+  // Effect to save messages to session storage whenever they change
   useEffect(() => {
-    // Load messages from session storage when the component mounts
-    const savedMessages = sessionStorage.getItem('chatMessages');
-    if (savedMessages) {
-      const parsedMessages = JSON.parse(savedMessages);
-      console.log('Parsed messages from session storage:', parsedMessages);
-      setMessages(parsedMessages);
-    }
-  }, [setMessages]);
-
-  useEffect(() => {
-    // Save messages to session storage whenever they change
     console.log('Saving messages to session storage:', messages);
     sessionStorage.setItem('chatMessages', JSON.stringify(messages));
   }, [messages]);
