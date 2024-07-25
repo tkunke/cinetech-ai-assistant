@@ -307,6 +307,13 @@ export async function POST(request: NextRequest) {
       const runStatus = assistantStream.currentRun();
       if (runStatus) {
         initialRunId = runStatus.id;
+        runStatusStore[threadId] = {
+          status: runStatus.status,
+          thread_id: threadId,
+          id: initialRunId,
+          usage: runStatus.usage
+        };
+        console.log('Initial run status stored:', runStatusStore[threadId]);
       } else {
         console.log('Initial run is undefined, retrying...');
         await new Promise(resolve => setTimeout(resolve, 1000));

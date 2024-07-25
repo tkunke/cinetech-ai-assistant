@@ -230,7 +230,7 @@ export default function CinetechAssistant({
         }
       }
 
-      await fetchMessages(currentThreadId); // Fetch messages immediately after POST
+      await fetchMessages(currentThreadId);
 
       if (!processingCompleted) {
         pollForRunStatus(currentThreadId); // Start polling for run status
@@ -241,7 +241,7 @@ export default function CinetechAssistant({
       setIsLoading(false);
     }
   }
-
+  
   async function fetchMessages(threadId) {
     try {
       const messagesResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
@@ -334,6 +334,9 @@ export default function CinetechAssistant({
                 console.error('Invalid tokenUsage:', tokenUsage);
               }
             }
+            // Mark the run as completed and log it
+            console.log('Run completed. Updating runCompleted state to true.');
+            setRunCompleted(true);
           }
         }
   
@@ -342,6 +345,17 @@ export default function CinetechAssistant({
       }
     }, 1000);
   }
+
+  useEffect(() => {
+    const fetchMessagesOnce = async () => {
+      if (runCompleted && threadId) {
+        console.log("Run completed. Fetching messages one last time.");
+        await fetchMessages(threadId);
+      }
+    };
+
+    fetchMessagesOnce();
+  }, [runCompleted, threadId]);
 
   useEffect(() => {
     const fetchEngineInfo = async (imageUrl) => {
