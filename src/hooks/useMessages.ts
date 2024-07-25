@@ -1,11 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSession } from 'next-auth/react';
 
 export function useMessages(threadId: string | null, runCompleted: boolean) {
-  // Initialize state with messages from session storage, if available
-  const { data: session } = useSession();
-  const initialMessages = JSON.parse(sessionStorage.getItem('chatMessages') || '[]');
-  const [messages, setMessages] = useState([]);
+  const isBrowser = typeof window !== 'undefined';
+  const initialMessages = isBrowser ? JSON.parse(sessionStorage.getItem('chatMessages') || '[]') : [];
+  const [messages, setMessages] = useState(initialMessages);
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
