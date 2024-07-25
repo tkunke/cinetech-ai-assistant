@@ -8,7 +8,6 @@ import Sidebar from './sidebar';
 import styles from '@/styles/cinetech-assistant.module.css';
 import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
 import SpinningReels from './spinning-reels';
-import { useMessages } from '@/hooks/useMessages';
 import axios from 'axios';
 
 function containsMarkdown(content) {
@@ -29,6 +28,7 @@ export default function CinetechAssistant({
   const [isLoading, setIsLoading] = useState(false);
   const [threadId, setThreadIdLocal] = useState(null);
   const [prompt, setPrompt] = useState('');
+  const [messages, setMessages] = useState([]);
   const [messagesLibrary, setMessagesLibrary] = useState([]);
   const [imageLibrary, setImageLibrary] = useState([]);
   const [streamingMessage, setStreamingMessage] = useState({
@@ -41,7 +41,7 @@ export default function CinetechAssistant({
   const [selectedFile, setSelectedFile] = useState(null);
   const [imageEngineMap, setImageEngineMap] = useState({});
   const [runCompleted, setRunCompleted] = useState(false);
-  const { messages, fetchMessages, loading, setMessages } = useMessages(threadId, runCompleted);
+  const intervalRef = useRef(null);
 
   const dynamicGreeting = session?.user.defaultGreeting || greeting;
   const assistantName = session?.user.assistantName || 'Your Assistant';
@@ -53,8 +53,17 @@ export default function CinetechAssistant({
   };
 
   const bufferRef = useRef('');
-  // Effect to save messages to session storage whenever they change
   useEffect(() => {
+    const savedMessages = sessionStorage.getItem('chatMessages');
+    if (savedMessages) {
+      const parsedMessages = JSON.parse(savedMessages);
+      console.log('Parsed messages from session storage:', parsedMessages);
+      setMessages(parsedMessages);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save messages to session storage whenever they change
     console.log('Saving messages to session storage:', messages);
     sessionStorage.setItem('chatMessages', JSON.stringify(messages));
   }, [messages]);
@@ -78,7 +87,7 @@ export default function CinetechAssistant({
   const handleGeneratePdf = () => {
     console.log('Selected messages:', selectedMessages);
     generatePdfWithSelectedMessages(selectedMessages);
-    setSelectedMessages([]);
+    setSelectedMessages([]); // Deselect messages after PDF generation
   };
 
   const scrollToBottom = useCallback((smooth = true) => {
@@ -119,14 +128,14 @@ export default function CinetechAssistant({
 
     setIsLoading(true);
 
-    // Add user message to the messages state
-    const newUserMessage = {
-      id: `user_${Date.now()}`,
-      role: 'user',
-      content: prompt,
-    };
-
-    setMessages((prevMessages) => [...prevMessages, newUserMessage]);
+    setMessages([
+      ...messages,
+      {
+        id: 'temp_user',
+        role: 'user',
+        content: prompt,
+      },
+    ]);
     setPrompt('');
     setSelectedFile(null); // Clear the file input after submission
     // Reset the height of the textarea
@@ -159,10 +168,6 @@ export default function CinetechAssistant({
       let contentSnapshot = '';
       const decoder = new TextDecoder();
       let processingCompleted = false;
-
-      if (!processingCompleted) {
-        pollForRunStatus(currentThreadId); // Start polling for run status
-      }
 
       while (true) {
         const { value, done } = await reader.read();
@@ -225,12 +230,27 @@ export default function CinetechAssistant({
         }
       }
 
-      await fetchMessages(); // Fetch messages immediately after POST
+      await fetchMessages(currentThreadId); // Fetch messages immediately after POST
 
+      if (!processingCompleted) {
+        pollForRunStatus(currentThreadId); // Start polling for run status
+      }
     } catch (error) {
       console.error(`Error during request with thread ID: ${threadId}`, error);
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function fetchMessages(threadId) {
+    try {
+      const messagesResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
+        threadId: threadId
+      }));
+      const allMessages = await messagesResponse.json();
+      setMessages(allMessages.messages);
+    } catch (error) {
+      console.error('Error fetching messages:', error);
     }
   }
 
@@ -274,25 +294,24 @@ export default function CinetechAssistant({
   
 
   async function pollForRunStatus(threadId) {
-    const intervalId = setInterval(async () => {
+    const interval = setInterval(async () => {
       try {
         const statusResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
           threadId: threadId
         }));
-        const { messages: newMessages, runStatus, tokenUsage } = await statusResponse.json();
+        const { messages, runStatus, tokenUsage } = await statusResponse.json();
   
-        setMessages(newMessages);
+        setMessages(messages);
   
         if (runStatus) {
+          console.log('Polling run status:', runStatus);
           setRunId(runStatus.id);
   
-          if (runStatus.status === 'completed' && tokenUsage || runStatus.failed) {
-            clearInterval(intervalId);
-            setRunCompleted(true);
-  
-            await fetchMessages();
+          if ((runStatus.status === 'completed' && tokenUsage) || runStatus.failed) {
+            clearInterval(interval);
   
             if (runStatus.failed) {
+              console.log('Run failed detected');
               setMessages(prevMessages => [
                 ...prevMessages,
                 {
@@ -302,7 +321,6 @@ export default function CinetechAssistant({
                 }
               ]);
             } else {
-              console.log('Token usage from server:', tokenUsage);
               setTokenUsage(tokenUsage);
   
               if (tokenUsage && tokenUsage.total_tokens !== undefined) {
@@ -316,26 +334,14 @@ export default function CinetechAssistant({
                 console.error('Invalid tokenUsage:', tokenUsage);
               }
             }
-  
-            await fetchMessages();
           }
         }
   
       } catch (error) {
         console.error('Error polling for run status:', error);
       }
-    }, 5000);
-  
-    return intervalId;
+    }, 1000);
   }
-
-  useEffect(() => {
-    return () => {
-      if (threadId) {
-        clearInterval(pollForRunStatus(threadId));
-      }
-    };
-  }, [threadId]);
 
   useEffect(() => {
     const fetchEngineInfo = async (imageUrl) => {

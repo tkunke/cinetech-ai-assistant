@@ -47,7 +47,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId }) => {
         }
       };
     }
-  }, [userId]);
+  }, [userId, fetchTokens]);
 
   useEffect(() => {
     console.log('Token state updated:', tokens); // Log the token state
