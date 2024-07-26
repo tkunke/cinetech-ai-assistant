@@ -20,6 +20,7 @@ export default function CinetechAssistant({
   selectedMessages,
   setSelectedMessages,
   setThreadId,
+  setRunId,
   setTokenUsage
 }) {
   const { data: session } = useSession();
