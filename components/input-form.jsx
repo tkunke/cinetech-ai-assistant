@@ -6,6 +6,7 @@ import styles from '@/styles/input-form.module.css';
 const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputRef, handleFileChange, showLoadingGif }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
+  const [showWarning, setShowWarning] = useState(false);
 
   useEffect(() => {
     if (selectedFile) {
@@ -50,11 +51,16 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
 
   const onSubmit = (e) => {
     e.preventDefault();
-    console.log('Submitting with selectedFile:', selectedFile);
-    handleSubmit(e);
-    setSelectedFile(null); // Clear the file input after submission
-    setFilePreview(null); // Clear the file preview after submission
-    console.log('After submission, selectedFile:', selectedFile);
+    if (prompt.length === 0 && selectedFile) {
+      setShowWarning(true);
+      setTimeout(() => setShowWarning(false), 3000); // Hide the warning after 3 seconds
+    } else {
+      console.log('Submitting with selectedFile:', selectedFile);
+      handleSubmit(e);
+      setSelectedFile(null); // Clear the file input after submission
+      setFilePreview(null); // Clear the file preview after submission
+      console.log('After submission, selectedFile:', selectedFile);
+    }
   };
 
   const renderFilePreview = () => {
@@ -138,6 +144,11 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
             )}
           </div>
         </div>
+        {showWarning && (
+          <div style={{ color: 'red', marginTop: '10px' }}>
+            Oops! You forgot to add a message.
+          </div>
+        )}
       </form>
     </div>
   );

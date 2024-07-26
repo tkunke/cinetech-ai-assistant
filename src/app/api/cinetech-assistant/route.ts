@@ -169,8 +169,10 @@ async function handleRunStatusEvent(event: { status: string, threadId: string, r
               imageEngineStore[imageUrl] = engine;
             } else if (functionName === 'imageRecognition') {
               const storedFile = fileStore[threadId];
+              console.log('File store content:', storedFile); // Log file store content
               if (storedFile) {
                 const { filePath, fileType } = storedFile;
+                console.log(`Processing image recognition for file: ${filePath}, type: ${fileType}`); // Log file being processed
                 const imageRecognitionResponse = await imageRecognition(filePath, args.content);
                 output = imageRecognitionResponse ?? undefined;
                 fs.unlinkSync(filePath);
@@ -274,6 +276,7 @@ export async function POST(request: NextRequest) {
   };
 
   // Handle file upload if there's a file attached
+  let imageFileAttached = false;
   if (file) {
     const fileData = await file.arrayBuffer();
     const fileBuffer = Buffer.from(fileData);
@@ -285,6 +288,13 @@ export async function POST(request: NextRequest) {
       const filePath = `/tmp/${file.name}`;
       fs.writeFileSync(filePath, fileBuffer);
       fileStore[threadId || ''] = { filePath, fileType: file.type };
+      imageFileAttached = true;
+    } else {
+      // Include the file as an attachment in the message for non-image files
+      newMessage.attachments!.push({
+        file_id: threadId || '',
+        tools: [{ type: 'file_search' }]
+      });
     }
   }
 
@@ -296,11 +306,20 @@ export async function POST(request: NextRequest) {
   }
   console.log('Thread ID:', threadId);
 
-  // Add new message to thread
+  // Check if the message content needs a hint for image recognition
+  const imageRecognitionKeywords = ['image', 'recognize', 'identify', 'analyze', 'picture', 'photo'];
+  const containsHint = imageRecognitionKeywords.some(keyword => content.toLowerCase().includes(keyword));
+
+  if (imageFileAttached && !containsHint) {
+    newMessage.content += ' Please recognize the attached image.';
+    console.log('Added image recognition hint to the message content');
+  }
+
   console.log('Message to be added to thread:', JSON.stringify(newMessage, null, 2));
+
   try {
     await openai.beta.threads.messages.create(threadId, newMessage);
-    console.log('Message added to thread', newMessage);
+    console.log('Message added to thread', JSON.stringify(newMessage, null, 2));
 
     // Create a run and stream it
     const runStream = openai.beta.threads.runs.stream(threadId, {
