@@ -53,19 +53,24 @@ export default function CinetechAssistant({
   };
 
   const bufferRef = useRef('');
+
   useEffect(() => {
-    const savedMessages = sessionStorage.getItem('chatMessages');
-    if (savedMessages) {
-      const parsedMessages = JSON.parse(savedMessages);
-      console.log('Parsed messages from session storage:', parsedMessages);
-      setMessages(parsedMessages);
+    if (typeof window !== 'undefined') {
+      const savedMessages = sessionStorage.getItem('chatMessages');
+      if (savedMessages) {
+        const parsedMessages = JSON.parse(savedMessages);
+        console.log('Parsed messages from session storage:', parsedMessages);
+        setMessages(parsedMessages);
+      }
     }
   }, []);
 
   useEffect(() => {
     // Save messages to session storage whenever they change
-    console.log('Saving messages to session storage:', messages);
-    sessionStorage.setItem('chatMessages', JSON.stringify(messages));
+    if (typeof window !== 'undefined') {
+      console.log('Saving messages to session storage:', messages);
+      sessionStorage.setItem('chatMessages', JSON.stringify(messages));
+    }
   }, [messages]);
 
   const addToMessagesLibrary = (message) => {
