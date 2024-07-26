@@ -365,6 +365,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const threadMessages = await openai.beta.threads.messages.list(threadId);
+    console.log('Raw response from the assistant:', JSON.stringify(threadMessages, null, 2));
+    
     const cleanMessages = threadMessages.data.map((m) => {
       let content = '';
       if (m.content && Array.isArray(m.content) && m.content.length > 0) {

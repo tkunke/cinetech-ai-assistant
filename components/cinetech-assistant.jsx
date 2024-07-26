@@ -20,7 +20,6 @@ export default function CinetechAssistant({
   selectedMessages,
   setSelectedMessages,
   setThreadId,
-  setRunId,
   setTokenUsage
 }) {
   const { data: session } = useSession();
@@ -305,7 +304,6 @@ export default function CinetechAssistant({
   
         if (runStatus) {
           console.log('Polling run status:', runStatus);
-          setRunId(runStatus.id);
   
           if ((runStatus.status === 'completed' && tokenUsage) || runStatus.failed) {
             clearInterval(interval);
