@@ -3,7 +3,7 @@ import { AiOutlineSend, AiOutlineFile, AiOutlinePaperClip, AiOutlineClose } from
 import CinetechSpinner from './message-spinner';
 import styles from '@/styles/input-form.module.css';
 
-const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputRef, handleFileChange }) => {
+const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputRef, handleFileChange, showLoadingGif }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
 
@@ -23,6 +23,9 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault(); // Prevents the default behavior of adding a new line
       handleSubmit(e); // Triggers the form submission
+      setSelectedFile(null); // Clear the file input after submission
+      setFilePreview(null); // Clear the file preview after submission
+      handleFileChange(null); // Notify the parent component that the file was removed
     }
   };
 

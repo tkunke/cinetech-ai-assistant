@@ -126,6 +126,16 @@ async function handleRunStatusEvent(event: { status: string, threadId: string, r
     console.log('Action required. Processing tool calls.');
     const runStatus = await openai.beta.threads.runs.retrieve(threadId, runId);
 
+    // Update the runStatusStore with the requires_action status
+    runStatusStore[threadId] = {
+      status: 'requires_action',
+      thread_id: threadId,
+      id: runId,
+      required_action: runStatus.required_action,
+    };
+
+    console.log(`runStatusStore updated for requires_action: ${JSON.stringify(runStatusStore[threadId])}`);
+
     if (runStatus.required_action && runStatus.required_action.submit_tool_outputs) {
       const toolCalls = runStatus.required_action.submit_tool_outputs.tool_calls;
       const toolOutputs: ToolOutput[] = [];
@@ -365,7 +375,6 @@ export async function GET(request: NextRequest) {
 
   try {
     const threadMessages = await openai.beta.threads.messages.list(threadId);
-    console.log('Raw response from the assistant:', JSON.stringify(threadMessages, null, 2));
     
     const cleanMessages = threadMessages.data.map((m) => {
       let content = '';

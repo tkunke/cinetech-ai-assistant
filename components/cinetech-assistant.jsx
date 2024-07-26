@@ -41,10 +41,11 @@ export default function CinetechAssistant({
   const [selectedFile, setSelectedFile] = useState(null);
   const [imageEngineMap, setImageEngineMap] = useState({});
   const [runCompleted, setRunCompleted] = useState(false);
+  const [showLoadingGif, setShowLoadingGif] = useState(false);
   const intervalRef = useRef(null);
 
   const dynamicGreeting = session?.user.defaultGreeting || greeting;
-  const assistantName = session?.user.assistantName || 'Your Assistant';
+  const assistantName = session?.user?.assistantName || 'Your Assistant';
 
   const greetingMessage = {
     id: 'initial_greeting',
@@ -222,6 +223,7 @@ export default function CinetechAssistant({
                     console.log('Image Engine Set: ', engine);
 
                     setChunkCounter((prevCounter) => prevCounter + 1);
+                    scrollToBottom();
                   }
                   break;
                 case 'thread.processing.completed':
@@ -310,6 +312,10 @@ export default function CinetechAssistant({
   
         if (runStatus) {
           console.log('Polling run status:', runStatus);
+
+          if (runStatus.status === 'requires_action') {
+            setShowLoadingGif(true); // Show the loading GIF
+          }
   
           if ((runStatus.status === 'completed' && tokenUsage) || runStatus.failed) {
             clearInterval(interval);
@@ -341,6 +347,7 @@ export default function CinetechAssistant({
             // Mark the run as completed and log it
             console.log('Run completed. Updating runCompleted state to true.');
             setRunCompleted(true);
+            setShowLoadingGif(false);
           }
         }
   
@@ -390,7 +397,7 @@ export default function CinetechAssistant({
 
   useEffect(() => {
     scrollToBottom();
-  }, [chunkCounter, scrollToBottom]);
+  }, [messages, chunkCounter, scrollToBottom]);
 
   useEffect(() => {
     if (!isLoading && inputRef.current) {
@@ -437,7 +444,6 @@ export default function CinetechAssistant({
         ))}
         {isLoading && <CinetechAssistantMessage message={streamingMessage} />}
         <div ref={messagesEndRef} style={{ height: '1px' }}></div>
-        {isLoading}
       </div>
       <Sidebar
         generatePdf={handleGeneratePdf}
@@ -446,6 +452,11 @@ export default function CinetechAssistant({
         userId={userId}
       />
       <footer className={styles.footer}>
+        {showLoadingGif && (
+          <div className={`${styles['loading-container']}`}>
+            <SpinningReels />
+          </div>
+        )}
         <InputForm
           handleSubmit={handleSubmit}
           handlePromptChange={handlePromptChange}
@@ -453,6 +464,7 @@ export default function CinetechAssistant({
           isLoading={isLoading}
           inputRef={inputRef}
           handleFileChange={handleFileChange}
+          showLoadingGif={showLoadingGif}
         />
       </footer>
     </div>
