@@ -86,7 +86,7 @@ export default function Home() {
         <main className={styles.main}>
           <CinetechAssistant
             assistantId="asst_fmjzsttDthGzzJud4Vv2bDGq"
-            greeting="Hey there! How can I help?"
+            greeting="Loading..."
             setSelectedMessages={setSelectedMessages}
             selectedMessages={selectedMessages}
             setThreadId={setThreadId}

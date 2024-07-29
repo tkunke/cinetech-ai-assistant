@@ -23,7 +23,7 @@ export default function CinetechAssistant({
   setRunId,
   setTokenUsage
 }) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const userId = session?.user?.id;
   const [isLoading, setIsLoading] = useState(false);
   const [threadId, setThreadIdLocal] = useState(null);
@@ -45,7 +45,7 @@ export default function CinetechAssistant({
   const intervalRef = useRef(null);
 
   const dynamicGreeting = session?.user.defaultGreeting || greeting;
-  const assistantName = session?.user?.assistantName || 'Your Assistant';
+  const assistantName = session?.user?.assistantName;
 
   const greetingMessage = {
     id: 'initial_greeting',
@@ -102,16 +102,10 @@ export default function CinetechAssistant({
     }
   }, []);  
 
-  async function initializeThread(file) {
+  async function initializeThread() {
     try {
-      const formData = new FormData();
-      if (file) {
-        formData.append('file', file);
-      }
-
       const response = await fetch('/api/thread-init', {
         method: 'POST',
-        body: formData,
       });
       const data = await response.json();
       setThreadId(data.threadId);
@@ -411,6 +405,38 @@ export default function CinetechAssistant({
     }
   }, [messages]);
 
+  useEffect(() => {
+    const handleSessionEnd = async () => {
+      try {
+        const response = await fetch('/api/cleanup', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        const data = await response.json();
+        if (data.error) {
+          console.error('Cleanup failed:', data.error);
+        } else {
+          console.log('Cleanup successful');
+        }
+      } catch (error) {
+        console.error('Error calling cleanup endpoint:', error);
+      }
+    };
+  
+    if (!session) {
+      handleSessionEnd();
+    }
+  
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', handleSessionEnd);
+      return () => {
+        window.removeEventListener('beforeunload', handleSessionEnd);
+      };
+    }
+  }, [session]);  
+
   function handlePromptChange(e) {
     setPrompt(e.target.value);
   }
@@ -461,7 +487,7 @@ export default function CinetechAssistant({
           handleSubmit={handleSubmit}
           handlePromptChange={handlePromptChange}
           prompt={prompt}
-          isLoading={isLoading}
+          isLoading={isLoading} 
           inputRef={inputRef}
           handleFileChange={handleFileChange}
           showLoadingGif={showLoadingGif}

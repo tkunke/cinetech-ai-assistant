@@ -1,17 +1,17 @@
 .input-container {
   width: 100%;
   display: flex;
-  flex-direction: column-reverse;
   align-items: center;
+  flex-direction: column-reverse; /* Ensure input box is at the bottom */
 }
 
 .textarea-container {
-  width: 50%;
+  width: 50%; /* Center the textarea-container and set it to 50% width */
   display: flex;
   justify-content: center;
   align-items: center; /* Ensure items are centered vertically */
+  flex-direction: row; /* Ensure horizontal stacking of elements */
   position: relative; /* Ensure relative positioning */
-  flex-direction: column; /* Ensure vertical stacking of elements */
 }
 
 .textarea {
@@ -23,7 +23,6 @@
   margin-right: 0.5rem;
   padding-left: 0.5rem; /* Add padding to the left */
   padding-right: 3rem; /* Add padding to the right to make room for the thumbnail */
-  margin-bottom: 0.5rem; /* Add space between textareas */
 }
 
 .button {
@@ -55,11 +54,15 @@
 
 .file-preview {
   background-color: white;
-  border: 1px solid #ccc;
-  border-style: dotted;
+  border: 1px double dodgerblue;
   border-radius: 0.25rem;
   display: flex;
-  left: 0;
+  justify-content: space-between; /* Space out elements inside the preview */
+  padding: 0.5rem; /* Add padding for spacing */
+  position: absolute; /* Absolute positioning */
+  bottom: 10px; /* Adjust positioning to provide some space from the bottom */
+  right: 10px; /* Adjust positioning to provide some space from the right */
+  margin-left: 0.5rem; /* Add space between the preview and the text area */
 }
 
 .thumbnail {
@@ -68,6 +71,27 @@
   border: 1px solid #ccc;
   border-radius: 0.25rem;
 }
+
+.file-preview {
+  display: inline-block;
+}
+
+.file-preview-container {
+  position: relative;
+  display: inline-block;
+  text-align: center; /* Center-align the text and thumbnail */
+}
+
+.file-preview-text {
+  position: absolute;
+  top: -20px; /* Adjust based on the desired space above the image */
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 12px;
+  color: #555;
+  white-space: nowrap; /* Prevent text from wrapping */
+}
+
 
 @media (max-width: 768px) {
   .textarea-container {

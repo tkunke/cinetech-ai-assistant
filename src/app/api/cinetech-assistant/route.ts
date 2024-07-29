@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI, { APIError } from 'openai/index.mjs';
 import fs from 'fs';
+import path from 'path';
+import { promisify } from 'util';
 import { performBingSearch } from '@/utils/performBingSearch';
 import { processSearchResults } from '@/utils/processSearchResults';
 import { generateImage } from '@/utils/generateImage';
 import { alternateImage } from '@/utils/alternateImage';
 import { imageRecognition } from '@/utils/imageRecognition';
+import { addFileToStore } from '@/utils/fileUtils';
 import { AssistantStream } from 'openai/lib/AssistantStream';
 
 // Define the RunStatus type
@@ -106,6 +109,7 @@ interface APIError {
 }
 
 const fileStore: FileStore = {}; // Initialize the file store
+const threadFileStore: { [key: string]: string[] } = {};
 
 const MAX_ATTEMPTS = 3;
 
@@ -278,21 +282,39 @@ export async function POST(request: NextRequest) {
   // Handle file upload if there's a file attached
   let imageFileAttached = false;
   if (file) {
+    const writeFile = promisify(fs.writeFile);
+    const unlink = promisify(fs.unlink);
     const fileData = await file.arrayBuffer();
     const fileBuffer = Buffer.from(fileData);
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+
+    // Save the file temporarily to disk
+    const filePath = path.join('/tmp', file.name);
+    await writeFile(filePath, fileBuffer);
 
     // Determine the appropriate tool based on the file type
-    const fileExtension = file.name.split('.').pop()?.toLowerCase();
     if (fileExtension && ['png', 'jpeg', 'jpg', 'webp', 'gif'].includes(fileExtension)) {
-      // Save the file temporarily to disk for later use
-      const filePath = `/tmp/${file.name}`;
-      fs.writeFileSync(filePath, fileBuffer);
       fileStore[threadId || ''] = { filePath, fileType: file.type };
       imageFileAttached = true;
     } else {
+      const fileUploadResponse = await openai.files.create({
+        file: fs.createReadStream(filePath),
+        purpose: 'assistants',
+      });
+
+      const fileId = fileUploadResponse.id;
+      console.log('File uploaded to OpenAI:', fileId);
+
+      await unlink(filePath);
+
+      // Store file ID locally
+      if (threadId) {
+        addFileToStore(threadId, fileUploadResponse.id);
+      }
+
       // Include the file as an attachment in the message for non-image files
       newMessage.attachments!.push({
-        file_id: threadId || '',
+        file_id: fileUploadResponse.id,
         tools: [{ type: 'file_search' }]
       });
     }

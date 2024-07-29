@@ -55,7 +55,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId }) => {
 
   return (
     <div className="font-extrabold">
-      <p>Tokens:</p>
+      <p>Credits:</p>
       {tokens !== null ? (
         <p>{tokens}</p>
       ) : (

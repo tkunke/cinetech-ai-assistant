@@ -1,5 +1,6 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { NextResponse } from 'next/server';
+import { kv } from '@vercel/kv';
 
 const EventTypes = {
   generateClientToken: 'blob.generate-client-token',
@@ -15,21 +16,19 @@ export async function POST(request: Request): Promise<NextResponse> {
     const requestBody = await request.json();
     console.log('Parsed request body:', requestBody);
 
-    const { pathname, type, payload } = requestBody;
+    const { pathname, type, payload, userId } = requestBody;
 
-    // Check if pathname is directly in requestBody or in payload
     const actualPathname = pathname || payload?.pathname;
 
     if (!actualPathname) {
       throw new Error('Pathname is missing');
     }
 
-    // Construct the HandleUploadBody
     const handleUploadBody: HandleUploadBody = {
       type: type || EventTypes.generateClientToken,
       payload: {
-        pathname: actualPathname, // Use the prefixed file name
-        callbackUrl: '', // your callback URL here
+        pathname: actualPathname,
+        callbackUrl: '',
         multipart: false,
         clientPayload: null,
       }
@@ -52,11 +51,27 @@ export async function POST(request: Request): Promise<NextResponse> {
         console.log('Token payload:', tokenPayload);
 
         try {
-          console.log('Updating database with blob URL:', blob.url);
-          // Add your database update logic here
+          console.log('Saving image metadata in KV database');
+
+          // Fetch the user data from KV database
+          const user = await kv.get(`user:${userId}`);
+          let userData;
+          if (user) {
+            userData = typeof user === 'string' ? JSON.parse(user) : user;
+          } else {
+            userData = { images: [] };
+          }
+
+          // Add the new image with initial metadata (e.g., empty tags array)
+          userData.images.push({ imageUrl: blob.url, tags: [] });
+
+          // Save the updated user data back to the KV store
+          await kv.set(`user:${userId}`, JSON.stringify(userData));
+          console.log('Image metadata saved successfully in KV database');
+
         } catch (error) {
-          console.error('Error updating user:', error);
-          throw new Error('Could not update user');
+          console.error('Error saving image metadata:', error);
+          throw new Error('Could not save image metadata');
         }
       },
     });
