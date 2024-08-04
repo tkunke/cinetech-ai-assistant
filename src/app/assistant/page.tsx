@@ -15,6 +15,11 @@ interface Message {
 
 export default function Home() {
   const { data: session, status } = useSession();
+  
+  useEffect(() => {
+    console.log('Session data:', session);
+  }, [session]);
+
   const [screenOrientation, setScreenOrientation] = useState<string>("portrait");
   const [selectedMessages, setSelectedMessages] = useState<Message[]>([]);
   const [imageLibrary, setImageLibrary] = useState<{ imageUrl: string; thumbnailUrl: string }[]>([]);
@@ -23,7 +28,7 @@ export default function Home() {
   const [threadId, setThreadId] = useState<string | null>(null);
   const [tokenUsage, setTokenUsage] = useState(null);
 
-  const userId = session?.user?.id || ''; // Ensure userId is available
+  const userId = session?.user?.id ? String(session.user.id) : ''; // Ensure userId is available
 
   const addToImageLibrary = (imageUrl: string) => {
     setImageLibrary((prevLibrary) => [

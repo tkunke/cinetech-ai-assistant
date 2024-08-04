@@ -24,7 +24,7 @@ export default function CinetechAssistant({
   setTokenUsage
 }) {
   const { data: session, status } = useSession();
-  const userId = session?.user?.id;
+  const userId = session?.user?.id ? String(session.user.id) : '';
   const [isLoading, setIsLoading] = useState(false);
   const [threadId, setThreadIdLocal] = useState(null);
   const [prompt, setPrompt] = useState('');
@@ -44,8 +44,8 @@ export default function CinetechAssistant({
   const [showLoadingGif, setShowLoadingGif] = useState(false);
   const intervalRef = useRef(null);
 
-  const dynamicGreeting = session?.user.defaultGreeting || greeting;
-  const assistantName = session?.user?.assistantName;
+  const dynamicGreeting = session?.user.default_greeting || greeting;
+  const assistantName = session?.user?.assistant_name;
 
   const greetingMessage = {
     id: 'initial_greeting',
@@ -328,11 +328,11 @@ export default function CinetechAssistant({
               setTokenUsage(tokenUsage);
   
               if (tokenUsage && tokenUsage.total_tokens !== undefined) {
-                const currentTokenCount = await fetchCurrentTokenCount(session.user.name);
+                const currentTokenCount = await fetchCurrentTokenCount(session.user.id);
                 if (currentTokenCount !== null) {
                   const newTokenCount = currentTokenCount - tokenUsage.total_tokens;
   
-                  await updateTokensInDatabase(session.user.name, newTokenCount);
+                  await updateTokensInDatabase(session.user.id, newTokenCount);
                 }
               } else {
                 console.error('Invalid tokenUsage:', tokenUsage);

@@ -15,8 +15,9 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
   const buttonRef = useRef(null);
   const [showTips, setShowTips] = useState(false);
   const { data: session } = useSession();
-  const userId = session?.user?.id;
+  const userId = session?.user?.id ? String(session.user.id) : '';
   const { fetchImages, fetchMessages } = useLibrary();
+  const { addImage, addMessage } = useLibrary();
 
   if (!message) return null;
   if (!message.role) return null;
@@ -80,18 +81,17 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
       console.error('User ID is missing from session');
       return;
     }
-
+  
     try {
       const response = await fetch(`/api/fetch-image?url=${encodeURIComponent(imageUrl)}`);
       const blob = await response.blob();
       const fileName = `generated-image.png`;
       const prefixedFileName = `${userId}-img-${fileName}`;
       const file = new File([blob], prefixedFileName, { type: 'image/png' });
-
-      console.log('File name being sent:', file.name); // Log the file name
-      console.log('Prefixed file name being sent:', prefixedFileName); // Log the prefixed file name
-
-      // Send the prefixed file name to the server to generate the client token
+  
+      console.log('File name being sent:', file.name);
+      console.log('Prefixed file name being sent:', prefixedFileName);
+  
       const tokenResponse = await fetch('/api/image-store', {
         method: 'POST',
         headers: {
@@ -99,28 +99,49 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
         },
         body: JSON.stringify({
           pathname: prefixedFileName,
+          userId: userId,
         }),
       });
-
+  
       const responseData = await tokenResponse.json();
       console.log('Response data:', responseData);
-
+  
       const { clientToken } = responseData;
-
+  
       if (!clientToken) {
         throw new Error('Failed to retrieve client token');
       }
-
+  
       const newBlob = await upload(prefixedFileName, file, {
         access: 'public',
         handleUploadUrl: '/api/image-store',
         clientToken,
       });
-
+  
       console.log('Image uploaded successfully:', newBlob);
-
-      // Fetch updated images
-      fetchImages(userId);
+  
+      // Save image metadata to the database
+      const saveResponse = await fetch('/api/saveToPg', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId,
+          imageUrl: newBlob.url,
+          type: 'image',
+        }),
+      });
+  
+      const saveData = await saveResponse.json();
+      console.log('Save response data:', saveData);
+  
+      // Update the state with the new image
+      addImage({
+        imageUrl: newBlob.url,
+        thumbnailUrl: newBlob.url,
+        tags: [],
+      });
     } catch (error) {
       console.error('Error uploading image:', error);
       if (error.response) {
@@ -128,7 +149,7 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
         console.error('Error response data:', errorData);
       }
     }
-  };
+  };    
 
   const handleSaveMessage = async (messageContent) => {
     if (!userId) {
@@ -159,6 +180,7 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
         },
         body: JSON.stringify({
           pathname: prefixedFileName,
+          userId: userId, // Ensure userId is correctly included
         }),
       });
   
@@ -179,8 +201,28 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
   
       console.log('Message uploaded successfully:', newBlob);
   
-      // Trigger a refresh of the messages library
-      fetchMessages(userId);
+      // Save message metadata to the database
+      const saveResponse = await fetch('/api/saveToPg', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userId, // Ensure userId is correctly included
+          messageUrl: newBlob.url,
+          type: 'message',
+        }),
+      });
+  
+      const saveData = await saveResponse.json();
+      console.log('Save response data:', saveData);
+  
+      // Update the state with the new message
+      addMessage({
+        content: messageContent,
+        thumbnailUrl: thumbnailUrl,
+        url: newBlob.url,
+      });
     } catch (error) {
       console.error('Error uploading message:', error);
       if (error.response) {
@@ -188,7 +230,7 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
         console.error('Error response data:', errorData);
       }
     }
-  };                
+  };                    
 
   const handleMessageSelect = (message) => {
     setSelectedMessages((prevSelectedMessages) =>

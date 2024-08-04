@@ -1,32 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { kv } from "@vercel/kv";
-import NextAuthHandler from 'next-auth/next';
+import { sql, QueryResult } from "@vercel/postgres";
+import bcrypt from 'bcrypt';
 import { JWT } from "next-auth/jwt";
 
 // Define the expected structure of the user object
 interface LocalUser {
+  id: string;
   username: string;
   password: string;
-  assistantName: string;
-  defaultGreeting: string;
+  assistant_name: string;
+  default_greeting: string;
 }
 
 // Extend the User type to include custom properties
 declare module "next-auth" {
   interface User {
     id: string;
-    assistantName: string;
-    defaultGreeting: string;
+    assistant_name: string;
+    default_greeting: string;
   }
 
   interface Session {
     user: {
       id: string;
       name: string;
-      assistantName: string;
-      defaultGreeting: string;
+      assistant_name: string;
+      default_greeting: string;
     }
   }
 }
@@ -35,8 +36,8 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
-    assistantName: string;
-    defaultGreeting: string;
+    assistant_name: string;
+    default_greeting: string;
   }
 }
 
@@ -53,13 +54,16 @@ const authOptions: NextAuthOptions = {
           return null;
         }
 
-        const user = await kv.get<LocalUser>(`user:${credentials.username}`);
-        if (user && user.password === credentials.password) {
+        // Query the PostgreSQL database for the user
+        const userQuery: QueryResult<LocalUser> = await sql`SELECT * FROM users WHERE username = ${credentials.username}`;
+        const user = userQuery.rows.length > 0 ? userQuery.rows[0] : null;
+
+        if (user && await bcrypt.compare(credentials.password, user.password)) {
           return {
-            id: credentials.username, // Use username as ID
+            id: user.id,
             name: user.username,
-            assistantName: user.assistantName,
-            defaultGreeting: user.defaultGreeting,
+            assistant_name: user.assistant_name,
+            default_greeting: user.default_greeting,
           };
         }
         return null;
@@ -76,25 +80,32 @@ const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id; // Use username as ID
+        console.log('User in JWT callback:', user);
+        token.id = user.id as string; // Use type assertion here
         token.name = user.name;
-        token.assistantName = user.assistantName;
-        token.defaultGreeting = user.defaultGreeting;
+        token.assistant_name = user.assistant_name;
+        token.default_greeting = user.default_greeting;
       }
+      console.log('Token in JWT callback:', token);
       return token;
     },
     async session({ session, token }) {
-      if (token.id && token.assistantName && token.defaultGreeting) {
-        session.user.id = token.id;
-        session.user.name = token.name as string || session.user.name as string;
-        session.user.assistantName = token.assistantName as string;
-        session.user.defaultGreeting = token.defaultGreeting as string;
+      console.log('Token in Session callback:', token);
+      if (typeof token.id === 'string' && token.assistant_name && token.default_greeting) {
+        console.log('Setting session user data');
+        session.user.id = token.id as string;
+        session.user.name = token.name as string;
+        session.user.assistant_name = token.assistant_name as string;
+        session.user.default_greeting = token.default_greeting as string;
+      } else {
+        console.log('Token did not pass the condition:', token);
       }
+      console.log('Session in Session callback:', session);
       return session;
     },
     async redirect({ url, baseUrl }) {
       if (url === '/logout') {
-        return baseUrl + '/logout'
+        return baseUrl + '/logout';
       }
       return baseUrl + '/assistant';
     }
@@ -102,7 +113,7 @@ const authOptions: NextAuthOptions = {
 };
 
 // Create the auth handler
-const handler = NextAuthHandler(authOptions);
+const handler = NextAuth(authOptions);
 
 // Export named handlers for GET and POST
 export const GET = handler;

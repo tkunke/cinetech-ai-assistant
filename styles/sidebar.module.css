@@ -151,6 +151,12 @@
   display: inline-block;
 }
 
+.draggableContainer {
+  position: absolute;
+  z-index: 1001; /* Ensure it's above other elements */
+  cursor: move;
+}
+
 /* Message content and window styles */
 .messageContent {
   margin-top: 20px;
@@ -159,6 +165,7 @@
 .messageWindow {
   width: 100%;
   height: 100%;
+  position: relative;
   padding: 20px;
   overflow-y: auto;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -166,8 +173,15 @@
   border-radius: 10px;
 }
 
+.drag-handle {
+  cursor: move;
+  padding: 10px;
+  background-color: #f0f0f0; /* Optional: style the handle as needed */
+  border-bottom: 1px solid #ddd; /* Optional: separate the handle visually */
+}
+
 .closeButton {
-  position: absolute;
+  position: static;
   top: 10px;
   right: 10px;
   background: gray;
@@ -176,6 +190,7 @@
   border-radius: 2px;
   font-size: 1rem;
   cursor: pointer;
+  margin-left: auto;
 }
 
 /* Logout button styles */
@@ -231,13 +246,12 @@
 
 /* Resizable box styles */
 .resizableBox {
-  border: 1px solid #ddd;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  border-radius: 10px;
+  border: none;
+  box-shadow: none;
   overflow: hidden;
-  background: white;
-  z-index: 1001;
+  background: transparent;
   padding: 10px;
+  z-index: 1002;
 }
 
 /* Popup overlay and content styles */
@@ -314,4 +328,20 @@
   background-color: #5a6268;
   color: white;
   border-radius: 4px;
+}
+
+.deleteButton {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.deleteButton:hover {
+  background-color: #ff1a1a;
 }

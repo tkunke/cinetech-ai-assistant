@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
+import { sql } from '@vercel/postgres';
 
-// Handler for GET requests to fetch user tags and images
+// Handler for GET requests to fetch user tags
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get('userId');
+  console.log("Received GET request for userId:", userId);
 
   if (!userId) {
     console.error("User ID not provided");
@@ -11,77 +12,130 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log(`Fetching tags and images for user: ${userId}`);
-    const user = await kv.get(`user:${userId}`);
-    if (!user) {
-      console.error(`User not found for ID: ${userId}`);
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+    const tagsQuery = await sql`SELECT * FROM project_tags WHERE user_id = ${userId}`;
+    const tags = tagsQuery.rows.map(tag => ({ id: tag.id, name: tag.name }));
 
-    let userData;
-    if (typeof user === 'string') {
-      userData = JSON.parse(user);
-    } else {
-      userData = user;
-    }
-
-    const tags = userData.tags || [];
-    const images = userData.images || [];
-    return NextResponse.json({ tags, images });
+    console.log("Response data:", { tags });
+    return NextResponse.json({ tags });
   } catch (error) {
-    console.error("Error fetching tags and images:", error);
-    return NextResponse.json({ error: "Failed to fetch tags and images" }, { status: 500 });
+    console.error("Error fetching tags:", error);
+    return NextResponse.json({ error: "Failed to fetch tags" }, { status: 500 });
   }
 }
 
-// Handler for POST requests to add a new tag to an image
+// Handler for POST requests to add a new tag
 export async function POST(request: NextRequest) {
-  const body = await request.json();
-  const userId = body.userId;
-  const imageUrl = body.imageUrl;
-  const newTag = body.tag;
-
-  if (!userId || !imageUrl || !newTag) {
-    console.error("Invalid request body");
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
-  }
-
   try {
-    console.log(`Fetching user data for ID: ${userId}`);
-    const user = await kv.get(`user:${userId}`);
-    if (!user) {
-      console.error(`User not found for ID: ${userId}`);
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const body = await request.json();
+    const userId = body.userId;
+    const tagName = body.tag?.name; // Extract the tag name from the request body
+
+    console.log("Received POST request with body:", body);
+
+    if (!userId || !tagName) {
+      console.error("Invalid request body");
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
-    let userData;
-    if (typeof user === 'string') {
-      userData = JSON.parse(user);
-    } else {
-      userData = user;
-    }
+    // Insert new tag into the project_tags table
+    const insertTagQuery = await sql`
+      INSERT INTO project_tags (user_id, name)
+      VALUES (${userId}, ${tagName})
+      RETURNING id, name
+    `;
 
-    // Initialize images array if it doesn't exist
-    if (!userData.images) {
-      userData.images = [];
-    }
+    const newTag = insertTagQuery.rows[0];
 
-    // Find the image and add the new tag
-    const imageIndex = userData.images.findIndex((img: any) => img.imageUrl === imageUrl);
-    if (imageIndex >= 0) {
-      userData.images[imageIndex].tags = userData.images[imageIndex].tags || [];
-      userData.images[imageIndex].tags.push(newTag);
-    } else {
-      // If the image does not exist, add it with the new tag
-      userData.images.push({ imageUrl, tags: [newTag] });
-    }
+    console.log(`New tag created for user ${userId}`, newTag);
 
-    // Save the updated user data back to the KV store
-    await kv.set(`user:${userId}`, JSON.stringify(userData));
-    console.log(`New tag added for image ${imageUrl} for user ${userId}:`, newTag);
-    return NextResponse.json({ images: userData.images });
+    // Fetch updated list of tags
+    const tagsQuery = await sql`SELECT * FROM project_tags WHERE user_id = ${userId}`;
+    const tags = tagsQuery.rows.map(tag => ({ id: tag.id, name: tag.name }));
+
+    return NextResponse.json({ tags });
   } catch (error) {
-    console.error("Error updating tags:", error);
-    return NextResponse.json({ error: "Failed to update tags" }, { status: 500 });
+    console.error("Error creating new tag:", error);
+    return NextResponse.json({ error: "Failed to create new tag" }, { status: 500 });
+  }
+}
+
+// Handler for DELETE requests to delete a tag
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const userId = body.userId;
+    const tagId = body.tagId;
+
+    console.log("Received DELETE request with body:", body);
+
+    if (!userId || !tagId) {
+      console.error("Invalid request body");
+      return NextResponse.json({ error: "User ID and Tag ID are required" }, { status: 400 });
+    }
+
+    await sql`
+      DELETE FROM project_tags WHERE user_id = ${userId} AND id = ${tagId}
+    `;
+
+    // Fetch updated list of tags
+    const tagsQuery = await sql`SELECT * FROM project_tags WHERE user_id = ${userId}`;
+    const tags = tagsQuery.rows.map(tag => ({ id: tag.id, name: tag.name }));
+
+    return NextResponse.json({ tags });
+  } catch (error) {
+    console.error("Error deleting tag:", error);
+    return NextResponse.json({ error: "Failed to delete tag" }, { status: 500 });
+  }
+}
+
+// Handler for PUT requests to tag an image
+export async function PUT(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { userId, imageUrl, tag }: { userId: number; imageUrl: string; tag: { id: number; name: string } } = body;
+
+    console.log("Received PUT request with body:", body);
+
+    if (!userId || !imageUrl || !tag?.id) {
+      console.error("Invalid request body");
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    }
+
+    const tagId = tag.id;
+
+    // Fetch the image ID
+    const imageQuery = await sql`
+      SELECT id FROM user_gen_images WHERE user_id = ${userId} AND image_url = ${imageUrl}
+    `;
+    const image = imageQuery.rows[0];
+
+    if (!image) {
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+    }
+
+    const imageId = image.id;
+
+    // Check if the tag already exists for this image
+    const tagQuery = await sql`
+      SELECT * FROM project_tag_images WHERE image_id = ${imageId} AND tag_id = ${tagId}
+    `;
+    const existingTag = tagQuery.rows[0];
+
+    if (existingTag) {
+      return NextResponse.json({ message: "Tag already exists for this image" }, { status: 200 });
+    }
+
+    // Insert the new tag for this image
+    await sql`
+      INSERT INTO project_tag_images (tag_id, image_id)
+      VALUES (${tagId}, ${imageId})
+    `;
+
+    console.log(`Tag ${tagId} added to image ${imageUrl} for user ${userId}`);
+
+    return NextResponse.json({ message: "Tag added successfully" });
+  } catch (error) {
+    console.error("Error adding tag:", error);
+    return NextResponse.json({ error: "Failed to add tag" }, { status: 500 });
   }
 }

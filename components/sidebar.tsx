@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import Draggable from 'react-draggable';
-import { ResizableBox } from 'react-resizable';
+import Draggable, { DraggableEvent, DraggableData } from 'react-draggable';
+import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import styles from '@/styles/sidebar.module.css';
-import { FaPlus, FaTag } from 'react-icons/fa';
+import { FaPlus, FaTag, FaTrash } from 'react-icons/fa';
 import ReactMarkdown from 'react-markdown';
 import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
@@ -22,13 +22,14 @@ interface Message {
 }
 
 interface Tag {
-  id: number;
+  id: string;
   name: string;
 }
 
 interface Image {
   imageUrl: string;
   thumbnailUrl: string;
+  tags: Tag[];
 }
 
 interface ImageItem extends Image {
@@ -55,6 +56,10 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
   const [isTagPopupVisible, setIsTagPopupVisible] = useState(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const [objectsWithTag, setObjectsWithTag] = useState<ImageItem[]>([]);
+  const [boxWidth, setBoxWidth] = useState(500);
+  const [boxHeight, setBoxHeight] = useState(300);
+  const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
+
 
   const router = useRouter();
 
@@ -67,12 +72,14 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
   };
 
   const toggleMessagesLibExpand = () => {
-    setIsMessagesLibExpanded(!isMessagesLibExpanded);
+    setIsMessagesLibExpanded((prev) => !prev);
+    console.log(`Messages library expanded state is now: ${!isMessagesLibExpanded}`);
   };
 
   const toggleImageLibraryExpand = () => {
-    setIsImageLibraryExpanded(!isImageLibraryExpanded);
-  };
+    setIsImageLibraryExpanded((prev) => !prev);
+    console.log(`Image library expanded state is now: ${!isImageLibraryExpanded}`); // Add this log
+  };  
 
   const togglePopup = () => {
     setIsPopupVisible(!isPopupVisible);
@@ -89,15 +96,13 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
   const handleTagSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
   
-    const newTag = { id: Date.now(), name: tagName };
-  
     try {
       const response = await fetch('/api/userTags', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId, tag: newTag }),
+        body: JSON.stringify({ userId, tag: { name: tagName } }), // Ensure tag is an object with name property
       });
   
       if (response.ok) {
@@ -111,9 +116,9 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
     } catch (error) {
       console.error('Error adding tag:', error);
     }
-  };
+  };  
 
-  const fetchTags = async () => {
+  const fetchTags = async (userId: string) => {
     try {
       const response = await fetch(`/api/userTags?userId=${userId}`);
       const data = await response.json();
@@ -126,16 +131,22 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
     } catch (error) {
       console.error('Error fetching tags:', error);
     }
-  };
+  };  
 
   const fetchObjectsByTag = async (tag: Tag) => {
     try {
       console.log(`Fetching objects for tag: ${tag.name}`);
       const response = await fetch(`/api/getObjectsByTag?userId=${userId}&tag=${tag.name}`);
       const data = await response.json();
+  
       if (response.ok) {
-        console.log('Fetched objects:', data.images);
-        setObjectsWithTag(data.images);
+        console.log('Fetched objects:', data);
+        const mappedImages = data.images.map((img: any) => ({
+          imageUrl: img.image_url,
+          thumbnailUrl: img.thumbnail_url,
+          tags: [] // Assuming tags are not returned in the response
+        }));
+        setObjectsWithTag(mappedImages); // Update state with mapped images
         setSelectedTag(tag);
         setIsTagPopupVisible(true);
       } else {
@@ -144,7 +155,7 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
     } catch (error) {
       console.error('Error fetching objects by tag:', error);
     }
-  };  
+  };        
 
   const toggleTagsDropdown = () => {
     setIsTagsDropdownVisible(!isTagsDropdownVisible);
@@ -155,44 +166,81 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
     setIsTaggingPopupVisible(true);
   };
 
-  const handleTagSelect = (tag: Tag) => {
+  const handleTagSelect = async (tag: Tag) => {
     if (taggingImage) {
       const updatedImage = {
         ...taggingImage,
         tags: [...taggingImage.tags, tag],
       };
       setTaggingImage(null);
-      setIsTagPopupVisible(false);
+      setIsTaggingPopupVisible(false);
   
-      // Send request to update the image metadata in the KV database
-      fetch('/api/userTags', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId, imageUrl: taggingImage.imageUrl, tag }),
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          console.error('Error updating tag:', data.error);
-        } else {
-          // Optionally update the local state
+      try {
+        const response = await fetch('/api/userTags', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId, imageUrl: taggingImage.imageUrl, tag }),
+        });
+  
+        const data = await response.json();
+        if (response.ok) {
+          // Update the local state with the new tags
           const updatedImages = fetchedImages.map(image =>
             image.imageUrl === taggingImage.imageUrl ? updatedImage : image
           );
-          setHasFetchedImages(true);
+          setHasFetchedImages(true); // Ensure you have a setter for updating the images
+          console.log('Tag updated successfully:', updatedImage);
+        } else {
+          console.error('Error updating tag:', data.error);
         }
-      })
-      .catch(error => {
+      } catch (error) {
         console.error('Error updating tag:', error);
-      });
+      }
     }
-  };
+  };          
   
   const handleTagClick = (tag: Tag) => {
     fetchObjectsByTag(tag);
   };
+
+  const handleDeleteTag = async (tagId: string) => {
+    try {
+      const response = await fetch('/api/userTags', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, tagId }),
+      });
+  
+      if (response.ok) {
+        // Refresh tags after deletion
+        fetchTags(userId);
+        setIsTagPopupVisible(false); // Close the pop-up after deletion
+      } else {
+        console.error('Failed to delete tag:', await response.json());
+      }
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+    }
+  };  
+
+  useEffect(() => {
+    fetchTags(userId);
+  }, []);
+
+  const handleResize = (event: React.SyntheticEvent, { size }: ResizeCallbackData) => {
+    setBoxWidth(size.width);
+    setBoxHeight(size.height);
+  };
+
+  useEffect(() => {
+    const centerX = (window.innerWidth - boxWidth) / 2;
+    const centerY = (window.innerHeight - boxHeight) / 2;
+    setInitialPosition({ x: centerX, y: centerY });
+  }, [boxWidth, boxHeight]);
   
 
   useEffect(() => {
@@ -249,12 +297,20 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
   useEffect(() => {
     if (isTagsDropdownVisible && !hasFetchedTags) {
       console.log('Tags dropdown expanded, fetching tags...');
-      fetchTags();
+      fetchTags(userId);
     }
   }, [isTagsDropdownVisible, hasFetchedTags]);
 
   const handleTextLineClick = (message: Message) => {
     setSelectedMessage(message);
+  };
+  
+
+  const handleDragStart = (e: DraggableEvent, data: DraggableData): false | void => {
+    const target = e.target as HTMLElement;
+    if (target.classList.contains('react-resizable-handle')) {
+      return false; // Prevent dragging if the target is a resize handle
+    }
   };
 
   const handleCloseMessageWindow = () => {
@@ -276,8 +332,8 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
 
   const transformedImages: ImageItem[] = fetchedImages.map((image: Image) => ({
     ...image,
-    tags: [],
-  }));
+    tags: image.tags || [], // Ensure tags are not overwritten
+  }));  
 
   return (
     <>
@@ -376,27 +432,6 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
           </nav>
         </div>
       </div>
-      {selectedMessage && (
-        <Draggable>
-          <ResizableBox
-            className={styles.resizableBox}
-            width={500}
-            height={300}
-            minConstraints={[100, 100]}
-            maxConstraints={[1200, 1200]}
-            resizeHandles={['se']}
-          >
-            <div className={styles.messageWindow}>
-              <button className={styles.closeButton} onClick={handleCloseMessageWindow}>
-                X
-              </button>
-              <div className={styles.messageContent}>
-                <ReactMarkdown>{selectedMessage.content}</ReactMarkdown>
-              </div>
-            </div>
-          </ResizableBox>
-        </Draggable>
-      )}
       {isPopupVisible && (
         <div className={styles.popupOverlay}>
           <div className={styles.popup}>
@@ -441,17 +476,62 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
               X
             </button>
             <h3>{selectedTag.name}</h3>
+            <button className={styles.deleteButton} onClick={() => handleDeleteTag(selectedTag.id)}>
+              <FaTrash />
+              Delete Tag
+            </button>
             <div className={styles.thumbnailGrid}>
-              {objectsWithTag.map((image, index) => (
-                <div key={index} className={styles.thumbnailContainer}>
-                  <a href={image.imageUrl} target="_blank" rel="noopener noreferrer">
-                    <Image src={image.imageUrl} alt={`Image ${index + 1}`} width="75" height="75" className={styles.thumbnail} />
-                  </a>
-                </div>
-              ))}
+              {objectsWithTag.length > 0 ? (
+                objectsWithTag.map((image, index) => {
+                  console.log('Rendering image:', image.imageUrl);
+                  return (
+                    <div key={index} className={styles.thumbnailContainer}>
+                      <a href={image.imageUrl} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={image.imageUrl}
+                          alt={`Image ${index + 1}`}
+                          width="75"
+                          height="75"
+                          className={styles.thumbnail}
+                        />
+                      </a>
+                    </div>
+                  );
+                })
+              ) : (
+                <p>No images found.</p>
+              )}
             </div>
           </div>
         </div>
+      )}
+      {selectedMessage && (
+        <Draggable
+          defaultPosition={initialPosition}
+          handle=".drag-handle"
+          onStart={handleDragStart}
+        >
+          <div className={`${styles.draggableContainer} drag-handle`}>
+            <ResizableBox
+              className={styles.resizableBox}
+              width={boxWidth}
+              height={boxHeight}
+              minConstraints={[100, 100]}
+              maxConstraints={[1200, 1200]}
+              resizeHandles={['se']}
+              onResize={handleResize}
+            >
+              <div className={styles.messageWindow}>
+                <div className={styles.messageContent}>
+                  <button className={styles.closeButton} onClick={handleCloseMessageWindow}>
+                    X
+                  </button>
+                  <ReactMarkdown>{selectedMessage.content}</ReactMarkdown>
+                </div>
+              </div>
+            </ResizableBox>
+          </div>
+        </Draggable>
       )}
     </>
   );
