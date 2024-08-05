@@ -118,7 +118,9 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
     }
   };  
 
-  const fetchTags = async (userId: string) => {
+  const fetchTags = useCallback(async (userId: string) => {
+    if (!userId) return;
+
     try {
       const response = await fetch(`/api/userTags?userId=${userId}`);
       const data = await response.json();
@@ -131,7 +133,7 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
     } catch (error) {
       console.error('Error fetching tags:', error);
     }
-  };  
+  }, []);
 
   const fetchObjectsByTag = async (tag: Tag) => {
     try {
@@ -228,8 +230,10 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
   };  
 
   useEffect(() => {
-    fetchTags(userId);
-  }, []);
+    if (userId) {
+      fetchTags(userId);
+    }
+  }, [userId, fetchTags]);
 
   const handleResize = (event: React.SyntheticEvent, { size }: ResizeCallbackData) => {
     setBoxWidth(size.width);
@@ -276,7 +280,7 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
   }, []);
 
   useEffect(() => {
-    if (isImageLibraryExpanded && !hasFetchedImages) {
+    if (isImageLibraryExpanded && !hasFetchedImages && userId) {
       console.log('Image library expanded, fetching images...');
       fetchImages(userId);
       setHasFetchedImages(true);
@@ -284,7 +288,7 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
   }, [isImageLibraryExpanded, userId, fetchImages, hasFetchedImages]);
 
   useEffect(() => {
-    if (isMessagesLibExpanded && !hasFetchedMessages) {
+    if (isMessagesLibExpanded && !hasFetchedMessages && userId) {
       console.log('Messages library expanded, fetching messages...');
       libraryFetchMessages(userId).then((formattedMessages) => {
         console.log('Messages fetched, fetching message contents...');
@@ -295,11 +299,11 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
   }, [isMessagesLibExpanded, userId, libraryFetchMessages, fetchMessageContents, hasFetchedMessages]);
 
   useEffect(() => {
-    if (isTagsDropdownVisible && !hasFetchedTags) {
+    if (isTagsDropdownVisible && !hasFetchedTags && userId) {
       console.log('Tags dropdown expanded, fetching tags...');
       fetchTags(userId);
     }
-  }, [isTagsDropdownVisible, hasFetchedTags]);
+  }, [isTagsDropdownVisible, hasFetchedTags, userId, fetchTags]);
 
   const handleTextLineClick = (message: Message) => {
     setSelectedMessage(message);
