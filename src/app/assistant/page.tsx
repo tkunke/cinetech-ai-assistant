@@ -5,7 +5,7 @@ import CinetechAssistant from '@/components/cinetech-assistant';
 import Sidebar from '@/components/sidebar';
 import styles from '@/styles/assistant.module.css';
 import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
-import TokenCounter from '@/components/token-counter';
+
 
 interface Message {
   id: string;
@@ -27,9 +27,14 @@ export default function Home() {
   const [runId, setRunId] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [tokenUsage, setTokenUsage] = useState(null);
+  const [isCreativeToolsExpanded, setIsCreativeToolsExpanded] = useState(false);
 
   const userId = session?.user?.id ? String(session.user.id) : ''; // Ensure userId is available
 
+  const toggleCreativeToolsExpand = () => {
+    setIsCreativeToolsExpanded(!isCreativeToolsExpanded);
+  };
+  
   const addToImageLibrary = (imageUrl: string) => {
     setImageLibrary((prevLibrary) => [
       ...prevLibrary,
@@ -73,19 +78,40 @@ export default function Home() {
     setSelectedMessages([]); // Clear the selected messages
   };
 
+  const handleLogout = () => {
+    signOut({
+      callbackUrl: '/logout',
+    });
+  };
+
   return (
     <div className="flex h-screen">
       <Sidebar 
         generatePdf={handleGeneratePdfClick}
         userId={userId} // Pass the user ID to Sidebar
       />
-      <div className="flex-1 flex flex-col ml-0 md:ml-64">
+      <div className="flex-1 flex flex-col ml-0 md:ml-80">
         <header className={styles.header}>
           <div className={styles.leftSection}>
             <button onClick={handleCancelRun} className={styles.cancelButton}>Cancel Run</button>
           </div>
+          <div className={styles.middleSection}>
+            <div className={styles.creativeToolsContainer}>
+              <button onClick={toggleCreativeToolsExpand} className={`${styles.creativeToolsButton} creativeToolsButton`}>
+                Creative Tools
+              </button>
+              {isCreativeToolsExpanded && (
+                <ul className={`${styles.creativeToolsDropdown} creativeToolsDropdown`}>
+                  <li onClick={handleGeneratePdfClick} className={styles.creativeToolsButton}>Generate Shot Sheet</li>
+                  {/* Add more buttons or links here as needed */}
+                </ul>
+              )}
+            </div>
+          </div>
           <div className={styles.rightSection}>
-            <TokenCounter userId={userId} />
+            <button onClick={handleLogout} className={styles.logoutButton}>
+              Logout
+            </button>
           </div>
         </header>
         <main className={styles.main}>

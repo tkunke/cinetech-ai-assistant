@@ -54,15 +54,12 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId }) => {
   }, [tokens]);
 
   return (
-    <div className="font-extrabold">
-      <p>Credits:</p>
-      {tokens !== null ? (
-        <p>{tokens}</p>
-      ) : (
-        <p>Loading...</p>
-      )}
+    <div className="font-extrabold text-left">
+      <p>
+        Credits:&nbsp;{tokens !== null ? tokens : "Loading..."}
+      </p>
     </div>
-  );
+  );    
 };
 
 export default TokenCounter;

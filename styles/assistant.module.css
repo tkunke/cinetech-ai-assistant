@@ -1,8 +1,8 @@
 .header {
     position: fixed;
     top: 0;
-    left: 16rem; /* Offset by the width of the sidebar */
-    width: calc(100% - 16rem); /* Full width minus the sidebar width */
+    left: 20rem; /* Offset by the width of the sidebar */
+    width: calc(100% - 20rem); /* Full width minus the sidebar width */
     background-color: #ffffff;
     box-shadow: none;
     z-index: 999;
@@ -16,6 +16,14 @@
 .leftSection {
     display: flex;
     align-items: center;
+}
+
+.middleSection {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center the contents */
+  flex: 1; /* Take up available space */
+  position: relative; /* Needed for absolute positioning of the dropdown */
 }
   
 .rightSection {
@@ -40,10 +48,53 @@
   opacity: 0.8;
 }
 
-.tokenCounter {
-  font-weight: bold;
-  color: black;
-  margin-right: 0.5rem;
+.creativeToolsContainer {
+  position: relative;
+}
+
+/* Initially hide the dropdown */
+.creativeToolsDropdown {
+  display: none;
+  position: absolute;
+  background-color: #ffffff; /* Adjust as needed */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  z-index: 1000; /* Ensure it's above other elements */
+  padding: 10px;
+  margin-top: 5px; /* Adjust as needed */
+  list-style: none; /* Remove list styles */
+  padding-left: 0; /* Remove left padding */
+}
+
+/* Show the dropdown when hovering over the button */
+.creativeToolsButton:hover + .creativeToolsDropdown,
+.creativeToolsContainer:hover .creativeToolsDropdown {
+  display: block;
+}
+
+/* Button styles */
+.creativeToolsButton {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  color: black; /* Adjust as needed */
+  padding: 10px 20px; /* Adjust as needed */
+  border-radius: 4px;
+}
+
+.creativeToolsButton:hover {
+  background-color: transparent; /* Adjust as needed */
+}
+
+/* Dropdown item styles */
+.creativeToolsDropdown li {
+  list-style: none;
+  padding: 10px 20px; /* Adjust as needed */
+  cursor: pointer;
+}
+
+.creativeToolsDropdown li:hover {
+  background-color: #f0f0f0; /* Adjust as needed */
 }
 
 .main {
@@ -52,8 +103,7 @@
     flex-direction: column;
     margin-top: 3rem;
     margin-bottom: 4.5rem;
-    left: 16rem;
-    /*width: calc(100% - 16rem);*/
+    left: 20rem;
     overflow: auto;
 }
 
@@ -61,4 +111,17 @@
     .main {
         left: 0;
     }
+}
+
+/* Logout button styles */
+.logoutButton {
+  background-color: transparent;
+  font-weight: bold;
+  color: black;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  margin: 0.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
 }

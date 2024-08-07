@@ -15,6 +15,7 @@ interface Message {
   content: string;
   thumbnailUrl: string;
   url: string;
+  timestamp: string;
 }
 
 interface LibraryContextType {
@@ -77,6 +78,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
         if (Array.isArray(data.messages)) {
           const formattedMessages = data.messages.map((message: any) => ({
             url: message.messageUrl,
+            timestamp: message.timestamp,
           }));
           console.log('Formatted messages:', formattedMessages);
           setFetchedMessages(formattedMessages);

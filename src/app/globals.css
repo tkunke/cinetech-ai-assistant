@@ -253,7 +253,7 @@ body {
 }
 
 .main {
-  margin-left: 16rem; /* Offset by sidebar width */
+  margin-left: 20rem; /* Offset by sidebar width */
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -282,7 +282,7 @@ thead th {
 }
 
 .content {
-  margin-left: 16rem; /* 64 * 0.25rem */
+  margin-left: 20rem; /* 64 * 0.25rem */
 }
 
 nav a {
