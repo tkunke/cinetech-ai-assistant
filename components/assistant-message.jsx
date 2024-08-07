@@ -16,6 +16,7 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
   const [showTips, setShowTips] = useState(false);
   const { data: session } = useSession();
   const userId = session?.user?.id ? String(session.user.id) : '';
+  const userName = session?.user?.name ? session.user.name : 'User';
   const { fetchImages, fetchMessages } = useLibrary();
   const { addImage, addMessage } = useLibrary();
 
@@ -37,7 +38,7 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
 
     switch (roleName) {
       case 'user':
-        return <span style={roleStyle}>User</span>;
+        return <span style={roleStyle}>{userName}</span>;
       case 'assistant':
         return <span style={roleStyle}>{assistantName}</span>;
       default:

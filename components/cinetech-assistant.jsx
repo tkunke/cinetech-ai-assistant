@@ -55,6 +55,7 @@ export default function CinetechAssistant({
 
   const bufferRef = useRef('');
 
+  // Use a useEffect to initialize messages from sessionStorage to ensure it only runs on the client
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedMessages = sessionStorage.getItem('chatMessages');
@@ -128,8 +129,8 @@ export default function CinetechAssistant({
 
     setIsLoading(true);
 
-    setMessages([
-      ...messages,
+    setMessages((prevMessages) => [
+      ...prevMessages,
       {
         id: 'temp_user',
         role: 'user',

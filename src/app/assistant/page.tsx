@@ -69,14 +69,13 @@ export default function Home() {
 
   const handleGeneratePdfClick = async () => {
     console.log('Selected Messages:', selectedMessages);
-    if (selectedMessages.length === 2) {
-      const [breakdownMessage, imageMessage] = selectedMessages;
-      await generatePdfWithSelectedMessages([breakdownMessage, imageMessage]);
+    if (selectedMessages.length >= 2) {
+      await generatePdfWithSelectedMessages(selectedMessages);
     } else {
-      alert("Please select one breakdown message and one image message.");
-    } 
+      alert("Please select one breakdown message and at least one image message.");
+    }
     setSelectedMessages([]); // Clear the selected messages
-  };
+  };  
 
   const handleLogout = () => {
     signOut({

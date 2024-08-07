@@ -19,50 +19,44 @@ interface Storyboard {
 }
 
 export async function generatePdfWithSelectedMessages(messages: Message[]) {
-  //if (messages.length !== 2) {
-  //  console.error('Exactly two messages must be selected: one breakdown message and one image message');
-  //  return;
-  //}
-
   const hasImages = (content: string) => {
     const imagePattern = /!\[.*\]\((.*)\)/;
     return imagePattern.test(content);
   };
 
   let breakdownMessage: Message | undefined;
-  let imageMessage: Message | undefined;
+  const imageMessages: Message[] = [];
 
   messages.forEach(message => {
     if (hasImages(message.content)) {
-      imageMessage = message;
+      imageMessages.push(message);
     } else {
       breakdownMessage = message;
     }
   });
 
-  if (!breakdownMessage || !imageMessage) {
+  if (!breakdownMessage || imageMessages.length === 0) {
     console.error('Required messages not found');
     console.log('Breakdown Message Found:', !!breakdownMessage);
-    console.log('Image Message Found:', !!imageMessage);
+    console.log('Image Messages Found:', imageMessages.length);
     return;
   }
 
-  // Log message contents for debugging
   console.log('Breakdown Message Content:', breakdownMessage.content);
-  console.log('Image Message Content:', imageMessage.content);
+  console.log('Image Messages Content:', imageMessages.map(msg => msg.content));
 
-  // Parse the storyboard breakdown
   const storyboard = parseStoryboard(breakdownMessage.content);
 
-  // Extract image URLs from the image message
   const imagePattern = /!\[.*\]\((.*)\)/g;
   const imageUrls: string[] = [];
-  let match;
-  while ((match = imagePattern.exec(imageMessage.content)) !== null) {
-    imageUrls.push(match[1]);
-  }
 
-  // Log extracted image URLs for debugging
+  imageMessages.forEach(imageMessage => {
+    let match;
+    while ((match = imagePattern.exec(imageMessage.content)) !== null) {
+      imageUrls.push(match[1]);
+    }
+  });
+
   console.log('Extracted Image URLs:', imageUrls);
 
   if (imageUrls.length === 0) {
@@ -73,7 +67,6 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
   console.log('Storyboard:', storyboard);
   console.log('Image URLs:', imageUrls);
 
-  // Step 3: Construct the PDF
   const pdf = new jsPDF();
   const pageWidth = pdf.internal.pageSize.getWidth();
   const margin = 10;
@@ -84,40 +77,34 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
 
   pdf.setFontSize(textFontSize);
 
-  let y = margin; // Initialize y position
+  let y = margin;
 
-  // Process each panel and add text and images to the PDF
   for (let i = 0; i < storyboard.panels.length; i++) {
     const panel = storyboard.panels[i];
 
-    // Calculate the height required for the text content
     const text = `Title: ${panel.title}\nDescription: ${panel.description}\nNotes: ${panel.notes}\nShot Type: ${panel.shotType}`;
     const textLines: string[] = pdf.splitTextToSize(text, textWidth);
-    const textHeight = textLines.length * (pdf.getTextDimensions(textLines[0]).h + 2); // Line height + spacing
-    const totalRowHeight = Math.max(textHeight, imageHeight) + 2 * margin; // Ensure the row height accommodates both text and image
+    const textHeight = textLines.length * (pdf.getTextDimensions(textLines[0]).h + 2);
+    const totalRowHeight = Math.max(textHeight, imageHeight) + 2 * margin;
 
-    // Check if we need to add a new page
     if (y + totalRowHeight > pdf.internal.pageSize.getHeight() - margin) {
       pdf.addPage();
       y = margin;
     }
 
-    // Draw the rectangle for the row
     pdf.rect(margin, y, pageWidth - 2 * margin, totalRowHeight);
 
-    // Draw text in the left cell
     const textX = margin + 2;
     const textY = y + margin;
     textLines.forEach((line: string, lineIndex: number) => {
-      console.log('Adding text:', line); // Log text lines
+      console.log('Adding text:', line);
       pdf.text(line, textX, textY + lineIndex * (pdf.getTextDimensions(line).h + 2));
     });
 
-    // Draw image in the right cell if it exists
     if (imageUrls[i]) {
       try {
         const imageData = await fetchImageAsDataUrl(imageUrls[i]);
-        console.log('Adding image:', imageUrls[i]); // Log image URLs
+        console.log('Adding image:', imageUrls[i]);
 
         const imageX = pageWidth / 2 + margin / 2 + 2;
         const imageY = y + margin;
@@ -127,7 +114,6 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
       }
     }
 
-    // Update the y position for the next row
     y += totalRowHeight + margin;
   }
 

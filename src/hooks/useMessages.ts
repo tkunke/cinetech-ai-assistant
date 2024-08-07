@@ -1,9 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
+interface Message {
+  id: string;
+  role: string;
+  content: string;
+  imageUrl?: string;
+}
+
 export function useMessages(threadId: string | null, runCompleted: boolean) {
   const isBrowser = typeof window !== 'undefined';
-  const initialMessages = isBrowser ? JSON.parse(sessionStorage.getItem('chatMessages') || '[]') : [];
-  const [messages, setMessages] = useState(initialMessages);
+  const initialMessages: Message[] = isBrowser ? JSON.parse(sessionStorage.getItem('chatMessages') || '[]') : [];
+  const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -45,5 +52,21 @@ export function useMessages(threadId: string | null, runCompleted: boolean) {
     }
   }, [runCompleted]);
 
-  return { messages, fetchMessages, loading, setMessages };
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('chatMessages', JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  const addMessage = useCallback((newMessage: Message) => {
+    setMessages((prevMessages: Message[]) => {
+      const updatedMessages = [...prevMessages, newMessage];
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('chatMessages', JSON.stringify(updatedMessages));
+      }
+      return updatedMessages;
+    });
+  }, []);
+
+  return { messages, fetchMessages, loading, setMessages, addMessage };
 }

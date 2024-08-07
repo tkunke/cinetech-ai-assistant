@@ -10,8 +10,8 @@ const SpinningReels = () => {
 
   const spinnerIconStyle = {
     marginRight: '0.5rem',
-    width: '30%',
-    maxWidth: '50px',
+    width: '50%',
+    maxWidth: '70px',
   };
 
   const spinnerTextStyle = {
@@ -21,9 +21,9 @@ const SpinningReels = () => {
   return (
     <div style={spinnerStyle}>
       <div style={spinnerIconStyle}>
-      <img src="/spinning_reels.gif" alt="Loading..." style={{ width: '100%', height: 'auto' }} />
+      <img src="/spinning_reels2.gif" alt="Loading..." style={{ width: '100%', height: 'auto' }} />
       </div>
-      <p style={spinnerTextStyle}>Working on it</p>
+      <p style={spinnerTextStyle}>hang tight...</p>
     </div>
   );
 };
