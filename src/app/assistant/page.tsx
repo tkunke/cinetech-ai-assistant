@@ -22,24 +22,14 @@ export default function Home() {
 
   const [screenOrientation, setScreenOrientation] = useState<string>("portrait");
   const [selectedMessages, setSelectedMessages] = useState<Message[]>([]);
-  const [imageLibrary, setImageLibrary] = useState<{ imageUrl: string; thumbnailUrl: string }[]>([]);
-  const [messagesLibrary, setMessagesLibrary] = useState<{ content: string; thumbnailUrl: string }[]>([]);
   const [runId, setRunId] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string | null>(null);
-  const [tokenUsage, setTokenUsage] = useState(null);
   const [isCreativeToolsExpanded, setIsCreativeToolsExpanded] = useState(false);
 
   const userId = session?.user?.id ? String(session.user.id) : ''; // Ensure userId is available
 
   const toggleCreativeToolsExpand = () => {
     setIsCreativeToolsExpanded(!isCreativeToolsExpanded);
-  };
-  
-  const addToImageLibrary = (imageUrl: string) => {
-    setImageLibrary((prevLibrary) => [
-      ...prevLibrary,
-      { imageUrl, thumbnailUrl: `/path/to/thumbnail/${prevLibrary.length + 1}` }, // Example thumbnailUrl
-    ]);
   };
   
   const handleCancelRun = async () => {
@@ -120,8 +110,6 @@ export default function Home() {
             setSelectedMessages={setSelectedMessages}
             selectedMessages={selectedMessages}
             setThreadId={setThreadId}
-            setRunId={setRunId}
-            setTokenUsage={setTokenUsage}
           />
         </main>
       </div>

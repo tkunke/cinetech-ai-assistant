@@ -73,6 +73,17 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "User ID and Tag ID are required" }, { status: 400 });
     }
 
+    // Delete associations with images
+    await sql`
+      DELETE FROM project_tag_images WHERE tag_id = ${tagId}
+    `;
+
+    // Delete associations with messages
+    await sql`
+      DELETE FROM project_tag_messages WHERE tag_id = ${tagId}
+    `;
+
+    // Delete the tag itself
     await sql`
       DELETE FROM project_tags WHERE user_id = ${userId} AND id = ${tagId}
     `;
@@ -88,54 +99,94 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// Handler for PUT requests to tag an image
+// Handler for PUT requests to tag an image or a message
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, imageUrl, tag }: { userId: number; imageUrl: string; tag: { id: number; name: string } } = body;
+    const { userId, imageUrl, messageUrl, tag }: { userId: number; imageUrl?: string; messageUrl?: string; tag: { id: number; name: string } } = body;
 
     console.log("Received PUT request with body:", body);
 
-    if (!userId || !imageUrl || !tag?.id) {
+    if (!userId || (!imageUrl && !messageUrl) || !tag?.id) {
       console.error("Invalid request body");
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
     const tagId = tag.id;
 
-    // Fetch the image ID
-    const imageQuery = await sql`
-      SELECT id FROM user_gen_images WHERE user_id = ${userId} AND image_url = ${imageUrl}
-    `;
-    const image = imageQuery.rows[0];
+    if (imageUrl) {
+      // Fetch the image ID
+      const imageQuery = await sql`
+        SELECT id FROM user_gen_images WHERE user_id = ${userId} AND image_url = ${imageUrl}
+      `;
+      const image = imageQuery.rows[0];
 
-    if (!image) {
-      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+      if (!image) {
+        return NextResponse.json({ error: "Image not found" }, { status: 404 });
+      }
+
+      const imageId = image.id;
+
+      // Check if the tag already exists for this image
+      const tagQuery = await sql`
+        SELECT * FROM project_tag_images WHERE image_id = ${imageId} AND tag_id = ${tagId}
+      `;
+      const existingTag = tagQuery.rows[0];
+
+      if (existingTag) {
+        return NextResponse.json({ message: "Tag already exists for this image" }, { status: 200 });
+      }
+
+      // Insert the new tag for this image
+      await sql`
+        INSERT INTO project_tag_images (tag_id, image_id)
+        VALUES (${tagId}, ${imageId})
+      `;
+
+      console.log(`Tag ${tagId} added to image ${imageUrl} for user ${userId}`);
+
+      return NextResponse.json({ message: "Tag added successfully to image" });
+
+    } else if (messageUrl) {
+      // Fetch the message ID
+      const messageQuery = await sql`
+        SELECT id FROM user_gen_messages WHERE user_id = ${userId} AND message_url = ${messageUrl}
+      `;
+      const message = messageQuery.rows[0];
+
+      if (!message) {
+        return NextResponse.json({ error: "Message not found" }, { status: 404 });
+      }
+
+      const messageId = message.id;
+
+      // Check if the tag already exists for this message
+      const tagQuery = await sql`
+        SELECT * FROM project_tag_messages WHERE message_id = ${messageId} AND tag_id = ${tagId}
+      `;
+      const existingTag = tagQuery.rows[0];
+
+      if (existingTag) {
+        return NextResponse.json({ message: "Tag already exists for this message" }, { status: 200 });
+      }
+
+      // Insert the new tag for this message
+      await sql`
+        INSERT INTO project_tag_messages (tag_id, message_id)
+        VALUES (${tagId}, ${messageId})
+      `;
+
+      console.log(`Tag ${tagId} added to message ${messageUrl} for user ${userId}`);
+
+      return NextResponse.json({ message: "Tag added successfully to message" });
     }
 
-    const imageId = image.id;
+    console.error("No valid target for tagging found");
+    return NextResponse.json({ error: "No valid target for tagging found" }, { status: 400 });
 
-    // Check if the tag already exists for this image
-    const tagQuery = await sql`
-      SELECT * FROM project_tag_images WHERE image_id = ${imageId} AND tag_id = ${tagId}
-    `;
-    const existingTag = tagQuery.rows[0];
-
-    if (existingTag) {
-      return NextResponse.json({ message: "Tag already exists for this image" }, { status: 200 });
-    }
-
-    // Insert the new tag for this image
-    await sql`
-      INSERT INTO project_tag_images (tag_id, image_id)
-      VALUES (${tagId}, ${imageId})
-    `;
-
-    console.log(`Tag ${tagId} added to image ${imageUrl} for user ${userId}`);
-
-    return NextResponse.json({ message: "Tag added successfully" });
   } catch (error) {
     console.error("Error adding tag:", error);
     return NextResponse.json({ error: "Failed to add tag" }, { status: 500 });
   }
 }
+

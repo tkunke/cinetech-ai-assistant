@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { sql, QueryResult } from "@vercel/postgres";
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { JWT } from "next-auth/jwt";
 
 // Define the expected structure of the user object

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { FaPlus, FaTag, FaTrash, FaChevronRight, FaChevronDown } from 'react-icons/fa';
+import { FaPlus, FaAsterisk, FaTrash, FaChevronRight, FaChevronDown } from 'react-icons/fa';
 import Image from 'next/image';
 import Draggable, { DraggableEvent, DraggableData } from 'react-draggable';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
@@ -16,6 +16,7 @@ interface Message {
   content: string;
   url: string;
   timestamp: string;
+  tags: Tag[];
 }
 
 interface Tag {
@@ -34,7 +35,7 @@ interface ImageItem extends Image {
 }
 
 const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
-  const { fetchedImages, fetchImages, fetchedMessages, fetchMessages: libraryFetchMessages } = useLibrary();
+  const { fetchedImages, fetchImages, fetchedMessages, fetchMessages: libraryFetchMessages, removeImage } = useLibrary();
   const [messagesWithContent, setMessagesWithContent] = useState<Message[]>([]);
   const [hasFetchedMessages, setHasFetchedMessages] = useState(false);
   const [hasFetchedImages, setHasFetchedImages] = useState(false);
@@ -47,9 +48,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
   const [isMessageLibraryExpanded, setIsMessageLibraryExpanded] = useState(false);
   const [isTagsExpanded, setIsTagsExpanded] = useState(false);
   const [taggingImage, setTaggingImage] = useState<ImageItem | null>(null);
+  const [taggingMessage, setTaggingMessage] = useState<Message | null>(null);
   const [isTagPopupVisible, setIsTagPopupVisible] = useState(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const [objectsWithTag, setObjectsWithTag] = useState<ImageItem[]>([]);
+  const [messagesWithTag, setMessagesWithTag] = useState<Message[]>([]);
   const [selectedMessage, setSelectedMessage] = useState<Message | null>(null);
   const [boxWidth, setBoxWidth] = useState(500);
   const [boxHeight, setBoxHeight] = useState(300);
@@ -80,12 +83,28 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
   
       if (response.ok) {
         console.log('Fetched objects:', data);
+  
+        // Process images
         const mappedImages = data.images.map((img: any) => ({
           imageUrl: img.image_url,
           thumbnailUrl: img.thumbnail_url,
           tags: [] // Assuming tags are not returned in the response
         }));
+  
+        // Process messages
+        const mappedMessages = await Promise.all(data.messages.map(async (msg: any) => {
+          const messageContentResponse = await fetch(msg.message_url);
+          const messageContentData = await messageContentResponse.json();
+          return {
+            url: msg.message_url,
+            timestamp: msg.timestamp,
+            content: messageContentData.content || '', // Fetch and include the content
+            tags: [] // Assuming tags are not returned in the response
+          };
+        }));
+  
         setObjectsWithTag(mappedImages); // Update state with mapped images
+        setMessagesWithTag(mappedMessages); // Update state with mapped messages
         setSelectedTag(tag);
         setIsTagPopupVisible(true);
       } else {
@@ -94,7 +113,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
     } catch (error) {
       console.error('Error fetching objects by tag:', error);
     }
-  };
+  };    
 
   const handleTagNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTagName(e.target.value);
@@ -125,10 +144,16 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
     }
   };
 
-  const handleTagIconClick = (image: ImageItem) => {
-    setTaggingImage(image);
+  const handleTagIconClick = (item: ImageItem | Message, type: 'image' | 'message') => {
+    console.log("handleTagIconClick called with:", item, type);
+    if (type === 'image') {
+      setTaggingImage(item as ImageItem);
+    } else if (type === 'message') {
+      setTaggingMessage(item as Message);
+    }
     setIsTaggingPopupVisible(true);
-  };
+    console.log("isTaggingPopupVisible set to true");
+  };  
 
   const handleTagSelect = async (tag: Tag) => {
     if (taggingImage) {
@@ -162,7 +187,39 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
         console.error('Error updating tag:', error);
       }
     }
-  };
+  
+    if (taggingMessage) {
+      const updatedMessage = {
+        ...taggingMessage,
+        tags: [...(taggingMessage.tags || []), tag],
+      };
+      setTaggingMessage(null);
+      setIsTaggingPopupVisible(false);
+  
+      try {
+        const response = await fetch('/api/userTags', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId, messageUrl: taggingMessage.url, tag }),
+        });
+  
+        const data = await response.json();
+        if (response.ok) {
+          const updatedMessages = messagesWithContent.map(message =>
+            message.url === taggingMessage.url ? updatedMessage : message
+          );
+          setMessagesWithContent(updatedMessages);
+          console.log('Tag updated successfully:', updatedMessage);
+        } else {
+          console.error('Error updating tag:', data.error);
+        }
+      } catch (error) {
+        console.error('Error updating tag:', error);
+      }
+    }
+  };  
 
   const handleDeleteTag = async (tagId: string) => {
     try {
@@ -184,6 +241,45 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
       console.error('Error deleting tag:', error);
     }
   };
+
+  const handleDeleteContent = async (userId: string, contentUrl: string, type: 'image' | 'message') => {
+    try {
+      const dbResponse = await fetch('/api/saveToPg', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, contentUrl, type }),
+      });
+  
+      if (dbResponse.ok) {
+        const result = await dbResponse.json();
+        console.log(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully from SQL database`);
+  
+        const blobResponse = await fetch(`/api/image-store?url=${encodeURIComponent(contentUrl)}&userId=${encodeURIComponent(userId)}`, {
+          method: 'DELETE',
+        });
+  
+        if (blobResponse.ok) {
+          console.log(`${type.charAt(0).toUpperCase() + type.slice(1)} deleted successfully from blob storage`);
+  
+          if (type === 'image') {
+            removeImage(contentUrl); // Update state after successful deletion
+          } else if (type === 'message') {
+            setMessagesWithContent(prevMessages => prevMessages.filter(message => message.url !== contentUrl));
+          }
+        } else {
+          const errorResult = await blobResponse.json();
+          console.error('Failed to delete file from blob storage:', errorResult.error);
+        }
+      } else {
+        const result = await dbResponse.json();
+        console.error('Failed to delete metadata:', result.error);
+      }
+    } catch (error) {
+      console.error('Error deleting content:', error);
+    }
+  };        
 
   useEffect(() => {
     if (userId) {
@@ -220,12 +316,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
     if (isMessageLibraryExpanded && !hasFetchedMessages && userId) {
       console.log('Messages library expanded, fetching messages...');
       libraryFetchMessages(userId).then((formattedMessages) => {
-        console.log('Messages fetched, fetching message contents...');
-        fetchMessageContents(formattedMessages);
+        fetchMessageContents(formattedMessages); // Fetch the content after fetching the messages
       });
       setHasFetchedMessages(true);
     }
-  }, [isMessageLibraryExpanded, userId, libraryFetchMessages, fetchMessageContents, hasFetchedMessages]);
+  }, [isMessageLibraryExpanded, userId, libraryFetchMessages, hasFetchedMessages, fetchMessageContents]);    
 
   useEffect(() => {
     if (isTagsExpanded && !hasFetchedTags && userId) {
@@ -233,6 +328,30 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
       fetchTags(userId);
     }
   }, [isTagsExpanded, hasFetchedTags, userId, fetchTags]);
+
+  useEffect(() => {
+    // Preserve existing content while updating messagesWithContent with fetchedMessages
+    setMessagesWithContent((prevMessages) => {
+      const combinedMessages = [...prevMessages];
+  
+      fetchedMessages.forEach((fetchedMessage) => {
+        const existingIndex = combinedMessages.findIndex(msg => msg.url === fetchedMessage.url);
+        if (existingIndex > -1) {
+          // Update existing message while preserving content
+          combinedMessages[existingIndex] = {
+            ...combinedMessages[existingIndex],
+            ...fetchedMessage,
+            content: fetchedMessage.content || combinedMessages[existingIndex].content,
+            timestamp: fetchedMessage.timestamp || combinedMessages[existingIndex].timestamp,
+          };
+        } else {
+          combinedMessages.push(fetchedMessage);
+        }
+      });
+  
+      return combinedMessages;
+    });
+  }, [fetchedMessages]);      
 
   const toggleImageLibraryExpand = () => {
     setIsImageLibraryExpanded((prev) => !prev);
@@ -258,12 +377,17 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
     tags: image.tags || [], 
   }));
 
-  const truncateText = (text: string, maxLength: number) => {
+  const truncateText = (text: string | undefined, maxLength: number) => {
+    if (!text) {
+      return ''; // Return an empty string if text is undefined or null
+    }
+  
     if (text.length <= maxLength) {
       return text;
     }
+  
     return text.slice(0, maxLength) + '...';
-  };
+  };  
 
   const handleTextLineClick = (message: Message) => {
     setSelectedMessage(message);
@@ -314,9 +438,29 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
                 <li key={index} className={styles.textLine} onClick={() => handleTextLineClick(message)}>
                   {truncateText(message.content, 30)}
                   <div className={styles.timestampList}>{message.timestamp}</div>
+                  <FaAsterisk
+                    className={styles.tagIcon}
+                    onClick={(e: React.MouseEvent<SVGElement>) => {
+                      e.stopPropagation(); // Prevent the parent onClick from triggering
+                      handleTagIconClick(message, 'message');
+                    }}
+                  />
+                  <FaTrash 
+                    className={styles.messageDelete} 
+                    onClick={(e: React.MouseEvent<SVGElement>) => {
+                      e.stopPropagation();
+                      handleDeleteContent(userId, message.url, 'message')}
+                    }
+                    title='Delete Message' 
+                  />
+                  {message.tags && message.tags.map((tag) => (
+                    <span key={tag.id} className={styles.messageTag}>
+                      {tag.name}
+                    </span>
+                  ))}
                 </li>
               ))}
-            </ul>
+          </ul>
           )}
         </li>
         <li>
@@ -334,7 +478,8 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
                     <a href={image.imageUrl} target="_blank" rel="noopener noreferrer">
                       <Image src={image.thumbnailUrl} alt={`Image ${index + 1}`} width="75" height="75" className={styles.thumbnail} />
                     </a>
-                    <FaTag className={styles.tagIcon} onClick={() => handleTagIconClick(image)} />
+                    <FaAsterisk className={styles.tagIcon} onClick={() => handleTagIconClick(image, 'image')} title='Tag Image' />
+                    <FaTrash className={styles.imageDelete} onClick={() => handleDeleteContent(userId, image.imageUrl, 'image')} title='Delete Image' />
                     {image.tags.map((tag) => (
                       <span key={tag.id} className={styles.imageTag}>
                         {tag.name}
@@ -372,7 +517,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
         <div className={styles.popupOverlay}>
           <div className={styles.popup}>
             <button className={styles.closeButton} onClick={() => setIsPopupVisible(false)}>
-              X
+              &times;
             </button>
             <form onSubmit={handleTagSubmit}>
               <label htmlFor="tagName">Tag Name:</label>
@@ -382,11 +527,11 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
           </div>
         </div>
       )}
-      {isTaggingPopupVisible && taggingImage && (
+      {isTaggingPopupVisible && ( taggingImage || taggingMessage ) && (
         <div className={styles.tagPopupOverlay}>
           <div className={styles.tagPopup}>
             <button className={styles.closeButton} onClick={() => setIsTaggingPopupVisible(false)}>
-              X
+              &times;
             </button>
             <h3>Select a Tag</h3>
             <ul className={styles.tagList}>
@@ -403,13 +548,30 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
         <div className={styles.popupOverlay}>
           <div className={styles.popup}>
             <button className={styles.closeButton} onClick={() => setIsTagPopupVisible(false)}>
-              X
+              &times;
             </button>
-            <h3>{selectedTag.name}</h3>
+            <h3>Project Tag: {selectedTag.name}</h3>
             <button className={styles.deleteButton} onClick={() => handleDeleteTag(selectedTag.id)}>
-              <FaTrash />
-              Delete Tag
+              <FaTrash
+                title='Delete Tag'
+              />
             </button>
+            {/* Display messages associated with the tag */}
+            <div className={styles.messagesSection}>
+              {messagesWithTag.length > 0 ? (
+                <ul className={styles.messagesList}>
+                  {messagesWithTag.map((message, index) => (
+                    <li key={index} className={styles.popupTextLine} onClick={() => handleTextLineClick(message)}>
+                      {truncateText(message.content, 30)}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No messages found.</p>
+              )}
+            </div>
+            
+            {/* Display images associated with the tag */}
             <div className={styles.thumbnailGrid}>
               {objectsWithTag.length > 0 ? (
                 objectsWithTag.map((image, index) => (
@@ -443,10 +605,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
               onResize={handleResize}
             >
               <div className={styles.messageWindow}>
+                <button className={styles.closeButton} onClick={handleCloseMessageWindow}>
+                  &times;
+                </button>
                 <div className={styles.messageContent}>
-                  <button className={styles.closeButton} onClick={handleCloseMessageWindow}>
-                    X
-                  </button>
                   <div className={styles.timestampWindow}>{selectedMessage.timestamp}</div>
                   <ReactMarkdown>{selectedMessage.content}</ReactMarkdown>
                 </div>

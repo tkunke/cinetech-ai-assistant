@@ -3,7 +3,7 @@ import { AiOutlineSend, AiOutlineFile, AiOutlinePaperClip, AiOutlineClose } from
 import CinetechSpinner from './message-spinner';
 import styles from '@/styles/input-form.module.css';
 
-const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputRef, handleFileChange, showLoadingGif }) => {
+const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputRef, handleFileChange }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
   const [showWarning, setShowWarning] = useState(false);

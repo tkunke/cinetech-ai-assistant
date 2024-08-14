@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    console.log(`GET request received for userId: ${userId}`);
     const userQuery = await sql`SELECT credits FROM users WHERE id = ${userId}`;
     if (userQuery.rows.length === 0) {
       console.error(`User not found for ID: ${userId}`);
@@ -20,8 +21,8 @@ export async function GET(request: NextRequest) {
     const tokenCount = userQuery.rows[0].credits;
     return NextResponse.json({ tokenCount });
   } catch (error) {
-    console.error("Error fetching token count:", error);
-    return NextResponse.json({ error: "Failed to fetch token count" }, { status: 500 });
+    console.error("Error fetching credit count:", error);
+    return NextResponse.json({ error: "Failed to fetch credit count" }, { status: 500 });
   }
 }
 
@@ -29,18 +30,20 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const userId = body.userId;
-  const tokensUsed = body.tokensUsed;
+  const newCredits = body.newCredits; // Change this to reflect the actual data being passed
 
-  if (!userId || tokensUsed === undefined) {
+  console.log(`POST request received with body: ${JSON.stringify(body)}`);
+
+  if (!userId || newCredits === undefined) {
     console.error("Invalid request body");
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
   try {
-    await sql`UPDATE users SET credits = ${tokensUsed} WHERE id = ${userId}`;
-    return NextResponse.json({ message: "Token count updated successfully" });
+    await sql`UPDATE users SET credits = ${newCredits} WHERE id = ${userId}`; // Update this to newCredits
+    return NextResponse.json({ message: "Credit count updated successfully in DB" });
   } catch (error) {
-    console.error("Error updating token count:", error);
-    return NextResponse.json({ error: "Failed to update token count" }, { status: 500 });
+    console.error("Error updating credit count:", error);
+    return NextResponse.json({ error: "Failed to update credit count in DB" }, { status: 500 });
   }
 }

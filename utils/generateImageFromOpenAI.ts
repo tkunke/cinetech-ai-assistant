@@ -5,6 +5,7 @@ import { put } from '@vercel/blob';
 const openai = new OpenAI();
 
 export async function generateImageFromOpenAI(content: string): Promise<string | null> {
+  console.log('Prompt length:', content.length);
   console.log('Assistant prompt:', content);
   try {
     const response = await openai.images.generate({
@@ -12,7 +13,7 @@ export async function generateImageFromOpenAI(content: string): Promise<string |
       prompt: content,
     });
 
-    console.log('OpenAI response:', response);
+    console.log('OpenAI response:', JSON.stringify(response, null, 2));
 
     if (response.data && response.data.length > 0) {
       const imageUrl = response.data[0].url ?? null; // Ensure the URL is either a string or null

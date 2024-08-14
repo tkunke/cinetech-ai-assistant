@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from '@/styles/sidebar.module.css';
-import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Workspace from '@/components/workspace';
 import TokenCounter from '@/components/token-counter';
@@ -10,9 +9,12 @@ import TokenCounter from '@/components/token-counter';
 interface SidebarProps {
   generatePdf: () => void;
   userId: string;
+  runId: string;
+  runCompleted: boolean;
+  messagesUpdated: boolean;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
+const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messagesUpdated }) => {
   const [isSidebarVisible, setIsSidebarVisible] = useState(false);
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState(false);
 
@@ -66,7 +68,7 @@ const Sidebar: React.FC<SidebarProps> = ({ generatePdf, userId }) => {
           )}
         </div>
         <div className={styles.bottomSection}>
-          <TokenCounter userId={userId} />
+          <TokenCounter userId={userId} runId={runId} runCompleted={runCompleted} messagesUpdated={messagesUpdated}/>
         </div>
       </div>
     </>

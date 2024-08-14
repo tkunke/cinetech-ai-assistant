@@ -16,6 +16,7 @@ interface Message {
   thumbnailUrl: string;
   url: string;
   timestamp: string;
+  tags: Tag[];
 }
 
 interface LibraryContextType {
@@ -25,6 +26,7 @@ interface LibraryContextType {
   fetchMessages: (userId: string) => Promise<Message[]>;
   addImage: (image: Image) => void;
   addMessage: (message: Message) => void;
+  removeImage: (imageUrl: string) => void;
 }
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
@@ -79,6 +81,8 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
           const formattedMessages = data.messages.map((message: any) => ({
             url: message.messageUrl,
             timestamp: message.timestamp,
+            content: message.content, // Assuming content is also returned by the API
+            tags: message.tags || [], // Include tags from the API, or default to an empty array
           }));
           console.log('Formatted messages:', formattedMessages);
           setFetchedMessages(formattedMessages);
@@ -93,18 +97,39 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
       console.error('Error fetching messages:', error);
     }
     return [];
-  }, []);
+  }, []);  
 
   const addImage = (newImage: Image) => {
     setFetchedImages((prevImages) => [...prevImages, newImage]);
   };
   
   const addMessage = (newMessage: Message) => {
-    setFetchedMessages((prevMessages) => [...prevMessages, newMessage]);
+    console.log('New message to be added:', newMessage);
+  
+    setFetchedMessages((prevMessages) => {
+      const existingMessages = [...prevMessages];
+  
+      // Check if the new message already exists (by URL), and update it if necessary
+      const existingIndex = existingMessages.findIndex(msg => msg.url === newMessage.url);
+      if (existingIndex > -1) {
+        existingMessages[existingIndex] = { ...existingMessages[existingIndex], ...newMessage };
+      } else {
+        existingMessages.push(newMessage);
+      }
+  
+      // Log the updated messages array
+      console.log('Updated messages array:', existingMessages);
+  
+      return existingMessages;
+    });
+  };  
+
+  const removeImage = (imageUrl: string) => {
+    setFetchedImages((prevImages) => prevImages.filter(image => image.imageUrl !== imageUrl));
   };
 
   return (
-    <LibraryContext.Provider value={{ fetchedImages, fetchedMessages, fetchImages, fetchMessages, addImage, addMessage }}>
+    <LibraryContext.Provider value={{ fetchedImages, fetchedMessages, fetchImages, fetchMessages, addImage, addMessage, removeImage }}>
       {children}
     </LibraryContext.Provider>
   );

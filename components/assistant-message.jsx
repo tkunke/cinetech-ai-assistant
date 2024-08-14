@@ -10,14 +10,13 @@ import { useSession } from 'next-auth/react';
 import { upload } from '@vercel/blob/client';
 import { useLibrary } from '@/context/LibraryContext';
 
-export default function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, addToImageLibrary, addToMessagesLibrary, assistantName, imageEngineMap }) {
+export default function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, assistantName, imageEngineMap }) {
   const tableRef = useRef(null);
   const buttonRef = useRef(null);
   const [showTips, setShowTips] = useState(false);
   const { data: session } = useSession();
   const userId = session?.user?.id ? String(session.user.id) : '';
   const userName = session?.user?.name ? session.user.name : 'User';
-  const { fetchImages, fetchMessages } = useLibrary();
   const { addImage, addMessage } = useLibrary();
 
   if (!message) return null;
@@ -87,7 +86,7 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
       const response = await fetch(`/api/fetch-image?url=${encodeURIComponent(imageUrl)}`);
       const blob = await response.blob();
       const fileName = `generated-image.png`;
-      const prefixedFileName = `${userId}-img-${fileName}`;
+      const prefixedFileName = `${userName}-img-${fileName}`;
       const file = new File([blob], prefixedFileName, { type: 'image/png' });
   
       console.log('File name being sent:', file.name);
@@ -159,21 +158,18 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
     }
   
     try {
+      // Generate the thumbnail and other necessary data
       const canvas = await html2canvas(document.body.querySelector(`#message-${message.id}`));
       const thumbnailUrl = canvas.toDataURL('image/png');
+      const timestamp = generateTimestamp();
   
-      const timestamp = generateTimestamp(); // Generate the timestamp
-  
-      const messageData = { content: messageContent, thumbnailUrl, timestamp }; // Include the timestamp
+      const messageData = { content: messageContent, thumbnailUrl, timestamp };
       const blob = new Blob([JSON.stringify(messageData)], { type: 'application/json' });
       const fileName = `message-${Math.random().toString(36).substr(2, 9)}.json`;
-      const prefixedFileName = `${userId}-message-${fileName}`;
+      const prefixedFileName = `${userName}-message-${fileName}`;
       const file = new File([blob], prefixedFileName, { type: 'application/json' });
   
-      console.log('File name being sent:', file.name); // Log the file name
-      console.log('Prefixed file name being sent:', prefixedFileName); // Log the prefixed file name
-  
-      // Send the prefixed file name to the server to generate the client token
+      // Save the message to the server
       const tokenResponse = await fetch('/api/message-store', {
         method: 'POST',
         headers: {
@@ -181,13 +177,11 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
         },
         body: JSON.stringify({
           pathname: prefixedFileName,
-          userId: userId, // Ensure userId is correctly included
+          userId: userId,
         }),
       });
   
       const responseData = await tokenResponse.json();
-      console.log('Response data:', responseData);
-  
       const { clientToken } = responseData;
   
       if (!clientToken) {
@@ -200,8 +194,6 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
         clientToken,
       });
   
-      console.log('Message uploaded successfully:', newBlob);
-  
       // Save message metadata to the database
       const saveResponse = await fetch('/api/saveToPg', {
         method: 'POST',
@@ -209,20 +201,21 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: userId, // Ensure userId is correctly included
+          userId: userId,
           messageUrl: newBlob.url,
           type: 'message',
         }),
       });
   
       const saveData = await saveResponse.json();
-      console.log('Save response data:', saveData);
   
-      // Update the state with the new message
+      // Directly update the state with the new message
       addMessage({
         content: messageContent,
         thumbnailUrl: thumbnailUrl,
         url: newBlob.url,
+        timestamp: timestamp,
+        tags: [],
       });
     } catch (error) {
       console.error('Error uploading message:', error);
@@ -231,7 +224,7 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
         console.error('Error response data:', errorData);
       }
     }
-  };                    
+  };                        
 
   const handleMessageSelect = (message) => {
     setSelectedMessages((prevSelectedMessages) =>

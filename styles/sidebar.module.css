@@ -13,7 +13,7 @@
   padding: 1rem;
   transition: transform 0.3s ease;
   transform: translateX(-100%);
-  z-index: 998;
+  z-index: 997;
 }
 
 .sidebar.visible {

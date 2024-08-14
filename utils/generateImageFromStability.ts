@@ -17,7 +17,7 @@ type PayloadType = {
 export async function generateImageFromStability(content: string): Promise<string | null> {
   console.log('Assistant prompt:', content);
 
-  const url = "https://api.stability.ai/v2beta/stable-image/generate/ultra";
+  const url = "https://api.stability.ai/v2beta/stable-image/generate/core";
 
   const payload: PayloadType = {
     prompt: content,

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log("Executing query: SELECT message_url FROM user_gen_messages WHERE user_id =", userId);
+    console.log("Executing query: SELECT * FROM user_gen_messages WHERE user_id =", userId);
     const messagesQuery = await sql`
       SELECT *
       FROM user_gen_messages

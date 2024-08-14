@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql, QueryResult, QueryResultRow } from '@vercel/postgres';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   const { firstName, lastName, email, username, password, assistantName, defaultGreeting } = await request.json();

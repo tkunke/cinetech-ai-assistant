@@ -1,5 +1,6 @@
 import { handleUpload, type HandleUploadBody, type HandleUploadOptions, type GenerateClientTokenOptions } from '@vercel/blob/client';
-import { NextResponse } from 'next/server';
+import { del } from '@vercel/blob';
+import { NextRequest, NextResponse } from 'next/server';
 
 const EventTypes = {
   generateClientToken: 'blob.generate-client-token',
@@ -61,5 +62,27 @@ export async function POST(request: Request): Promise<NextResponse> {
       { error: (error as Error).message },
       { status: 400 },
     );
+  }
+}
+
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
+  try {
+    const { searchParams } = new URL(request.url);
+    const urlToDelete = searchParams.get('url');
+    const userId = searchParams.get('userId');
+
+    if (!urlToDelete || !userId) {
+      throw new Error('URL to delete or User ID is missing');
+    }
+
+    // Use the del function to delete the blob from Vercel storage
+    await del(urlToDelete);
+
+    console.log(`Blob at ${urlToDelete} deleted successfully`);
+
+    return NextResponse.json({ message: 'Blob deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting blob:', error);
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }
 }
