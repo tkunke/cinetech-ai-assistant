@@ -7,7 +7,6 @@ import Workspace from '@/components/workspace';
 import TokenCounter from '@/components/token-counter';
 
 interface SidebarProps {
-  generatePdf: () => void;
   userId: string;
   runId: string;
   runCompleted: boolean;

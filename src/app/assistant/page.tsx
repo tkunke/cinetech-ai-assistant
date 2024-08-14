@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import CinetechAssistant from '@/components/cinetech-assistant';
-import Sidebar from '@/components/sidebar';
 import styles from '@/styles/assistant.module.css';
 import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
 
@@ -75,10 +74,6 @@ export default function Home() {
 
   return (
     <div className="flex h-screen">
-      <Sidebar 
-        generatePdf={handleGeneratePdfClick}
-        userId={userId} // Pass the user ID to Sidebar
-      />
       <div className="flex-1 flex flex-col ml-0 md:ml-80">
         <header className={styles.header}>
           <div className={styles.leftSection}>
