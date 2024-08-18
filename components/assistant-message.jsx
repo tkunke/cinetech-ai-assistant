@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import styles from '@/styles/assistant-message.module.css';
@@ -10,7 +10,10 @@ import { useSession } from 'next-auth/react';
 import { upload } from '@vercel/blob/client';
 import { useLibrary } from '@/context/LibraryContext';
 
-export default function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, assistantName, imageEngineMap }) {
+function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, assistantName, imageEngineMap }) {
+  useEffect(() => {
+    console.log('CinetechAssistantMessage re-rendered:', message.id);
+  });
   const tableRef = useRef(null);
   const buttonRef = useRef(null);
   const [showTips, setShowTips] = useState(false);
@@ -341,3 +344,13 @@ export default function CinetechAssistantMessage({ message, selectedMessages = [
     </div>
   );
 }
+
+export default React.memo(CinetechAssistantMessage, (prevProps, nextProps) => {
+  return (
+    prevProps.message === nextProps.message &&
+    prevProps.selectedMessages === nextProps.selectedMessages &&
+    prevProps.assistantName === nextProps.assistantName &&
+    prevProps.imageEngineMap === nextProps.imageEngineMap
+  );
+});
+

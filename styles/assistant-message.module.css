@@ -13,6 +13,9 @@
   margin: 0.5rem; /* Add margin for better spacing on small screens */
   word-wrap: break-word; /* Ensure long words break to fit small screens */
   padding-bottom: 2rem;
+  max-width: 60rem;
+  width: 90%;
+  box-sizing: border-box;
 }
 
 .messageContainer img {
@@ -56,10 +59,19 @@
 }
 
 .imageMessageContainer {
-  position: relative;
+  width: 100%;
+  max-width: 100%; /* Ensures the container takes the full width available */
   display: flex;
-  flex-direction: row;
-  align-items: flex-start;
+  justify-content: center; /* Centers the image horizontally */
+  align-items: center;
+  margin: 0 auto; /* Centers the container itself */
+}
+
+.imageMessageContainer img {
+  width: 100%; /* Forces image to take up full container width */
+  max-width: 100%; /* Prevents image from exceeding container width */
+  height: auto; /* Maintains aspect ratio */
+  margin: 0 auto; /* Centers the image within the container */
 }
 
 .image {

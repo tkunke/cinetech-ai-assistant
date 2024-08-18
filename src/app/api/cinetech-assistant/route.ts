@@ -425,9 +425,9 @@ export async function POST(request: NextRequest) {
           id: initialRunId,
           usage: runStatus.usage
         };
-        //console.log('Initial run status stored:', runStatusStore[threadId]);
+        console.log('Initial run status stored:', runStatusStore[threadId]);
       } else {
-        //console.log('Initial run is undefined, retrying...');
+        console.log('Initial run is undefined, retrying...');
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
@@ -460,12 +460,12 @@ export async function GET(request: NextRequest) {
 
   if (type === 'engineInfo') {
     const imageUrl = searchParams.get('imageUrl');
-    //console.log(`Fetching engine info for imageUrl: ${imageUrl}`);
+    console.log(`Fetching engine info for imageUrl: ${imageUrl}`);
     if (imageUrl && imageEngineStore[imageUrl]) {
-      //console.log(`Engine found: ${imageEngineStore[imageUrl]}`);
+      console.log(`Engine found: ${imageEngineStore[imageUrl]}`);
       return NextResponse.json({ engine: imageEngineStore[imageUrl] });
     } else {
-      //console.log('No engine info found');
+      console.log('No engine info found');
       return NextResponse.json({ engine: null });
     }
   }
@@ -481,7 +481,7 @@ export async function GET(request: NextRequest) {
     let runStatus;
     if (runId) {
       runStatus = await openai.beta.threads.runs.retrieve(threadId, runId);
-      //console.log('Retrieved run status directly from OpenAI:', runStatus);
+      console.log('Retrieved run status directly from OpenAI:', runStatus);
     }
 
     const threadMessages = await openai.beta.threads.messages.list(threadId);

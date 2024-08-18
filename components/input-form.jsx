@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { AiOutlineSend, AiOutlineFile, AiOutlinePaperClip, AiOutlineClose } from 'react-icons/ai';
 import CinetechSpinner from './message-spinner';
 import styles from '@/styles/input-form.module.css';
@@ -159,4 +159,4 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
   );
 };
 
-export default InputForm;
+export default memo(InputForm);

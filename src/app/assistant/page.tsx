@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import CinetechAssistant from '@/components/cinetech-assistant';
 import styles from '@/styles/assistant.module.css';
+import { FaUserCircle } from 'react-icons/fa';
 import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
 
 
@@ -14,6 +16,7 @@ interface Message {
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   
   useEffect(() => {
     console.log('Session data:', session);
@@ -21,39 +24,17 @@ export default function Home() {
 
   const [screenOrientation, setScreenOrientation] = useState<string>("portrait");
   const [selectedMessages, setSelectedMessages] = useState<Message[]>([]);
-  const [runId, setRunId] = useState<string | null>(null);
-  const [threadId, setThreadId] = useState<string | null>(null);
   const [isCreativeToolsExpanded, setIsCreativeToolsExpanded] = useState(false);
+  const [isUserMenuExpanded, setIsUserMenuExpanded] = useState(false);
 
   const userId = session?.user?.id ? String(session.user.id) : ''; // Ensure userId is available
 
   const toggleCreativeToolsExpand = () => {
     setIsCreativeToolsExpanded(!isCreativeToolsExpanded);
   };
-  
-  const handleCancelRun = async () => {
-    if (!threadId || !runId) {
-      console.error('Thread ID or Run ID is missing');
-      return;
-    }
 
-    try {
-      const response = await fetch('/api/cancel-run', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ threadId, runId }), // Include threadId and runId
-      });
-      const result = await response.json();
-      if (result.success) {
-        console.log('Run cancelled successfully');
-      } else {
-        console.error('Failed to cancel run:', result.error);
-      }
-    } catch (error) {
-      console.error('Error cancelling run:', error);
-    }
+  const toggleUserMenuExpand = () => {
+    setIsUserMenuExpanded(!isUserMenuExpanded);
   };
 
   const handleGeneratePdfClick = async () => {
@@ -72,13 +53,14 @@ export default function Home() {
     });
   };
 
+  const handleProfileClick = () => {
+    router.push('/profile'); // Adjust this path as needed
+  };
+
   return (
     <div className="flex h-screen">
       <div className="flex-1 flex flex-col ml-0 md:ml-80">
         <header className={styles.header}>
-          <div className={styles.leftSection}>
-            <button onClick={handleCancelRun} className={styles.cancelButton}>Cancel Run</button>
-          </div>
           <div className={styles.middleSection}>
             <div className={styles.creativeToolsContainer}>
               <button onClick={toggleCreativeToolsExpand} className={`${styles.creativeToolsButton} creativeToolsButton`}>
@@ -93,9 +75,15 @@ export default function Home() {
             </div>
           </div>
           <div className={styles.rightSection}>
-            <button onClick={handleLogout} className={styles.logoutButton}>
-              Logout
-            </button>
+            <div className={styles.userIconContainer} onClick={toggleUserMenuExpand}>
+              <FaUserCircle className={styles.userIcon} />
+              {isUserMenuExpanded && (
+                <ul className={styles.userDropdown}>
+                  <li onClick={handleProfileClick} className={styles.userMenuItem}>Profile</li>
+                  <li onClick={handleLogout} className={styles.userMenuItem}>Logout</li>
+                </ul>
+              )}
+            </div>
           </div>
         </header>
         <main className={styles.main}>
@@ -104,7 +92,6 @@ export default function Home() {
             greeting="Loading..."
             setSelectedMessages={setSelectedMessages}
             selectedMessages={selectedMessages}
-            setThreadId={setThreadId}
           />
         </main>
       </div>

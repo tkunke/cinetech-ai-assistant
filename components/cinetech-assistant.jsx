@@ -1,12 +1,12 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import CinetechAssistantMessage from './assistant-message';
 import InputForm from './input-form';
 import Sidebar from './sidebar';
 import styles from '@/styles/cinetech-assistant.module.css';
-import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
+import { v4 as uuidv4 } from 'uuid';
 import SpinningReels from './spinning-reels';
 
 function containsMarkdown(content) {
@@ -18,13 +18,12 @@ export default function CinetechAssistant({
   greeting = 'I am a helpful chat assistant. How can I help you?',
   selectedMessages,
   setSelectedMessages,
-  setThreadId,
 }) {
   const { data: session } = useSession();
   const userId = session?.user?.id ? String(session.user.id) : '';
   const [isLoading, setIsLoading] = useState(false);
-  const [threadId, setThreadIdLocal] = useState(null);
-  const [prompt, setPrompt] = useState('');
+  const [threadId, setThreadId] = useState(null);
+  const [prompt, setPrompt] = useState(''); 
   const [messages, setMessages] = useState([]);
   const [messagesLibrary, setMessagesLibrary] = useState([]);
   const [messagesUpdated, setMessagesUpdated] = useState(false);
@@ -47,25 +46,36 @@ export default function CinetechAssistant({
   const dynamicGreeting = session?.user.default_greeting || greeting;
   const assistantName = session?.user?.assistant_name;
 
-  const greetingMessage = {
+  const greetingMessage = useMemo(() => ({
     id: 'initial_greeting',
     role: 'assistant',
     content: dynamicGreeting,
-  };
+  }), [dynamicGreeting]);
 
   const bufferRef = useRef('');
 
   // Use a useEffect to initialize messages from sessionStorage to ensure it only runs on the client
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const savedThreadId = sessionStorage.getItem('threadId');
       const savedMessages = sessionStorage.getItem('chatMessages');
-      if (savedMessages) {
-        const parsedMessages = JSON.parse(savedMessages);
-        console.log('Parsed messages from session storage:', parsedMessages);
-        setMessages(parsedMessages);
+  
+      if (savedThreadId) {
+        console.log('Using saved threadId:', savedThreadId);
+        setThreadId(savedThreadId);
+  
+        if (savedMessages) {
+          const parsedMessages = JSON.parse(savedMessages);
+          console.log('Parsed messages from session storage:', parsedMessages);
+          setMessages(parsedMessages);
+        }
       }
     }
   }, []);
+
+  useEffect(() => {
+    console.log('Messages state after page refresh:', messages);
+  }, [messages]);
 
   useEffect(() => {
     if (messages.length > 0 && typeof window !== 'undefined') {
@@ -74,21 +84,21 @@ export default function CinetechAssistant({
     }
   }, [messages]);  
 
-  const addToMessagesLibrary = (message) => {
+  const addToMessagesLibrary = useCallback((message) => {
     setMessagesLibrary((prevLibrary) => {
       const updatedLibrary = [...prevLibrary, message];
-      console.log('Updated messages library:', updatedLibrary); // Debugging line
+      console.log('Updated messages library:', updatedLibrary);
       return updatedLibrary;
     });
-  };
-
-  const addToImageLibrary = (image) => {
+  }, []);
+  
+  const addToImageLibrary = useCallback((image) => {
     setImageLibrary((prevLibrary) => {
       const updatedLibrary = [...prevLibrary, image];
-      console.log('Updated image library:', updatedLibrary); // Debugging line
+      console.log('Updated image library:', updatedLibrary);
       return updatedLibrary;
     });
-  };
+  }, []);
 
   const scrollToBottom = useCallback((smooth = true) => {
     if (messagesEndRef.current) {
@@ -103,7 +113,6 @@ export default function CinetechAssistant({
       });
       const data = await response.json();
       setThreadId(data.threadId);
-      setThreadIdLocal(data.threadId);
       return data.threadId;
     } catch (error) {
       console.error('Error initializing thread:', error);
@@ -143,7 +152,9 @@ export default function CinetechAssistant({
       if (!currentThreadId) {
         currentThreadId = await initializeThread(selectedFile);
       }
+      sessionStorage.setItem('threadId', currentThreadId);
 
+      console.log('ThreadId:', currentThreadId);
       // Prepare form data
       const formData = new FormData();
       formData.append('assistantId', assistantId);
@@ -189,7 +200,6 @@ export default function CinetechAssistant({
               switch (serverEvent.event) {
                 case 'thread.message.created':
                   setThreadId(serverEvent.data.thread_id);
-                  setThreadIdLocal(serverEvent.data.thread_id);
                   break;
                 case 'thread.message.delta':
                   if (serverEvent.data.delta.content[0].text && serverEvent.data.delta.content[0].text.value) {
@@ -247,17 +257,24 @@ export default function CinetechAssistant({
   }
   
   async function fetchMessages(threadId) {
+    if (!threadId) {
+      console.error('Cannot fetch messages: threadId is null or undefined');
+      return;
+    }
+  
     try {
-      //console.log('Fetching messages for threadId:', threadId);
       const messagesResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
-        threadId: threadId
+        threadId: threadId,
       }));
       const allMessages = await messagesResponse.json();
+  
+      console.log('Fetched messages from server:', allMessages.messages);
+  
       setMessages(allMessages.messages);
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
-  }   
+  }           
 
   useEffect(() => {
     if (readerDone) {
@@ -294,7 +311,7 @@ export default function CinetechAssistant({
         // Clean up the interval on component unmount or when polling stops
         return () => clearInterval(pollInterval);
     }
-  }, [readerDone]);
+  }, [readerDone, runId, threadId]);
 
   useEffect(() => {
     const fetchEngineInfo = async (imageUrl) => {
@@ -334,12 +351,6 @@ export default function CinetechAssistant({
   }, [isLoading, messages]);
 
   useEffect(() => {
-    if (messages.length > 0) {
-      //console.log('New messages state:', JSON.stringify(messages, null, 2));
-    }
-  }, [messages]);
-
-  useEffect(() => {
     const handleSessionEnd = async () => {
       try {
         const response = await fetch('/api/cleanup', {
@@ -371,13 +382,22 @@ export default function CinetechAssistant({
     }
   }, [session]);  
 
-  function handlePromptChange(e) {
+  const handlePromptChange = useCallback((e) => {
     setPrompt(e.target.value);
-  }
+  }, []);
 
-  function handleFileChange(file) {
+  const handleFileChange = useCallback((file) => {
     setSelectedFile(file);
-  }
+  }, []);
+
+  // Memoize the entire message list
+  const memoizedMessages = useMemo(() => 
+    messages.map(m => ({
+      ...m,
+      isMarkdown: containsMarkdown(m.content),
+      imageUrl: m.imageUrl,
+    })),
+  [messages]);
 
   return (
     <div className="flex flex-col h-full justify-between">
@@ -386,15 +406,11 @@ export default function CinetechAssistant({
           message={greetingMessage}
           assistantName={assistantName}
         />
-        {messages.map((m) => (
+        {memoizedMessages.map((memoizedMessage) => (
           <CinetechAssistantMessage
-            key={m.id}
-            message={{
-              ...m,
-              isMarkdown: containsMarkdown(m.content),
-              imageUrl: m.imageUrl,
-            }}
-            selectedMessages={selectedMessages || []}
+            key={memoizedMessage.id}
+            message={memoizedMessage}
+            selectedMessages={selectedMessages}
             setSelectedMessages={setSelectedMessages}
             addToImageLibrary={addToImageLibrary}
             addToMessagesLibrary={addToMessagesLibrary}

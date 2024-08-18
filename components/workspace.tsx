@@ -520,16 +520,16 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
               &times;
             </button>
             <form onSubmit={handleTagSubmit}>
-              <label htmlFor="tagName">Tag Name:</label>
-              <input type="text" id="tagName" value={tagName} onChange={handleTagNameChange} required />
-              <button type="submit">Create Tag</button>
+              <h3>Tag Name:</h3>
+              <input type="text" id="tagName" value={tagName} onChange={handleTagNameChange} required className={styles.inputField}/>
+              <button type="submit" className={styles.submitButton}>Create Tag</button>
             </form>
           </div>
         </div>
       )}
       {isTaggingPopupVisible && ( taggingImage || taggingMessage ) && (
-        <div className={styles.tagPopupOverlay}>
-          <div className={styles.tagPopup}>
+        <div className={styles.popupOverlay}>
+          <div className={styles.popup}>
             <button className={styles.closeButton} onClick={() => setIsTaggingPopupVisible(false)}>
               &times;
             </button>
