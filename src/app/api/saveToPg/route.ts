@@ -7,16 +7,25 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const requestBody = await request.json();
     console.log('Parsed request body:', requestBody);
 
-    const { userId, imageUrl, messageUrl, type } = requestBody;
+    const { userId, threadId, title, type } = requestBody;
 
-    if (!userId || (!imageUrl && !messageUrl)) {
-      throw new Error('User ID or content URL is missing');
+    if (!userId || !threadId || !type) {
+      throw new Error('User ID, thread ID, or type is missing');
     }
 
     const id = uuidv4();
     const createdAt = new Date().toISOString();
 
-    if (type === 'image') {
+    if (type === 'thread') {
+      await sql`
+        INSERT INTO user_threads (id, user_id, thread_id, title, created_at)
+        VALUES (${id}, ${userId}, ${threadId}, ${title}, ${createdAt})
+      `;
+      console.log('Thread metadata saved successfully in SQL database');
+    } else if (type === 'image') {
+      const imageUrl = requestBody.imageUrl;
+      if (!imageUrl) throw new Error('Image URL is missing');
+      
       const thumbnailUrl = imageUrl; // Use the same URL for the thumbnail
       await sql`
         INSERT INTO user_gen_images (id, user_id, image_url, created_at, thumbnail_url)
@@ -24,6 +33,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       `;
       console.log('Image metadata saved successfully in SQL database');
     } else if (type === 'message') {
+      const messageUrl = requestBody.messageUrl;
+      if (!messageUrl) throw new Error('Message URL is missing');
+
       await sql`
         INSERT INTO user_gen_messages (id, user_id, message_url, created_at)
         VALUES (${id}, ${userId}, ${messageUrl}, ${createdAt})
@@ -46,63 +58,34 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 // DELETE method to handle the deletion of images or messages
 export async function DELETE(request: NextRequest): Promise<NextResponse> {
   try {
-    const { userId, contentUrl, type } = await request.json();
+    const { userId, contentUrl, threadId, type } = await request.json();
 
-    if (!userId || !contentUrl || !type) {
-      throw new Error('User ID, content URL, or type is missing');
+    if (!userId || !type) {
+      throw new Error('User ID or type is missing');
     }
 
-    if (type === 'image') {
-      // Log the intended deletion
-      console.log('Attempting to delete tags associated with the image');
-      
-      // Log the subquery result for image ID
-      const imageIdResult = await sql`
-        SELECT id FROM user_gen_images WHERE user_id = ${userId} AND image_url = ${contentUrl}
-      `;
-      console.log('Subquery result for image ID:', imageIdResult);
+    if (type === 'thread') {
+      if (!threadId) throw new Error('Thread ID is missing');
 
-      // Delete tags associated with the image
       await sql`
-        DELETE FROM project_tag_images WHERE image_id = (
-          SELECT id FROM user_gen_images WHERE user_id = ${userId} AND image_url = ${contentUrl}
-        )
+        DELETE FROM user_threads WHERE user_id = ${userId} AND thread_id = ${threadId}
       `;
-      console.log('Tags deleted successfully (if any)');
-
-      // Log before deleting the image itself
-      console.log('Attempting to delete the image metadata itself');
+      console.log('Thread metadata deleted successfully from SQL database');
+    } else if (type === 'image') {
+      if (!contentUrl) throw new Error('Content URL is missing');
       
-      // Delete the image metadata itself
-      const deleteResult = await sql`
+      // Delete image metadata
+      await sql`
         DELETE FROM user_gen_images WHERE user_id = ${userId} AND image_url = ${contentUrl}
       `;
-      console.log('Image metadata delete result:', deleteResult);
-
       console.log('Image metadata deleted successfully from SQL database');
     } else if (type === 'message') {
-      // Similar logging for message deletion
-      console.log('Attempting to delete tags associated with the message');
-      
-      const messageIdResult = await sql`
-        SELECT id FROM user_gen_messages WHERE user_id = ${userId} AND message_url = ${contentUrl}
-      `;
-      console.log('Subquery result for message ID:', messageIdResult);
+      if (!contentUrl) throw new Error('Content URL is missing');
 
+      // Delete message metadata
       await sql`
-        DELETE FROM project_tag_messages WHERE message_id = (
-          SELECT id FROM user_gen_messages WHERE user_id = ${userId} AND message_url = ${contentUrl}
-        )
-      `;
-      console.log('Tags deleted successfully (if any)');
-
-      console.log('Attempting to delete the message metadata itself');
-      
-      const deleteResult = await sql`
         DELETE FROM user_gen_messages WHERE user_id = ${userId} AND message_url = ${contentUrl}
       `;
-      console.log('Message metadata delete result:', deleteResult);
-
       console.log('Message metadata deleted successfully from SQL database');
     } else {
       throw new Error('Invalid type provided');
@@ -117,3 +100,4 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
     );
   }
 }
+

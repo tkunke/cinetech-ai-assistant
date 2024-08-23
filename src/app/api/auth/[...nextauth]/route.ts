@@ -12,6 +12,7 @@ interface LocalUser {
   password: string;
   assistant_name: string;
   default_greeting: string;
+  first_name: string;
 }
 
 // Extend the User type to include custom properties
@@ -20,6 +21,7 @@ declare module "next-auth" {
     id: string;
     assistant_name: string;
     default_greeting: string;
+    first_name: string;
   }
 
   interface Session {
@@ -28,6 +30,7 @@ declare module "next-auth" {
       name: string;
       assistant_name: string;
       default_greeting: string;
+      first_name: string;
     }
   }
 }
@@ -38,6 +41,7 @@ declare module "next-auth/jwt" {
     id: string;
     assistant_name: string;
     default_greeting: string;
+    first_name: string;
   }
 }
 
@@ -62,6 +66,7 @@ const authOptions: NextAuthOptions = {
           return {
             id: user.id,
             name: user.username,
+            first_name: user.first_name,
             assistant_name: user.assistant_name,
             default_greeting: user.default_greeting,
           };
@@ -80,27 +85,29 @@ const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        console.log('User in JWT callback:', user);
+        //console.log('User in JWT callback:', user);
         token.id = user.id as string; // Use type assertion here
         token.name = user.name;
+        token.first_name = user.first_name;
         token.assistant_name = user.assistant_name;
         token.default_greeting = user.default_greeting;
       }
-      console.log('Token in JWT callback:', token);
+      //console.log('Token in JWT callback:', token);
       return token;
     },
     async session({ session, token }) {
-      console.log('Token in Session callback:', token);
+      //console.log('Token in Session callback:', token);
       if (typeof token.id === 'string' && token.assistant_name && token.default_greeting) {
-        console.log('Setting session user data');
+        //console.log('Setting session user data');
         session.user.id = token.id as string;
         session.user.name = token.name as string;
+        session.user.first_name = token.first_name as string;
         session.user.assistant_name = token.assistant_name as string;
         session.user.default_greeting = token.default_greeting as string;
       } else {
         console.log('Token did not pass the condition:', token);
       }
-      console.log('Session in Session callback:', session);
+      //console.log('Session in Session callback:', session);
       return session;
     },
     async redirect({ url, baseUrl }) {

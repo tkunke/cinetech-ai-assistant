@@ -50,6 +50,7 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  justify-items: center;
   padding: 20px;
   width: 100%;
   box-sizing: border-box;
@@ -70,13 +71,13 @@
 /* Sidebar button styles */
 .sidebarButton,
 .buttonsContainer button {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: flex-start;
   color: white;
   padding: 10px;
   border: none;
-  width: 100%;
+  width: auto;
   text-align: left;
   margin-bottom: 5px;
   cursor: pointer;
@@ -85,7 +86,8 @@
 
 .sidebarButton:hover,
 .buttonsContainer button:hover {
-  background-color: transparent;
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
 }
 
 .sidebarButton svg,
@@ -97,6 +99,16 @@
 .bottomSection {
   padding: 20px;
   background-color: transparent;
+  display: flex;
+  justify-content: center; /* Centers the TokenCounter horizontally */
+  align-items: center; /* Centers the TokenCounter vertically */
+  margin-top: 20px; /* Adjust this value to move the TokenCounter down */
+}
+
+.tokenCounter {
+  font-weight: bold;
+  color: white;
+  text-align: center;
 }
 
 .bottomSection nav {
@@ -132,4 +144,71 @@
   font-weight: bold;
   color: white;
   margin-right: 0.5rem;
+}
+
+.threadListSection {
+  margin-top: 20px;
+  padding: 10px;
+  background-color: transparent;
+  border-radius: 8px;
+  overflow-y: auto;
+  max-height: 15rem;
+}
+
+.threadList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.threadButton {
+  padding: 8px;
+  background-color: transparent;
+  color: white;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.threadButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.threadListItem {
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.textLine:hover {
+  background-color: rgba(255, 255, 255, 0.2); /* Adjust hover effect for better visibility */
+}
+
+.textLine {
+  padding: 4px;
+  background-color: transparent;
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  position: relative;
+}
+
+.threadListItem button {
+  background-color: transparent;
+  color: #fff;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.threadListItem button:hover {
+  background-color: rgba(255, 255, 255, 0.2);
 }

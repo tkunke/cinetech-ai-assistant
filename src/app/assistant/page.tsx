@@ -1,11 +1,13 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import CinetechAssistant from '@/components/cinetech-assistant';
 import styles from '@/styles/assistant.module.css';
-import { FaUserCircle } from 'react-icons/fa';
+import { jsPDF } from 'jspdf';
+import { FaUserCircle, FaRocketchat } from 'react-icons/fa';
 import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
+import { generateThreadSynopsis } from '@/utils/generateThreadSynopsis';
 
 
 interface Message {
@@ -26,14 +28,22 @@ export default function Home() {
   const [selectedMessages, setSelectedMessages] = useState<Message[]>([]);
   const [isCreativeToolsExpanded, setIsCreativeToolsExpanded] = useState(false);
   const [isUserMenuExpanded, setIsUserMenuExpanded] = useState(false);
+  const resetMessagesRef = useRef<(() => void) | null>(null);
 
   const userId = session?.user?.id ? String(session.user.id) : ''; // Ensure userId is available
+  let threadId = '';
+
+  if (typeof window !== 'undefined') {
+    threadId = sessionStorage.getItem('threadId') || '';
+  }
+
 
   const toggleCreativeToolsExpand = () => {
     setIsCreativeToolsExpanded(!isCreativeToolsExpanded);
   };
 
   const toggleUserMenuExpand = () => {
+    console.log("User menu expanded:", !isUserMenuExpanded);
     setIsUserMenuExpanded(!isUserMenuExpanded);
   };
 
@@ -48,6 +58,7 @@ export default function Home() {
   };  
 
   const handleLogout = () => {
+    sessionStorage.clear();
     signOut({
       callbackUrl: '/logout',
     });
@@ -57,12 +68,78 @@ export default function Home() {
     router.push('/profile'); // Adjust this path as needed
   };
 
+  const handleMouseLeave = () => {
+    setIsCreativeToolsExpanded(false);
+    setIsUserMenuExpanded(false);
+  };
+
+  const handleGenerateSynopsisClick = async () => {
+    const savedThreadId = sessionStorage.getItem('threadId');
+    const assistantId = 'asst_fmjzsttDthGzzJud4Vv2bDGq';
+    
+    if (savedThreadId && assistantId) {
+        const synopsis = await generateThreadSynopsis(savedThreadId);
+        console.log('Generated Synopsis:', synopsis);
+
+        if (synopsis) {
+            // Create a new jsPDF instance
+            const pdf = new jsPDF();
+
+            // Set title for the document
+            pdf.setFontSize(18);
+            pdf.text('Conversation Synopsis', 10, 10);
+
+            // Add the synopsis text, split into lines
+            pdf.setFontSize(12);
+            const lines = pdf.splitTextToSize(synopsis, 180); // Wrap the text to fit the page width
+            let y = 30; // Start the text 30 units down the page to leave room for the title
+            const pageHeight = pdf.internal.pageSize.height;
+
+            lines.forEach((line: string) => {
+                if (y + 10 > pageHeight) { // Check if adding the next line would overflow the page
+                    pdf.addPage(); // Add a new page if we're close to the bottom
+                    y = 10; // Reset y position for the new page
+                }
+                pdf.text(line, 10, y);
+                y += 10; // Move down the line height
+            });
+
+            // Save the PDF with a relevant filename
+            pdf.save('Conversation_Synopsis.pdf');
+        } else {
+            alert("Failed to generate synopsis.");
+        }
+    } else {
+        alert("No active thread found.");
+    }
+  };
+
+  const handleStartNewThreadClick = () => {
+    // Clear session storage
+    sessionStorage.clear();
+
+    // Call the reset function directly from the ref
+    if (resetMessagesRef.current) {
+      resetMessagesRef.current(); // Call the reset function stored in the ref
+    }
+
+    console.log('Cleared state and storage for starting a new thread');
+  };
+
   return (
     <div className="flex h-screen">
       <div className="flex-1 flex flex-col ml-0 md:ml-80">
         <header className={styles.header}>
-          <div className={styles.middleSection}>
-            <div className={styles.creativeToolsContainer}>
+          <div className={styles.leftSection}>
+            <button className={styles.chatButton} onClick={handleStartNewThreadClick}>
+              <FaRocketchat
+                title='Start New Conversation'
+              />
+            </button>
+            <div
+              className={`${styles.creativeToolsContainer} ${isCreativeToolsExpanded ? 'active' : ''}`}
+              onMouseLeave={handleMouseLeave}
+            >
               <button onClick={toggleCreativeToolsExpand} className={`${styles.creativeToolsButton} creativeToolsButton`}>
                 Creative Tools
               </button>
@@ -73,25 +150,31 @@ export default function Home() {
                 </ul>
               )}
             </div>
+            <button onClick={handleGenerateSynopsisClick} style={{ display: 'none' }}>
+              Generate Synopsis
+            </button>
           </div>
-          <div className={styles.rightSection}>
-            <div className={styles.userIconContainer} onClick={toggleUserMenuExpand}>
-              <FaUserCircle className={styles.userIcon} />
-              {isUserMenuExpanded && (
-                <ul className={styles.userDropdown}>
-                  <li onClick={handleProfileClick} className={styles.userMenuItem}>Profile</li>
-                  <li onClick={handleLogout} className={styles.userMenuItem}>Logout</li>
-                </ul>
-              )}
-            </div>
+          <div className={styles.middleSection}>
+          </div>
+          <div
+            className={`${styles.userIconContainer} ${isUserMenuExpanded ? 'active' : ''}`}
+            onMouseLeave={handleMouseLeave}
+          >
+            <FaUserCircle className={styles.userIcon} onClick={toggleUserMenuExpand} />
+            {isUserMenuExpanded && (
+              <ul className={styles.userDropdown} style={{ display: 'block' }}>
+                <li onClick={handleProfileClick} className={styles.userMenuItem}>Profile</li>
+                <li onClick={handleLogout} className={styles.userMenuItem}>Logout</li>
+              </ul>
+            )}
           </div>
         </header>
         <main className={styles.main}>
           <CinetechAssistant
             assistantId="asst_fmjzsttDthGzzJud4Vv2bDGq"
-            greeting="Loading..."
             setSelectedMessages={setSelectedMessages}
             selectedMessages={selectedMessages}
+            resetMessagesRef={resetMessagesRef}
           />
         </main>
       </div>

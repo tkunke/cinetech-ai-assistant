@@ -74,8 +74,17 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
-  padding: 0 10px;
+  padding: 0;
   background-color: transparent;
+}
+
+.thumbnailGridContainer {
+  padding: 10px; /* Add padding to the container for spacing */
+}
+
+.thumbnailTitle {
+  margin-bottom: 5px; /* Add some margin below the title */
+  color: gray;
 }
 
 .thumbnail {
@@ -118,6 +127,13 @@
 
 .messagesSection {
   margin-bottom: 20px; /* Add some spacing between the messages and the images */
+}
+
+.messagesSection h4 {
+  top: 0;
+  margin-top: 5px;
+  margin-left: 5px; /* Slight left margin for spacing */
+  color: gray;
 }
 
 .messagesList {
@@ -169,12 +185,12 @@
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   border: 1px double dodgerblue;
   border-radius: 10px;
-  background-color: white;
+  background-color: rgb(243, 242, 242);
 }
 
 .draggableContainer {
-  position: fixed;
-  top: 50%;
+  position: absolute;
+  top: 0;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1002; /* Ensure it's above other elements */
@@ -235,27 +251,22 @@
 }
 
 .popup {
-  background: white;
+  position: relative;
   padding: 20px;
   border-radius: 10px;
+  background: white;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  position: relative;
-  width: 300px;
-  max-width: 90%;
-  color: black !important;
   z-index: 1001;
-}
-
-.popup h3 {
-  margin-top: 20px; /* Adjust this value to move it down */
-  margin-left: 10px; /* Slight left margin for spacing */
-  font-weight: bold;
+  overflow: visible;
+  max-width: 300px;
   color: black;
 }
 
-.popup {
-  overflow: visible; /* Ensure the button isn't being clipped */
-  z-index: 1001;
+.popup h3 {
+  top: 0;
+  margin-left: 5px; /* Slight left margin for spacing */
+  font-weight: bold;
+  color: black;
 }
 
 .popupTextLine {
@@ -276,24 +287,20 @@
 
 .closeButton {
   position: absolute;
-  top: 5px; /* Keep it 10px from the top */
-  right: 5px; /* Keep it 10px from the right */
+  top: 5px;
+  right: 5px;
   background-color: transparent;
-  color: grey !important;
+  color: gray !important;
   border: none;
-  border-radius: 50%; /* Makes the button round */
+  border-radius: 50%;
   font-size: 1.5rem;
   cursor: pointer;
-  width: 30px; /* Adjusted size */
-  height: 30px; /* Adjusted size */
-  display: inline-flex;
-  align-items: center; /* Center the 'X' vertically */
-  justify-content: center; /* Center the 'X' horizontally */
-  padding: 0;
-  margin: 0;
-  flex-shrink: 0;
-  flex-grow: 0;
-  z-index: 1003 !important; /* Ensure it's above other elements */
+  width: 30px !important;
+  height: 30px !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1003;
 }
 
 .closeButton:hover {

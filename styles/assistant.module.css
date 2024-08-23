@@ -11,6 +11,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    /*border-bottom: 2px solid #aaa;*/
 }
 
 .leftSection {
@@ -43,18 +44,33 @@
   color: black;
 }
 
+.chatButton {
+  cursor: pointer;
+  margin: 5px;
+  font-size: 1.5rem;
+}
+
+.chatButton:hover {
+  color: black;
+}
+
 .userDropdown {
+  display: none;
   position: absolute;
-  top: 2rem;
+  top: 1.5rem;
   right: 0;
-  background-color: #ffffff; /* Dropdown background */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Light shadow for dropdown */
+  background-color: #ffffff;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
-  z-index: 1000; /* Ensure it's above other elements */
+  z-index: 1000;
   list-style: none;
   padding: 10px;
-  margin-top: 5px;
-  width: 120px; /* Adjust width as needed */
+  margin-top: 0;
+  width: 120px;
+}
+
+.userIconContainer.active .userDropdown {
+  display: block;
 }
 
 .userDropdown li {
@@ -64,7 +80,7 @@
 }
 
 .userDropdown li:hover {
-  background-color: #f0f0f0; /* Hover effect for dropdown items */
+  background-color: #f0f0f0;
 }
 
 .cancelButton {
@@ -91,14 +107,14 @@
 .creativeToolsDropdown {
   display: none;
   position: absolute;
-  background-color: #ffffff; /* Adjust as needed */
+  background-color: #ffffff;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   border-radius: 4px;
-  z-index: 1000; /* Ensure it's above other elements */
+  z-index: 1000;
   padding: 10px;
-  margin-top: 5px; /* Adjust as needed */
-  list-style: none; /* Remove list styles */
-  padding-left: 0; /* Remove left padding */
+  margin-top: -5px; /* Overlap the button by adjusting the margin-top */
+  list-style: none;
+  padding-left: 0;
 }
 
 /* Show the dropdown when hovering over the button */
@@ -112,9 +128,13 @@
   background-color: transparent;
   border: none;
   cursor: pointer;
-  color: black; /* Adjust as needed */
-  padding: 10px 20px; /* Adjust as needed */
+  color: black;
+  padding: 10px 20px;
   border-radius: 4px;
+}
+
+.creativeToolsContainer.active .creativeToolsDropdown {
+  display: block;
 }
 
 .creativeToolsButton:hover {
@@ -124,12 +144,13 @@
 /* Dropdown item styles */
 .creativeToolsDropdown li {
   list-style: none;
-  padding: 10px 20px; /* Adjust as needed */
+  padding: 10px 20px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .creativeToolsDropdown li:hover {
-  background-color: #f0f0f0; /* Adjust as needed */
+  background-color: #f0f0f0;
 }
 
 .main {
@@ -163,4 +184,19 @@
 
 .logoutButton:hover {
   opacity: 0.8;
+}
+
+.startNewThreadButton {
+  background-color: transparent;
+  color: black;
+  padding: 10px 20px;
+  margin-left: 10px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.startNewThreadButton:hover {
+  background-color: #45a049;
 }

@@ -26,10 +26,17 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
 
   let breakdownMessage: Message | undefined;
   const imageMessages: Message[] = [];
+  let storyboardName = "Shot Sheet"; // Default name
 
   messages.forEach(message => {
     if (hasImages(message.content)) {
       imageMessages.push(message);
+
+      // Extract storyboard name from the message content if available
+      const nameMatch = message.content.match(/Storyboard:\s*(.*)/);
+      if (nameMatch && nameMatch[1]) {
+        storyboardName = nameMatch[1].trim();
+      }
     } else {
       breakdownMessage = message;
     }
@@ -41,9 +48,6 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
     console.log('Image Messages Found:', imageMessages.length);
     return;
   }
-
-  console.log('Breakdown Message Content:', breakdownMessage.content);
-  console.log('Image Messages Content:', imageMessages.map(msg => msg.content));
 
   const storyboard = parseStoryboard(breakdownMessage.content);
 
@@ -57,34 +61,33 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
     }
   });
 
-  console.log('Extracted Image URLs:', imageUrls);
-
-  if (imageUrls.length === 0) {
-    console.error('No images found for the storyboard');
-    return;
-  }
-
-  console.log('Storyboard:', storyboard);
-  console.log('Image URLs:', imageUrls);
-
   const pdf = new jsPDF();
+
+  pdf.setFont("Helvetica", "normal");
+  pdf.setFontSize(10);
+
+  let y = 10;
   const pageWidth = pdf.internal.pageSize.getWidth();
   const margin = 10;
   const imageWidth = (pageWidth - 3 * margin) / 2;
   const imageHeight = imageWidth / 1.5;
   const textWidth = pageWidth / 2 - 2 * margin;
-  const textFontSize = 10;
-
-  pdf.setFontSize(textFontSize);
-
-  let y = margin;
 
   for (let i = 0; i < storyboard.panels.length; i++) {
     const panel = storyboard.panels[i];
 
-    const text = `Title: ${panel.title}\nDescription: ${panel.description}\nNotes: ${panel.notes}\nShot Type: ${panel.shotType}`;
-    const textLines: string[] = pdf.splitTextToSize(text, textWidth);
-    const textHeight = textLines.length * (pdf.getTextDimensions(textLines[0]).h + 2);
+    // Combine the label and content for each heading into one block
+    const combinedText = [
+      `Title: ${panel.title}`,
+      `Description: ${panel.description}`,
+      `Notes: ${panel.notes}`,
+      `Shot Type: ${panel.shotType}`
+    ];
+
+    // Split and wrap the text within the available width
+    const wrappedText = combinedText.flatMap(text => pdf.splitTextToSize(text, textWidth));
+
+    const textHeight = wrappedText.length * (pdf.getTextDimensions('Text').h + 2);
     const totalRowHeight = Math.max(textHeight, imageHeight) + 2 * margin;
 
     if (y + totalRowHeight > pdf.internal.pageSize.getHeight() - margin) {
@@ -95,17 +98,26 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
     pdf.rect(margin, y, pageWidth - 2 * margin, totalRowHeight);
 
     const textX = margin + 2;
-    const textY = y + margin;
-    textLines.forEach((line: string, lineIndex: number) => {
-      console.log('Adding text:', line);
-      pdf.text(line, textX, textY + lineIndex * (pdf.getTextDimensions(line).h + 2));
+    let textY = y + margin;
+
+    wrappedText.forEach((line: string) => {
+      // Check if the line starts with a known label to make it bold
+      if (line.startsWith("Title:") || line.startsWith("Description:") || line.startsWith("Notes:") || line.startsWith("Shot Type:")) {
+        const parts = line.split(/:(.+)/); // Split at the first colon
+        pdf.setFont("Helvetica", "bold");
+        pdf.text(parts[0] + ":", textX, textY);
+        pdf.setFont("Helvetica", "normal");
+        pdf.text(parts[1].trim(), textX + pdf.getTextDimensions(parts[0] + ":").w + 2, textY);
+      } else {
+        pdf.setFont("Helvetica", "normal");
+        pdf.text(line, textX, textY);
+      }
+      textY += pdf.getTextDimensions('Text').h + 2;
     });
 
     if (imageUrls[i]) {
       try {
         const imageData = await fetchImageAsDataUrl(imageUrls[i]);
-        console.log('Adding image:', imageUrls[i]);
-
         const imageX = pageWidth / 2 + margin / 2 + 2;
         const imageY = y + margin;
         pdf.addImage(imageData, "PNG", imageX, imageY, imageWidth - 4, imageHeight - 4);
@@ -117,7 +129,9 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
     y += totalRowHeight + margin;
   }
 
-  pdf.save(`Shot Sheet.pdf`);
+  // Save the PDF using the storyboard name
+  const sanitizedFileName = storyboardName.replace(/[^\w\s-]/g, '').trim(); // Remove invalid characters
+  pdf.save(`${sanitizedFileName}.pdf`);
 }
 
 // Function to fetch image as data URL
@@ -128,7 +142,6 @@ async function fetchImageAsDataUrl(imageUrl: string): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        console.log('Image Data URL:', reader.result); // Log image data URL
         resolve(reader.result as string);
       };
       reader.onerror = reject;

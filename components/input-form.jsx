@@ -117,7 +117,7 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
               className={`${styles.textarea} border rounded py-2 px-3 text-gray-700 mb-2 resize-none`}
               onChange={handlePromptChange}
               value={prompt}
-              placeholder="Type your message..."
+              placeholder="Start new conversation"
               ref={inputRef}
               rows="1"
               onInput={(e) => {

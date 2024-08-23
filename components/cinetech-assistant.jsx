@@ -6,8 +6,8 @@ import CinetechAssistantMessage from './assistant-message';
 import InputForm from './input-form';
 import Sidebar from './sidebar';
 import styles from '@/styles/cinetech-assistant.module.css';
-import { v4 as uuidv4 } from 'uuid';
 import SpinningReels from './spinning-reels';
+import { useThreads } from '@/context/ThreadsContext';
 
 function containsMarkdown(content) {
   return /(\*\*|__|`|#|\*|-|\||\n[\-=\*]{3,}\s*$)/.test(content.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, ''));
@@ -15,9 +15,9 @@ function containsMarkdown(content) {
 
 export default function CinetechAssistant({
   assistantId,
-  greeting = 'I am a helpful chat assistant. How can I help you?',
   selectedMessages,
   setSelectedMessages,
+  resetMessagesRef,
 }) {
   const { data: session } = useSession();
   const userId = session?.user?.id ? String(session.user.id) : '';
@@ -32,6 +32,9 @@ export default function CinetechAssistant({
     role: 'assistant',
     content: 'Thinking...',
   });
+  const [showGreeting, setShowGreeting] = useState(true);
+  const [salutation, setSalutation] = useState('');
+  const [dynamicGreeting, setDynamicGreeting] = useState('');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const [chunkCounter, setChunkCounter] = useState(0);
@@ -42,62 +45,146 @@ export default function CinetechAssistant({
   const [runId, setRunId] = useState(null);
   const [readerDone, setReaderDone] = useState(false);
 
+  const { saveThread, threads } = useThreads();
 
-  const dynamicGreeting = session?.user.default_greeting || greeting;
   const assistantName = session?.user?.assistant_name;
+  const userName = session?.user?.name || 'User';
+  const userFirstName = session?.user?.first_name || userName;
 
-  const greetingMessage = useMemo(() => ({
-    id: 'initial_greeting',
-    role: 'assistant',
-    content: dynamicGreeting,
-  }), [dynamicGreeting]);
+  const handleInteraction = useCallback(() => {
+    setShowGreeting(false);
+  }, []);
 
-  const bufferRef = useRef('');
+  useEffect(() => {
+    // Attach event listeners to hide greeting on interaction
+    const hideGreetingOnInteraction = () => {
+      setShowGreeting(false);
+    };
 
-  // Use a useEffect to initialize messages from sessionStorage to ensure it only runs on the client
+    window.addEventListener('click', hideGreetingOnInteraction);
+    window.addEventListener('keydown', hideGreetingOnInteraction);
+
+    return () => {
+      window.removeEventListener('click', hideGreetingOnInteraction);
+      window.removeEventListener('keydown', hideGreetingOnInteraction);
+    };
+  }, []);
+
+  const saveCurrentThreadIfNeeded = useCallback(async () => {
+    if (threadId && userId) {
+      // Fetch the current threads from the database
+      const response = await fetch(`/api/getThreads?userId=${userId}`);
+      const data = await response.json();
+  
+      console.log('Checking for thread:', threadId);
+      // Check if the current thread is already saved in the database
+      const existingThread = data.threads.find(thread => thread.thread_id === threadId);
+  
+      if (!existingThread) {
+        const title = `Started ${new Date().toLocaleString()}`;
+        await saveThread(userId, threadId, title);
+      }
+    }
+  }, [threadId, userId, saveThread]);  
+
+  useEffect(() => {
+    const getSalutation = () => {
+      const currentHour = new Date().getHours();
+
+      if (currentHour < 12) {
+        return 'Good morning';
+      } else if (currentHour < 18) {
+        return 'Good afternoon';
+      } else {
+        return 'Good evening';
+      }
+    };
+
+    setSalutation(getSalutation());
+  }, [userName]);
+
+  useEffect(() => {
+    const loadGreetings = async () => {
+      try {
+        const response = await fetch('/greetingMessages.json');
+        const greetings = await response.json();
+        const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+        setDynamicGreeting(`${salutation}, ${userFirstName}! ${randomGreeting}`);
+      } catch (error) {
+        console.error('Error loading greetings:', error);
+      }
+    };
+
+    if (salutation) {
+      loadGreetings();
+    }
+  }, [salutation, userFirstName]);
+
+  useEffect(() => {
+    // Check if the greeting has already been shown in this session
+    const greetingShown = sessionStorage.getItem('greetingShown');
+
+    if (!greetingShown) {
+      // Show the greeting if it hasn't been shown yet
+      setShowGreeting(true);
+
+      // Set the flag in sessionStorage to prevent showing it again
+      sessionStorage.setItem('greetingShown', 'true');
+    }
+  }, []);
+
+  const handlePromptChange = useCallback((e) => {
+    setPrompt(e.target.value);
+    if (showGreeting) {
+      setShowGreeting(false); // Hide the greeting when the user starts typing
+    }
+  }, [showGreeting]);
+
+  const clearMessages = () => {
+    setMessages([]);
+  };
+
+  useEffect(() => {
+    if (resetMessagesRef) {
+      resetMessagesRef.current = async () => {
+        clearMessages();
+        setThreadId(null);
+        await saveCurrentThreadIfNeeded();
+      };
+    }
+  }, [resetMessagesRef, saveCurrentThreadIfNeeded]);
+
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedThreadId = sessionStorage.getItem('threadId');
       const savedMessages = sessionStorage.getItem('chatMessages');
   
       if (savedThreadId) {
-        console.log('Using saved threadId:', savedThreadId);
         setThreadId(savedThreadId);
-  
         if (savedMessages) {
-          const parsedMessages = JSON.parse(savedMessages);
-          console.log('Parsed messages from session storage:', parsedMessages);
-          setMessages(parsedMessages);
+          setMessages(JSON.parse(savedMessages));
         }
       }
     }
   }, []);
 
   useEffect(() => {
-    console.log('Messages state after page refresh:', messages);
-  }, [messages]);
-
-  useEffect(() => {
     if (messages.length > 0 && typeof window !== 'undefined') {
-      console.log('Saving messages to session storage:', messages);
       sessionStorage.setItem('chatMessages', JSON.stringify(messages));
     }
-  }, [messages]);  
+  }, [messages]);
+
+  const handleThreadSelect = (threadId) => {
+    setThreadId(threadId);
+    fetchMessages(threadId);
+  };
 
   const addToMessagesLibrary = useCallback((message) => {
-    setMessagesLibrary((prevLibrary) => {
-      const updatedLibrary = [...prevLibrary, message];
-      console.log('Updated messages library:', updatedLibrary);
-      return updatedLibrary;
-    });
+    setMessagesLibrary((prevLibrary) => [...prevLibrary, message]);
   }, []);
   
   const addToImageLibrary = useCallback((image) => {
-    setImageLibrary((prevLibrary) => {
-      const updatedLibrary = [...prevLibrary, image];
-      console.log('Updated image library:', updatedLibrary);
-      return updatedLibrary;
-    });
+    setImageLibrary((prevLibrary) => [...prevLibrary, image]);
   }, []);
 
   const scrollToBottom = useCallback((smooth = true) => {
@@ -148,9 +235,10 @@ export default function CinetechAssistant({
 
     try {
       let currentThreadId = threadId;
+      console.log('Current thread:', currentThreadId);
 
       if (!currentThreadId) {
-        currentThreadId = await initializeThread(selectedFile);
+        currentThreadId = await initializeThread();
       }
       sessionStorage.setItem('threadId', currentThreadId);
 
@@ -173,12 +261,10 @@ export default function CinetechAssistant({
       let contentSnapshot = '';
       const decoder = new TextDecoder();
 
-      //console.log('Entering while loop, starting to listen for server events...');
       setReaderDone(false);
 
       while (true) {
         const { value, done } = await reader.read();
-        //console.log('Reader done status:', done);
         if (done) {
           setReaderDone(true);
           break;
@@ -193,8 +279,7 @@ export default function CinetechAssistant({
               const serverEvent = JSON.parse(strServerEvent);
 
               if (!runId && serverEvent.data.run_id) {
-                setRunId(serverEvent.data.run_id); // Set the runId when it is first received
-                //console.log('RunId set:', serverEvent.data.run_id); // Log the runId
+                setRunId(serverEvent.data.run_id);
               }
 
               switch (serverEvent.event) {
@@ -221,18 +306,8 @@ export default function CinetechAssistant({
                       imageUrl: imageUrl,
                     };
 
-                    setMessages((prevMessages) => [
-                      ...prevMessages,
-                      newImageMessage,
-                    ]);
-
-                    setImageEngineMap((prevMap) => ({
-                      ...prevMap,
-                      [imageUrl]: engine,
-                    }));
-                    console.log('Image Engine Set: ', engine);
-
-                    setChunkCounter((prevCounter) => prevCounter + 1);
+                    setMessages((prevMessages) => [...prevMessages, newImageMessage]);
+                    setImageEngineMap((prevMap) => ({ ...prevMap, [imageUrl]: engine }));
                     scrollToBottom();
                   }
                   break;
@@ -263,18 +338,13 @@ export default function CinetechAssistant({
     }
   
     try {
-      const messagesResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
-        threadId: threadId,
-      }));
+      const messagesResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({ threadId }));
       const allMessages = await messagesResponse.json();
-  
-      console.log('Fetched messages from server:', allMessages.messages);
-  
       setMessages(allMessages.messages);
     } catch (error) {
       console.error('Error fetching messages:', error);
     }
-  }           
+  }
 
   useEffect(() => {
     if (readerDone) {
@@ -320,17 +390,13 @@ export default function CinetechAssistant({
         const response = await fetch(`/api/cinetech-assistant?type=engineInfo&imageUrl=${encodeURIComponent(imageUrl)}`);
         const data = await response.json();
         if (data.engine) {
-          setImageEngineMap((prevMap) => {
-            const newMap = { ...prevMap, [imageUrl]: data.engine };
-            console.log('Updated imageEngineMap:', newMap);  // Log the updated map
-            return newMap;
-          });
+          setImageEngineMap((prevMap) => ({ ...prevMap, [imageUrl]: data.engine }));
         }
       } catch (error) {
         console.error('Error fetching engine info:', error);
       }
     };
-  
+
     messages.forEach((message) => {
       const imageUrlMatch = message.content.match(/!\[image\]\((.*?)\)/i);  // Case-insensitive regex for 'image'
       if (imageUrlMatch && imageUrlMatch[1]) {
@@ -352,69 +418,59 @@ export default function CinetechAssistant({
 
   useEffect(() => {
     const handleSessionEnd = async () => {
-      try {
-        const response = await fetch('/api/cleanup', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        const data = await response.json();
-        if (data.error) {
-          console.error('Cleanup failed:', data.error);
-        } else {
-          console.log('Cleanup successful');
-        }
-      } catch (error) {
-        console.error('Error calling cleanup endpoint:', error);
+      if (threadId && userId) {
+        const newThread = {
+          userId,
+          threadId,
+          title: `Thread ${new Date().toLocaleString()}`,
+        };
+        await addThread(newThread);
       }
     };
-  
+
     if (!session) {
       handleSessionEnd();
     }
-  
+
     if (typeof window !== 'undefined') {
       window.addEventListener('beforeunload', handleSessionEnd);
       return () => {
         window.removeEventListener('beforeunload', handleSessionEnd);
       };
     }
-  }, [session]);  
-
-  const handlePromptChange = useCallback((e) => {
-    setPrompt(e.target.value);
-  }, []);
+  }, [session, threadId, userId]);
 
   const handleFileChange = useCallback((file) => {
     setSelectedFile(file);
   }, []);
 
-  // Memoize the entire message list
-  const memoizedMessages = useMemo(() => 
-    messages.map(m => ({
-      ...m,
-      isMarkdown: containsMarkdown(m.content),
-      imageUrl: m.imageUrl,
-    })),
-  [messages]);
+  const memoizedMessages = useMemo(
+    () =>
+      messages.map((m) => ({
+        ...m,
+        isMarkdown: containsMarkdown(m.content),
+        imageUrl: m.imageUrl,
+      })),
+    [messages]
+  );
 
   return (
     <div className="flex flex-col h-full justify-between">
+      {showGreeting && (
+        <div className={styles.greetingOverlay}>
+          <p className={styles.greetingMessage}>{dynamicGreeting}</p>
+        </div>
+      )}
       <div className="flex flex-col mb-10 items-center justify-center">
-        <CinetechAssistantMessage 
-          message={greetingMessage}
-          assistantName={assistantName}
-        />
-        {memoizedMessages.map((memoizedMessage) => (
+        {messages.map((message) => (
           <CinetechAssistantMessage
-            key={memoizedMessage.id}
-            message={memoizedMessage}
+            key={message.id}
+            message={message}
             selectedMessages={selectedMessages}
             setSelectedMessages={setSelectedMessages}
             addToImageLibrary={addToImageLibrary}
             addToMessagesLibrary={addToMessagesLibrary}
-            assistantName={assistantName}
+            assistantName={session?.user?.assistant_name}
             imageEngineMap={imageEngineMap}
           />
         ))}
@@ -428,6 +484,7 @@ export default function CinetechAssistant({
         runId={runId}
         runCompleted={runCompleted}
         messagesUpdated={messagesUpdated}
+        onSelectThread={handleThreadSelect}
       />
       <footer className={styles.footer}>
         {showLoadingGif && (
@@ -439,7 +496,7 @@ export default function CinetechAssistant({
           handleSubmit={handleSubmit}
           handlePromptChange={handlePromptChange}
           prompt={prompt}
-          isLoading={isLoading} 
+          isLoading={isLoading}
           inputRef={inputRef}
           handleFileChange={handleFileChange}
           showLoadingGif={showLoadingGif}

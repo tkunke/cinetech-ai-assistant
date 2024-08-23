@@ -340,6 +340,8 @@ export async function POST(request: NextRequest) {
     attachments: [],
   };
 
+  console.log('Creating message with content:', newMessage.content);
+  
   // Handle file upload if there's a file attached
   let imageFileAttached = false;
   if (file) {
@@ -354,7 +356,7 @@ export async function POST(request: NextRequest) {
     await writeFile(filePath, fileBuffer);
 
     // Determine the appropriate tool based on the file type
-    if (fileExtension && ['png', 'jpeg', 'jpg', 'webp', 'gif'].includes(fileExtension)) {
+    if (fileExtension && ['png', 'jpeg', 'jpg', 'webp', 'gif', 'mp4'].includes(fileExtension)) {
       fileStore[threadId || ''] = { filePath, fileType: file.type };
       imageFileAttached = true;
     } else {
@@ -481,7 +483,7 @@ export async function GET(request: NextRequest) {
     let runStatus;
     if (runId) {
       runStatus = await openai.beta.threads.runs.retrieve(threadId, runId);
-      console.log('Retrieved run status directly from OpenAI:', runStatus);
+      //console.log('Retrieved run status directly from OpenAI:', runStatus);
     }
 
     const threadMessages = await openai.beta.threads.messages.list(threadId);

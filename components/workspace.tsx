@@ -391,7 +391,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
 
   const handleTextLineClick = (message: Message) => {
     setSelectedMessage(message);
-  };
+    const centerX = (window.innerWidth - boxWidth) / 2;
+    const centerY = (window.innerHeight - boxHeight) / 2;
+    setInitialPosition({ x: centerX, y: centerY });
+  };  
 
   const handleDragStart = (e: DraggableEvent, data: DraggableData): false | void => {
     const target = e.target as HTMLElement;
@@ -410,17 +413,12 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
   };
 
   useEffect(() => {
-    const handleResize = () => {
+    if (selectedMessage) {
       const centerX = (window.innerWidth - boxWidth) / 2;
       const centerY = (window.innerHeight - boxHeight) / 2;
       setInitialPosition({ x: centerX, y: centerY });
-    };
-  
-    handleResize(); // Call once to set the initial position
-    window.addEventListener('resize', handleResize); // Adjust on window resize
-  
-    return () => window.removeEventListener('resize', handleResize);
-  }, [boxWidth, boxHeight]);  
+    }
+  }, [selectedMessage, boxWidth, boxHeight]);   
 
   return (
     <div className={styles.workspaceContainer}>
@@ -550,7 +548,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
             <button className={styles.closeButton} onClick={() => setIsTagPopupVisible(false)}>
               &times;
             </button>
-            <h3>Project Tag: {selectedTag.name}</h3>
+            <h3>{selectedTag.name}</h3>
             <button className={styles.deleteButton} onClick={() => handleDeleteTag(selectedTag.id)}>
               <FaTrash
                 title='Delete Tag'
@@ -558,32 +556,36 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
             </button>
             {/* Display messages associated with the tag */}
             <div className={styles.messagesSection}>
+              <h4>Messages</h4>
               {messagesWithTag.length > 0 ? (
                 <ul className={styles.messagesList}>
                   {messagesWithTag.map((message, index) => (
                     <li key={index} className={styles.popupTextLine} onClick={() => handleTextLineClick(message)}>
-                      {truncateText(message.content, 30)}
+                      {truncateText(message.content, 35)}
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p>No messages found.</p>
+                <p>None</p>
               )}
             </div>
             
             {/* Display images associated with the tag */}
-            <div className={styles.thumbnailGrid}>
-              {objectsWithTag.length > 0 ? (
-                objectsWithTag.map((image, index) => (
-                  <div key={index} className={styles.thumbnailContainer}>
-                    <a href={image.imageUrl} target="_blank" rel="noopener noreferrer">
-                      <img src={image.imageUrl} alt={`Image ${index + 1}`} width="75" height="75" className={styles.thumbnail} />
-                    </a>
-                  </div>
-                ))
-              ) : (
-                <p>No images found.</p>
-              )}
+            <div className={styles.thumbnailGridContainer}>
+              <h4 className={styles.thumbnailTitle}>Images</h4>
+              <div className={styles.thumbnailGrid}>
+                {objectsWithTag.length > 0 ? (
+                  objectsWithTag.map((image, index) => (
+                    <div key={index} className={styles.thumbnailContainer}>
+                      <a href={image.imageUrl} target="_blank" rel="noopener noreferrer">
+                        <img src={image.imageUrl} alt={`Image ${index + 1}`} width="75" height="75" className={styles.thumbnail} />
+                      </a>
+                    </div>
+                  ))
+                ) : (
+                  <p>None</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -600,7 +602,7 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
               width={boxWidth}
               height={boxHeight}
               minConstraints={[100, 100]}
-              maxConstraints={[1200, 1200]}
+              maxConstraints={[1000, 600]}
               resizeHandles={['se']}
               onResize={handleResize}
             >

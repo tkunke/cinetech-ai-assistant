@@ -59,6 +59,7 @@
 }
 
 .imageMessageContainer {
+  position: relative;
   width: 100%;
   max-width: 100%; /* Ensures the container takes the full width available */
   display: flex;
@@ -84,8 +85,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  position: relative;
-  margin-right: 10px;
+  position: absolute;
+  top: 1.75rem;
+  left: -2.5rem; /* Adjust to position outside the image */
+  transform: translateY(-50%); /* Adjusts for perfect vertical centering */
 }
 
 .iconButton {

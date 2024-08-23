@@ -5,15 +5,12 @@ import styles from '@/styles/assistant-message.module.css';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { AiOutlineDownload } from 'react-icons/ai';
-import { FaFilm, FaImages, FaEnvelope, FaNewspaper } from 'react-icons/fa';
+import { FaFilm, FaImages, FaAsterisk, FaNewspaper, FaCheckCircle } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
 import { upload } from '@vercel/blob/client';
 import { useLibrary } from '@/context/LibraryContext';
 
 function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, assistantName, imageEngineMap }) {
-  useEffect(() => {
-    console.log('CinetechAssistantMessage re-rendered:', message.id);
-  });
   const tableRef = useRef(null);
   const buttonRef = useRef(null);
   const [showTips, setShowTips] = useState(false);
@@ -310,7 +307,7 @@ function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedM
           <div className={styles.messageSidebar}>
             {(isBreakdownMessage || isImageMessage) && (
               <div className={styles.iconButton} onClick={() => handleMessageSelect(message)} title="Select Message">
-                <FaFilm style={{ color: selectedMessages.some(m => m.id === message.id) ? 'red' : 'gray' }} />
+                <FaCheckCircle style={{ color: selectedMessages.some(m => m.id === message.id) ? 'red' : 'gray' }} />
               </div>
             )}
             {!hasImages(message.content) && (  // Conditionally render based on presence of images
