@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import styles from '@/styles/profile.module.css';
 
 const UserProfileSettings = () => {
   const [username, setUsername] = useState('currentUsername'); // Replace with actual data

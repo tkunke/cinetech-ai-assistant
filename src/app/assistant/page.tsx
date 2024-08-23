@@ -68,6 +68,10 @@ export default function Home() {
     router.push('/profile'); // Adjust this path as needed
   };
 
+  const handleCreditAdd = () => {
+    router.push('/purchasecredits');
+  }
+
   const handleMouseLeave = () => {
     setIsCreativeToolsExpanded(false);
     setIsUserMenuExpanded(false);
@@ -165,6 +169,7 @@ export default function Home() {
               <ul className={styles.userDropdown} style={{ display: 'block' }}>
                 <li onClick={handleProfileClick} className={styles.userMenuItem}>Profile</li>
                 <li onClick={handleLogout} className={styles.userMenuItem}>Logout</li>
+                <li onClick={handleCreditAdd} className={styles.userMenuItem}>Add Credits</li>
               </ul>
             )}
           </div>

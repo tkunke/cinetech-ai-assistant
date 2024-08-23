@@ -1,0 +1,67 @@
+/* productorder.module.css */
+
+.container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(to bottom, #0e7490, #0891b2);
+    color: white;
+  }
+  
+  .heading {
+    font-size: 2.25rem;
+    font-weight: bold;
+    margin-bottom: 2rem;
+  }
+  
+  .cardContainer {
+    display: flex;
+    gap: 1rem;
+  }
+  
+  .card {
+    width: 20rem;
+    background-color: #0e7490;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+  }
+  
+  .cardTitle {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
+  
+  .price {
+    font-size: 1.875rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
+  
+  .featureList {
+    font-size: 0.875rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .featureItem {
+    margin-bottom: 0.5rem;
+  }
+  
+  .button {
+    background-color: #3b82f6;
+    color: white;
+    font-weight: bold;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    width: 100%;
+    text-align: center;
+    transition: background-color 0.3s ease;
+  }
+  
+  .button:hover {
+    background-color: #2563eb;
+  }
+  

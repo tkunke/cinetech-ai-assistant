@@ -36,7 +36,7 @@
 
   .greetingOverlay {
     position: fixed;
-    top: 50%;
+    top: 40%;
     left: 50%;
     transform: translate(-50%, -50%);
     background-color: transparent; /* Dark background with some transparency */
@@ -44,6 +44,15 @@
     border-radius: 10px;
     z-index: 1000;
     text-align: center;
+    width: calc(100% - 20rem);
+  }
+  
+  @media (max-width: 768px) {
+    .greetingOverlay {
+      width: 100%; /* Adjust for smaller screens */
+      left: 50%;
+      transform: translate(-50%, -40%); /* Adjust translate value for different screen sizes */
+    }
   }
   
   .greetingMessage {
