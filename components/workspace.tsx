@@ -593,10 +593,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
       {selectedMessage && (
         <Draggable
           defaultPosition={initialPosition}
-          handle=".drag-handle"
+          handle=".drag-handle" // Only the toolbar will be draggable
           onStart={handleDragStart}
         >
-          <div className={`${styles.draggableContainer} drag-handle`}>
+          <div className={styles.draggableContainer}>
             <ResizableBox
               className={styles.resizableBox}
               width={boxWidth}
@@ -607,9 +607,13 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
               onResize={handleResize}
             >
               <div className={styles.messageWindow}>
-                <button className={styles.closeButton} onClick={handleCloseMessageWindow}>
-                  &times;
-                </button>
+                {/* Toolbar (drag handle) */}
+                <div className={`${styles.toolbar} drag-handle`}>
+                  {/* You can add buttons or icons here, like close or minimize */}
+                  <button className={styles.closeButton} onClick={handleCloseMessageWindow}>
+                    &times;
+                  </button>
+                </div>
                 <div className={styles.messageContent}>
                   <div className={styles.timestampWindow}>{selectedMessage.timestamp}</div>
                   <ReactMarkdown>{selectedMessage.content}</ReactMarkdown>

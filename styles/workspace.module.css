@@ -174,7 +174,93 @@
 .messageContent {
   margin-top: 20px;
   color: black;
+  cursor: text;
 }
+
+/* Headings */
+.messageContent h1 {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #ddd; /* Optional: underline effect */
+}
+
+.messageContent h2 {
+  font-size: 1.75rem;
+  font-weight: bold;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid #ddd; /* Optional: underline effect */
+}
+
+.messageContent h3 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.messageContent h4, 
+.messageContent h5, 
+.messageContent h6 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+/* Paragraphs */
+.messageContent p {
+  margin-bottom: 1rem; /* Add space between paragraphs */
+}
+
+/* Lists */
+.messageContent ul {
+  list-style-type: disc;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.messageContent ol {
+  list-style-type: decimal;
+  margin-left: 1.5rem;
+  margin-bottom: 1rem;
+  padding-left: 1.5rem;
+}
+
+.messageContent li {
+  margin-bottom: 0.5rem; /* Add space between list items */
+}
+
+/* Blockquotes */
+.messageContent blockquote {
+  border-left: 4px solid #ddd;
+  padding-left: 1rem;
+  color: #555;
+  margin: 1.5rem 0;
+  font-style: italic;
+}
+
+/* Code blocks */
+.messageContent pre {
+  background-color: #f5f5f5;
+  padding: 1rem;
+  border-radius: 5px;
+  overflow-x: auto;
+}
+
+.messageContent code {
+  background-color: #f5f5f5;
+  padding: 0.25rem 0.5rem;
+  border-radius: 3px;
+  font-family: 'Courier New', Courier, monospace;
+}
+
+/* Horizontal Rule */
+.messageContent hr {
+  border: none;
+  border-top: 2px solid #ddd;
+  margin: 2rem 0;
+}
+
 
 .messageWindow {
   width: 100%;
@@ -420,3 +506,32 @@
   background-color: #f0f8ff; /* Light blue background when focused */
 }
 
+/* Toolbar styles */
+.toolbar {
+  background-color: transparent;
+  color: gray;
+  padding: 10px;
+  cursor: move; /* Show move cursor to indicate it's draggable */
+  display: flex;
+  justify-content: space-between; /* Space out the content */
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+  border-radius: 10px 10px 0 0; /* Round the top corners */
+}
+
+.toolbar span {
+  font-size: 1rem;
+}
+
+.toolbar button {
+  background-color: transparent;
+  color: white;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  margin-left: auto;
+}
+
+.toolbar button:hover {
+  color: red; /* Change color on hover */
+}

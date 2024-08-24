@@ -49,12 +49,19 @@
 .topSection {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  justify-items: center;
-  padding: 20px;
+  align-items: center; /* Centers content horizontally */
+  justify-content: center; /* Centers content vertically */
+  padding: 0;
+  margin: 0;
   width: 100%;
   box-sizing: border-box;
   background-color: transparent;
+}
+
+.cinetechArtImage {
+  display: block; /* Ensures the image is treated as a block element */
+  margin: 0 auto; /* Centers the image horizontally */
+  max-width: 100%; /* Optional: Ensure the image doesn’t exceed the container’s width */
 }
 
 /* Buttons container styles */
@@ -64,8 +71,10 @@
   flex-direction: column;
   align-items: flex-start;
   flex-grow: 1;
-  overflow-y: auto;
+  flex-shrink: 0; /* Prevents the container from shrinking */
+  overflow-y: auto; /* This allows the buttons container to scroll independently */
   background-color: transparent;
+  margin-bottom: 10px;
 }
 
 /* Sidebar button styles */
@@ -146,13 +155,23 @@
   margin-right: 0.5rem;
 }
 
+.middleSection {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  overflow-y: auto; /* This allows the entire middle section to scroll */
+  margin-top: 20px; /* Optional: Adjust the spacing above the middle section */
+}
+
 .threadListSection {
-  margin-top: 20px;
+  flex-shrink: 0; /* Prevents the container from shrinking */
   padding: 10px;
   background-color: transparent;
   border-radius: 8px;
-  overflow-y: auto;
-  max-height: 15rem;
+  overflow-y: auto; /* Ensure this section can scroll */
+  flex-grow: 1; /* Makes the thread list grow and fill the remaining space */
+  max-height: 10rem;
+  flex-grow: 0;
 }
 
 .threadList {

@@ -32,7 +32,7 @@ export default function CinetechAssistant({
     role: 'assistant',
     content: 'Thinking...',
   });
-  const [showGreeting, setShowGreeting] = useState(true);
+  const [showGreeting, setShowGreeting] = useState(false);
   const [salutation, setSalutation] = useState('');
   const [dynamicGreeting, setDynamicGreeting] = useState('');
   const messagesEndRef = useRef(null);
@@ -53,6 +53,19 @@ export default function CinetechAssistant({
 
   const handleInteraction = useCallback(() => {
     setShowGreeting(false);
+  }, []);
+
+  useEffect(() => {
+    // Check if the greeting has already been shown in this session
+    const greetingShown = sessionStorage.getItem('greetingShown');
+
+    if (!greetingShown) {
+      // Show the greeting if it hasn't been shown yet
+      setShowGreeting(true);
+
+      // Set the flag in sessionStorage to prevent showing it again
+      sessionStorage.setItem('greetingShown', 'true');
+    }
   }, []);
 
   useEffect(() => {
@@ -119,19 +132,6 @@ export default function CinetechAssistant({
       loadGreetings();
     }
   }, [salutation, userFirstName]);
-
-  useEffect(() => {
-    // Check if the greeting has already been shown in this session
-    const greetingShown = sessionStorage.getItem('greetingShown');
-
-    if (!greetingShown) {
-      // Show the greeting if it hasn't been shown yet
-      setShowGreeting(true);
-
-      // Set the flag in sessionStorage to prevent showing it again
-      sessionStorage.setItem('greetingShown', 'true');
-    }
-  }, []);
 
   const handlePromptChange = useCallback((e) => {
     setPrompt(e.target.value);
@@ -210,39 +210,37 @@ export default function CinetechAssistant({
     if (event && event.preventDefault) {
       event.preventDefault();
     }
-
+  
     setStreamingMessage({
       role: 'assistant',
       content: 'Thinking...',
     });
-
+  
     setIsLoading(true);
-
+  
     setMessages((prevMessages) => [
       ...prevMessages,
       {
-        id: 'temp_user',
+        id: `temp_user_${Date.now()}`,  // Ensure a unique key for the message
         role: 'user',
         content: prompt,
       },
     ]);
     setPrompt('');
     setSelectedFile(null); // Clear the file input after submission
-    // Reset the height of the textarea
+  
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
     }
-
+  
     try {
       let currentThreadId = threadId;
-      console.log('Current thread:', currentThreadId);
-
+  
       if (!currentThreadId) {
         currentThreadId = await initializeThread();
       }
       sessionStorage.setItem('threadId', currentThreadId);
-
-      console.log('ThreadId:', currentThreadId);
+  
       // Prepare form data
       const formData = new FormData();
       formData.append('assistantId', assistantId);
@@ -251,37 +249,39 @@ export default function CinetechAssistant({
       if (selectedFile) {
         formData.append('file', selectedFile);
       }
-
+  
       const response = await fetch('/api/cinetech-assistant', {
         method: 'POST',
         body: formData,
       });
-
+  
       const reader = response.body.getReader();
-      let contentSnapshot = '';
       const decoder = new TextDecoder();
-
+      let contentSnapshot = '';  // Accumulate content here
+  
       setReaderDone(false);
-
+  
       while (true) {
         const { value, done } = await reader.read();
         if (done) {
           setReaderDone(true);
           break;
         }
-
+  
         const strChunk = decoder.decode(value, { stream: true }).trim();
+        
+        // Split on newline to handle individual JSON chunks
         const strServerEvents = strChunk.split('\n\n');
-
+  
         for (const strServerEvent of strServerEvents) {
           if (strServerEvent) {
             try {
               const serverEvent = JSON.parse(strServerEvent);
-
+  
               if (!runId && serverEvent.data.run_id) {
                 setRunId(serverEvent.data.run_id);
               }
-
+  
               switch (serverEvent.event) {
                 case 'thread.message.created':
                   setThreadId(serverEvent.data.thread_id);
@@ -295,7 +295,7 @@ export default function CinetechAssistant({
                     }));
                     setChunkCounter((prevCounter) => prevCounter + 1);
                   }
-
+  
                   if (serverEvent.data.delta.content[0].image && serverEvent.data.delta.content[0].image.url) {
                     const imageUrl = serverEvent.data.delta.content[0].image.url;
                     const engine = imageEngineMap[imageUrl];
@@ -305,7 +305,7 @@ export default function CinetechAssistant({
                       content: `![image](${imageUrl})`,
                       imageUrl: imageUrl,
                     };
-
+  
                     setMessages((prevMessages) => [...prevMessages, newImageMessage]);
                     setImageEngineMap((prevMap) => ({ ...prevMap, [imageUrl]: engine }));
                     scrollToBottom();
@@ -321,15 +321,15 @@ export default function CinetechAssistant({
           }
         }
       }
-
+  
       await fetchMessages(currentThreadId);
-
+  
     } catch (error) {
       console.error(`Error during request with thread ID: ${threadId}`, error);
     } finally {
       setIsLoading(false);
     }
-  }
+  }  
   
   async function fetchMessages(threadId) {
     if (!threadId) {
@@ -453,6 +453,32 @@ export default function CinetechAssistant({
       })),
     [messages]
   );
+
+  useEffect(() => {
+    const handleBeforeUnload = async (event) => {
+      event.preventDefault();
+      if (runId && threadId) {
+        try {
+          await fetch('/api/cancelRun', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ runId, threadId }),
+          });
+          console.log('Run canceled');
+        } catch (error) {
+          console.error('Failed to cancel the run:', error);
+        }
+      }
+    };
+  
+    window.addEventListener('beforeunload', handleBeforeUnload);
+  
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [runId, threadId]);  
 
   return (
     <div className="flex flex-col h-full justify-between">

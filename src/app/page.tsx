@@ -2,11 +2,10 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import React, { useEffect, useState } from 'react';
+import styles from '@/styles/homepage.module.css';
 
-type Orientation = 'portrait' | 'landscape' | null;
-
-const ResponsiveDiv = () => {
-  const [orientation, setOrientation] = useState<Orientation>(null);
+const HomePage: React.FC = () => {
+  const [orientation, setOrientation] = useState<'portrait' | 'landscape' | null>(null);
 
   useEffect(() => {
     const updateOrientation = () => {
@@ -22,58 +21,67 @@ const ResponsiveDiv = () => {
   }, []);
 
   const handleSignUp = () => {
-    // Navigate to the signup page when the signup button is clicked
     window.location.href = '/signup';
   };
 
   return (
-    <div className="page-background">
-      {orientation === "landscape" || orientation === "portrait" ? (
-        <div>
-          <header className="header-homepage">
-            <div className="header-content">
-              <h1 className="text-cyan-100" style={{ fontFamily: "'Limelight', 'sans-serif'" }}>
-                Welcome to the CineTech Assistant
-              </h1>
-            </div>
-          </header>
-          <div className="overlay-image-container">
-            <Image
-              src="/cinetech_art.png"
-              alt="Cinetech Logo"
-              width="0"
-              height="0"
-              sizes="100vw"
-              className="overlay-image"
-            />
-            <div className="absolute bottom-12 left-0 w-full h-1/3 flex justify-center" style={{ zIndex: '50'}}>
-              <div className="container mx-auto px-4 py-4 flex flex-col items-center">
-                <div className="mb-3 md:mb-6">
-                  <Link href="/assistant">
-                    <button onClick={handleSignUp} className="px-4 md:px-12 py-2 md:py-3 bg-white text-gray-700 text-sm md:text-base rounded-full hover:bg-gray-200 hover:text-gray-900 transition duration-300 ease-in-out">
-                      Try the Assistant
-                    </button>
-                  </Link>
-                </div>
-              </div>
-            </div>
+    <div className={styles.pageWrapper}>
+      <div className={styles.videoBackground}>
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className={styles.backgroundVideo}
+        >
+          <source src="/banana_grab.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+        {/* Alternatively, use an image if a video is not available */}
+        {/* <Image src="/background-image.jpg" alt="Background" layout="fill" objectFit="cover" className={styles.backgroundImage} /> */}
+      </div>
+      
+      <div className={styles.content}>
+        <header className={styles.header}>
+          <Image
+            src="/cinetech_art.png"
+            alt="Cinetech Logo"
+            width={225}
+            height={125}
+            className={styles.overlayImage}
+          />
+          <h1>Welcome to the CineTech Assistant</h1>
+        </header>
+
+        <section className={styles.section}>
+          <h2>Explore the Future of Filmmaking</h2>
+          <p>The CineTech Assistant is designed as an advanced virtual aide for industry professionals and enthusiasts.</p>
+        </section>
+
+        <section className={styles.section}>
+        <Image
+            src="/testpic.png"
+            alt="Cinetech Logo"
+            width={225}
+            height={125}
+            className={styles.overlayImage}
+          />
+          <div className={styles.buttonContainer}>
+            <Link href="/assistant">
+              <button onClick={handleSignUp}>
+                Try the Assistant
+              </button>
+            </Link>
           </div>
-          <footer className="footer-homepage">
-            <div className="footer-content">
-              <h1 className="text-cyan-100" style={{ fontFamily: "'Limelight', 'sans-serif'" }}>
-              The CineTech Assistant is designed as an advanced virtual aide for industry professionals and enthusiasts
-              </h1>
-                <p className="text-cyan-100 font-extrabold" style={{ fontFamily: "'Limelight', 'sans-serif'", fontSize: '1.5rem' }}>
-                Already have an account? <a href="/login" className="text-blue-500 underline">Login</a>
-                </p>
-            </div>
-          </footer>
-        </div>
-      ) : (
-        <div>Loading...</div>
-      )}
+        </section>
+
+        <section className={styles.section}>
+          <h2>Join the Community</h2>
+          <p>Already have an account? <Link href="/login" className={styles.loginLink}>Login</Link></p>
+        </section>
+      </div>
     </div>
   );
-}
+};
 
-export default ResponsiveDiv;
+export default HomePage;

@@ -75,36 +75,44 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
       <div className={`${styles.sidebar} ${isSidebarVisible ? styles.visible : ''}`}>
         <div className={styles.topSection}>
           <Link href="/">
-            <Image src="/cinetech_art.png" alt="Cinetech Logo" width="250" height="250" />
+            <Image
+              src="/cinetech_art.png"
+              alt="Cinetech Logo"
+              width="250"
+              height="250"
+              className={styles.cinetechArtImage} /* Apply the new class here */
+            />
           </Link>
         </div>
-        <div className={styles.buttonsContainer}>
-          <button
-            className="mt-4 w-full bg-opacity-100 hover:bg-gray-700 text-left text-white font-bold py-2 px-4 rounded"
-            onClick={toggleWorkspaceExpand}
-          >
-            Workspaces
-          </button>
-          {isWorkspaceExpanded && (
-            <div className={styles.expandedSection}>
-              <Workspace userId={userId} />
-            </div>
-          )}
-        </div>
-        <div className={styles.threadListSection}>
-          <h3 className="text-white font-bold text-left">Conversations</h3>
-          <ul className={styles.threadList}>
-            {threads.map((thread: Thread) => (
-              <li key={thread.id} className={styles.threadListItem}>
-                <button
-                  onClick={() => handleThreadClick(thread.id)}
-                  className={`${styles.textLine}`}
-                >
-                  {thread.title}
-                </button>
-              </li>
-            ))}
-          </ul>
+        <div className={styles.middleSection}>
+          <div className={styles.buttonsContainer}>
+            <button
+              className="mt-4 w-full bg-opacity-100 hover:bg-gray-700 text-left text-white font-bold py-2 px-4 rounded"
+              onClick={toggleWorkspaceExpand}
+            >
+              Workspaces
+            </button>
+            {isWorkspaceExpanded && (
+              <div className={styles.expandedSection}>
+                <Workspace userId={userId} />
+              </div>
+            )}
+          </div>
+          <div className={styles.threadListSection}>
+            <h3 className="text-white font-bold text-left">Conversations</h3>
+            <ul className={styles.threadList}>
+              {threads.map((thread: Thread) => (
+                <li key={thread.id} className={styles.threadListItem}>
+                  <button
+                    onClick={() => handleThreadClick(thread.id)}
+                    className={`${styles.textLine}`}
+                  >
+                    {thread.title}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
         <div className={styles.bottomSection}>
           <div className={styles.tokenCounter}>
