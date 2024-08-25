@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { FaPlus, FaAsterisk, FaTrash, FaChevronRight, FaChevronDown } from 'react-icons/fa';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { FaPlus, FaAsterisk, FaTrash, FaChevronRight, FaChevronDown, FaEnvelope, FaFilePdf } from 'react-icons/fa';
+import styles from '@/styles/workspace.module.css';
+import { generatePdfFromMarkdown } from '@/utils/pdfUtils';
 import Image from 'next/image';
 import Draggable, { DraggableEvent, DraggableData } from 'react-draggable';
 import { ResizableBox, ResizeCallbackData } from 'react-resizable';
 import ReactMarkdown from 'react-markdown';
-import styles from '@/styles/workspace.module.css';
 import { useLibrary } from '@/context/LibraryContext';
 import 'react-resizable/css/styles.css';
 
@@ -57,6 +58,10 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
   const [boxWidth, setBoxWidth] = useState(500);
   const [boxHeight, setBoxHeight] = useState(300);
   const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
+
+  const handleDownloadMessagePDF = (messageContent: string) => {
+    generatePdfFromMarkdown(messageContent);
+  };
 
   const fetchTags = useCallback(async (userId: string) => {
     if (!userId) return;
@@ -418,7 +423,9 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
       const centerY = (window.innerHeight - boxHeight) / 2;
       setInitialPosition({ x: centerX, y: centerY });
     }
-  }, [selectedMessage, boxWidth, boxHeight]);   
+  }, [selectedMessage, boxWidth, boxHeight]);
+
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   return (
     <div className={styles.workspaceContainer}>
@@ -613,6 +620,31 @@ const Workspace: React.FC<WorkspaceProps> = ({ userId }) => {
                   <button className={styles.closeButton} onClick={handleCloseMessageWindow}>
                     &times;
                   </button>
+                  {/* Email button */}
+                  <button
+                    className={styles.emailButton}
+                    onClick={() => {
+                      const subject = encodeURIComponent('Message Content');
+                      const body = encodeURIComponent(Array.isArray(selectedMessage.content)
+                        ? selectedMessage.content.join('')
+                        : selectedMessage.content || '');
+                    
+                      window.location.href = `mailto:?subject=${subject}&body=${body}`;
+                    }}
+                  >
+                    <FaEnvelope />
+                  </button>
+                  <button
+                    className={styles.pdfButton}
+                    onClick={() => {
+                      const messageContent = Array.isArray(selectedMessage?.content)
+                        ? selectedMessage.content.join('')
+                        : selectedMessage?.content || '';
+                        handleDownloadMessagePDF(messageContent);
+                    }}
+                  >
+                    <FaFilePdf />
+                </button>
                 </div>
                 <div className={styles.messageContent}>
                   <div className={styles.timestampWindow}>{selectedMessage.timestamp}</div>

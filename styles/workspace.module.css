@@ -535,3 +535,31 @@
 .toolbar button:hover {
   color: red; /* Change color on hover */
 }
+
+.emailButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: 10px; /* Spacing from the close button */
+  font-size: 1.5rem; /* Adjust size if needed */
+  color: gray !important; /* Button color */
+}
+
+.emailButton:hover {
+  color: #000; /* Darker color on hover */
+}
+
+.pdfButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: 10px; /* Spacing from other buttons */
+  font-size: 1.5rem; /* Adjust size if needed */
+  color: gray !important; /* PDF red color */
+}
+
+.pdfButton:hover {
+  color: #b30000; /* Darker red on hover */
+}
+
+
