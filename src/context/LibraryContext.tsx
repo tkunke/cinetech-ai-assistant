@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { useWorkspace } from '@/context/WorkspaceContext';  // Import the Workspace context
 
 interface Tag {
   id: string;
@@ -22,8 +23,8 @@ interface Message {
 interface LibraryContextType {
   fetchedImages: Image[];
   fetchedMessages: Message[];
-  fetchImages: (userId: string) => Promise<void>;
-  fetchMessages: (userId: string) => Promise<Message[]>;
+  fetchImages: (userId: string, workspaceId: string) => Promise<void>;
+  fetchMessages: (userId: string, workspaceId: string) => Promise<Message[]>;
   addImage: (image: Image) => void;
   addMessage: (message: Message) => void;
   removeImage: (imageUrl: string) => void;
@@ -46,14 +47,16 @@ interface LibraryProviderProps {
 export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) => {
   const [fetchedImages, setFetchedImages] = useState<Image[]>([]);
   const [fetchedMessages, setFetchedMessages] = useState<Message[]>([]);
+  const { activeWorkspaceId } = useWorkspace();  // Get the active workspace ID from context
 
-  const fetchImages = useCallback(async (userId: string) => {
+  const fetchImages = useCallback(async (userId: string, workspaceId: string) => {
     try {
-      const response = await fetch(`/api/get-lib-images?userId=${userId}&t=${Date.now()}`);
+      const response = await fetch(`/api/get-lib-images?userId=${userId}&workspaceId=${workspaceId}&t=${Date.now()}`);
       const data = await response.json();
       if (response.ok) {
         if (Array.isArray(data.images)) {
           const formattedImages = data.images.map((image: any) => ({
+            id: image.imageId,
             imageUrl: image.imageUrl,
             thumbnailUrl: image.thumbnailUrl,
             tags: image.tags, // No need to parse tags again
@@ -71,17 +74,18 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
     }
   }, []);  
 
-  const fetchMessages = useCallback(async (userId: string) => {
+  const fetchMessages = useCallback(async (userId: string, workspaceId: string) => {
     try {
-      const response = await fetch(`/api/get-lib-messages?userId=${userId}&t=${Date.now()}`);
+      const response = await fetch(`/api/get-lib-messages?userId=${userId}&workspaceId=${workspaceId}&t=${Date.now()}`);
       const data = await response.json();
       if (response.ok) {
         console.log('API response data:', data);
         if (Array.isArray(data.messages)) {
           const formattedMessages = data.messages.map((message: any) => ({
+            id: message.messageId,
             url: message.messageUrl,
             timestamp: message.timestamp,
-            content: message.content, // Assuming content is also returned by the API
+            content: message.content,
             tags: message.tags || [], // Include tags from the API, or default to an empty array
           }));
           console.log('Formatted messages:', formattedMessages);
@@ -117,7 +121,6 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
         existingMessages.push(newMessage);
       }
   
-      // Log the updated messages array
       console.log('Updated messages array:', existingMessages);
   
       return existingMessages;

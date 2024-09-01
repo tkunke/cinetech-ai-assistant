@@ -6,7 +6,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(to bottom, #0e7490, #0891b2);
+    background: linear-gradient(to bottom, rgb(60, 117, 138), rgb(30, 63, 82));
     color: white;
   }
   
@@ -23,7 +23,7 @@
   
   .card {
     width: 20rem;
-    background-color: #0e7490;
+    background-color: rgb(60, 117, 138);
     border-radius: 0.5rem;
     box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
     padding: 1.5rem;

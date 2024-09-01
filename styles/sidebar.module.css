@@ -2,17 +2,15 @@
 .sidebar {
   width: 20rem;
   height: 100vh;
-  background-image: url('/background_landscape.png');
+  background: linear-gradient(to bottom, rgb(60, 117, 138), rgb(30, 63, 82));
   color: #ffffff;
   position: fixed;
   left: 0;
   top: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
   padding: 1rem;
   transition: transform 0.3s ease;
-  transform: translateX(-100%);
   z-index: 997;
 }
 
@@ -20,7 +18,6 @@
   transform: translateX(0);
 }
 
-/* Hamburger button styles */
 .hamburger {
   display: none;
   position: fixed;
@@ -47,131 +44,79 @@
 
 /* Top section styles */
 .topSection {
+  height: 3rem; /* Adjusted height for logo */
   display: flex;
   flex-direction: column;
-  align-items: center; /* Centers content horizontally */
-  justify-content: center; /* Centers content vertically */
+  align-items: center;
   padding: 0;
-  margin: 0;
-  width: 100%;
-  box-sizing: border-box;
-  background-color: transparent;
+  margin-bottom: 1rem;
+  flex-shrink: 0;
 }
 
 .cinetechArtImage {
-  display: block; /* Ensures the image is treated as a block element */
-  margin: 0 auto; /* Centers the image horizontally */
-  max-width: 100%; /* Optional: Ensure the image doesn’t exceed the container’s width */
+  display: block;
+  margin: 0;
+  max-width: 100%;
+  padding: 0;
 }
 
-/* Buttons container styles */
-.buttonsContainer {
-  width: 100%;
+/* Middle section styles */
+.middleSection {
+  flex-grow: 1;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+}
+
+.sectionTitle {
+  font-weight: bold;
+  margin: 10px 0;
+  font-size: 1.2rem;
+  padding: 2px 0;
+  border-radius: 8px;
+  text-align: left; /* Left-align the section titles */
+}
+
+.workspaceManagerContainer {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   flex-grow: 1;
-  flex-shrink: 0; /* Prevents the container from shrinking */
-  overflow-y: auto; /* This allows the buttons container to scroll independently */
-  background-color: transparent;
-  margin-bottom: 10px;
 }
 
-/* Sidebar button styles */
-.sidebarButton,
-.buttonsContainer button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  color: white;
+.workspaceDropdownButton {
+  width: 100%;
   padding: 10px;
+  background-color: transparent;
+  color: #fff;
   border: none;
-  width: auto;
   text-align: left;
-  margin-bottom: 5px;
   cursor: pointer;
-  background: transparent;
-}
-
-.sidebarButton:hover,
-.buttonsContainer button:hover {
-  background-color: rgba(255, 255, 255, 0.1);
+  font-size: 1rem;
   border-radius: 4px;
 }
 
-.sidebarButton svg,
-.buttonsContainer button svg {
-  margin-right: 8px;
+.workspaceDropdownButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.expandedSection {
+  padding: 10px 0;
 }
 
 /* Bottom section styles */
 .bottomSection {
+  height: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   padding: 20px;
   background-color: transparent;
-  display: flex;
-  justify-content: center; /* Centers the TokenCounter horizontally */
-  align-items: center; /* Centers the TokenCounter vertically */
-  margin-top: 20px; /* Adjust this value to move the TokenCounter down */
-}
-
-.tokenCounter {
-  font-weight: bold;
-  color: white;
-  text-align: center;
-}
-
-.bottomSection nav {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.bottomSection a,
-.bottomSection button {
-  flex: 1;
-  text-align: center;
-  background-color: transparent;
-}
-
-/* Expanded section styles */
-.expandedSection {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  padding: 0;
-  border-radius: 4px;
-  background-color: transparent;
-  overflow-y: auto;
-  max-height: 80vh;
-}
-
-.expandedSection > .expandedSection {
-  padding: 0;
-}
-
-.tokenCounter {
-  font-weight: bold;
-  color: white;
-  margin-right: 0.5rem;
-}
-
-.middleSection {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  overflow-y: auto; /* This allows the entire middle section to scroll */
-  margin-top: 20px; /* Optional: Adjust the spacing above the middle section */
+  flex-shrink: 0;
+  padding-top: 1rem;
 }
 
 .threadListSection {
-  flex-shrink: 0; /* Prevents the container from shrinking */
-  padding: 10px;
-  background-color: transparent;
-  border-radius: 8px;
-  overflow-y: auto; /* Ensure this section can scroll */
-  flex-grow: 1; /* Makes the thread list grow and fill the remaining space */
-  max-height: 10rem;
-  flex-grow: 0;
+  flex-grow: 1;
+  flex-shrink: 1;
 }
 
 .threadList {
@@ -180,8 +125,13 @@
   margin: 0;
 }
 
-.threadButton {
-  padding: 8px;
+.threadListItem {
+  margin-bottom: 2px;
+  font-size: 0.8125rem;
+}
+
+.textLine {
+  padding: 4px;
   background-color: transparent;
   color: white;
   border: none;
@@ -190,44 +140,8 @@
   width: 100%;
   display: flex;
   align-items: center;
-  position: relative;
-}
-
-.threadButton:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.threadListItem {
-  margin-bottom: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .textLine:hover {
-  background-color: rgba(255, 255, 255, 0.2); /* Adjust hover effect for better visibility */
-}
-
-.textLine {
-  padding: 4px;
-  background-color: transparent;
-  font-size: 12px;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  width: 100%;
-  position: relative;
-}
-
-.threadListItem button {
-  background-color: transparent;
-  color: #fff;
-  border: none;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-}
-
-.threadListItem button:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.1);
 }

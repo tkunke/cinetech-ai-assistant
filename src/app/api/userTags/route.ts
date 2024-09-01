@@ -1,18 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
-// Handler for GET requests to fetch user tags
+// Handler for GET requests to fetch workspace-specific tags
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get('userId');
-  console.log("Received GET request for userId:", userId);
+  const workspaceId = request.nextUrl.searchParams.get('workspaceId');
 
-  if (!userId) {
-    console.error("User ID not provided");
-    return NextResponse.json({ error: "User ID not provided" }, { status: 400 });
+  if (!userId || !workspaceId) {
+    console.error("User ID and Workspace ID are required");
+    return NextResponse.json({ error: 'User ID and Workspace ID are required' }, { status: 400 });
   }
 
   try {
-    const tagsQuery = await sql`SELECT * FROM project_tags WHERE user_id = ${userId}`;
+    console.log(`Fetching tags for workspace: ${workspaceId}`);
+
+    // Fetch tags associated with the workspace directly from project_tags
+    const tagsQuery = await sql`
+      SELECT id, name
+      FROM project_tags
+      WHERE workspace_id = ${workspaceId}
+    `;
+
     const tags = tagsQuery.rows.map(tag => ({ id: tag.id, name: tag.name }));
 
     console.log("Response data:", { tags });
@@ -23,33 +31,34 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Handler for POST requests to add a new tag
+// Handler for POST requests to add a new workspace-specific tag
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const userId = body.userId;
-    const tagName = body.tag?.name; // Extract the tag name from the request body
+    const { userId, workspaceId, tag } = body;
 
-    console.log("Received POST request with body:", body);
-
-    if (!userId || !tagName) {
-      console.error("Invalid request body");
-      return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    if (!userId || !workspaceId || !tag?.name) {
+      console.error("User ID, Workspace ID, and Tag Name are required");
+      return NextResponse.json({ error: "User ID, Workspace ID, and Tag Name are required" }, { status: 400 });
     }
 
-    // Insert new tag into the project_tags table
+    // Insert new tag into the project_tags table directly with workspace_id
     const insertTagQuery = await sql`
-      INSERT INTO project_tags (user_id, name)
-      VALUES (${userId}, ${tagName})
+      INSERT INTO project_tags (user_id, name, workspace_id)
+      VALUES (${userId}, ${tag.name}, ${workspaceId})
       RETURNING id, name
     `;
 
     const newTag = insertTagQuery.rows[0];
 
-    console.log(`New tag created for user ${userId}`, newTag);
+    console.log(`New tag created for user ${userId} and associated with workspace ${workspaceId}`, newTag);
 
-    // Fetch updated list of tags
-    const tagsQuery = await sql`SELECT * FROM project_tags WHERE user_id = ${userId}`;
+    // Fetch updated list of tags for the workspace
+    const tagsQuery = await sql`
+      SELECT id, name
+      FROM project_tags
+      WHERE workspace_id = ${workspaceId}
+    `;
     const tags = tagsQuery.rows.map(tag => ({ id: tag.id, name: tag.name }));
 
     return NextResponse.json({ tags });
@@ -63,33 +72,32 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const body = await request.json();
-    const userId = body.userId;
-    const tagId = body.tagId;
+    const { userId, workspaceId, tagId } = body;
 
-    console.log("Received DELETE request with body:", body);
-
-    if (!userId || !tagId) {
-      console.error("Invalid request body");
-      return NextResponse.json({ error: "User ID and Tag ID are required" }, { status: 400 });
+    if (!userId || !workspaceId || !tagId) {
+      console.error("User ID, Workspace ID, and Tag ID are required");
+      return NextResponse.json({ error: "User ID, Workspace ID, and Tag ID are required" }, { status: 400 });
     }
 
-    // Delete associations with images
+    // Delete associations with images and messages first
     await sql`
       DELETE FROM project_tag_images WHERE tag_id = ${tagId}
     `;
-
-    // Delete associations with messages
     await sql`
       DELETE FROM project_tag_messages WHERE tag_id = ${tagId}
     `;
 
-    // Delete the tag itself
+    // Delete the tag from project_tags
     await sql`
-      DELETE FROM project_tags WHERE user_id = ${userId} AND id = ${tagId}
+      DELETE FROM project_tags WHERE id = ${tagId} AND workspace_id = ${workspaceId}
     `;
 
-    // Fetch updated list of tags
-    const tagsQuery = await sql`SELECT * FROM project_tags WHERE user_id = ${userId}`;
+    // Fetch updated list of tags for the workspace
+    const tagsQuery = await sql`
+      SELECT id, name
+      FROM project_tags
+      WHERE workspace_id = ${workspaceId}
+    `;
     const tags = tagsQuery.rows.map(tag => ({ id: tag.id, name: tag.name }));
 
     return NextResponse.json({ tags });
@@ -99,15 +107,13 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// Handler for PUT requests to tag an image or a message
+// Handler for PUT requests to tag an image or a message within a workspace
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, imageUrl, messageUrl, tag }: { userId: number; imageUrl?: string; messageUrl?: string; tag: { id: number; name: string } } = body;
+    const { userId, workspaceId, imageUrl, messageUrl, tag }: { userId: string; workspaceId: string; imageUrl?: string; messageUrl?: string; tag: { id: string; name: string } } = body;
 
-    console.log("Received PUT request with body:", body);
-
-    if (!userId || (!imageUrl && !messageUrl) || !tag?.id) {
+    if (!userId || !workspaceId || (!imageUrl && !messageUrl) || !tag?.id) {
       console.error("Invalid request body");
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
@@ -117,7 +123,7 @@ export async function PUT(request: NextRequest) {
     if (imageUrl) {
       // Fetch the image ID
       const imageQuery = await sql`
-        SELECT id FROM user_gen_images WHERE user_id = ${userId} AND image_url = ${imageUrl}
+        SELECT id FROM user_gen_images WHERE user_id = ${userId} AND image_url = ${imageUrl} AND workspace_id = ${workspaceId}
       `;
       const image = imageQuery.rows[0];
 
@@ -127,7 +133,7 @@ export async function PUT(request: NextRequest) {
 
       const imageId = image.id;
 
-      // Check if the tag already exists for this image
+      // Check if the tag already exists for this image within the workspace
       const tagQuery = await sql`
         SELECT * FROM project_tag_images WHERE image_id = ${imageId} AND tag_id = ${tagId}
       `;
@@ -143,14 +149,14 @@ export async function PUT(request: NextRequest) {
         VALUES (${tagId}, ${imageId})
       `;
 
-      console.log(`Tag ${tagId} added to image ${imageUrl} for user ${userId}`);
+      console.log(`Tag ${tagId} added to image ${imageUrl} for user ${userId} and workspace ${workspaceId}`);
 
       return NextResponse.json({ message: "Tag added successfully to image" });
 
     } else if (messageUrl) {
       // Fetch the message ID
       const messageQuery = await sql`
-        SELECT id FROM user_gen_messages WHERE user_id = ${userId} AND message_url = ${messageUrl}
+        SELECT id FROM user_gen_messages WHERE user_id = ${userId} AND message_url = ${messageUrl} AND workspace_id = ${workspaceId}
       `;
       const message = messageQuery.rows[0];
 
@@ -160,7 +166,7 @@ export async function PUT(request: NextRequest) {
 
       const messageId = message.id;
 
-      // Check if the tag already exists for this message
+      // Check if the tag already exists for this message within the workspace
       const tagQuery = await sql`
         SELECT * FROM project_tag_messages WHERE message_id = ${messageId} AND tag_id = ${tagId}
       `;
@@ -176,7 +182,7 @@ export async function PUT(request: NextRequest) {
         VALUES (${tagId}, ${messageId})
       `;
 
-      console.log(`Tag ${tagId} added to message ${messageUrl} for user ${userId}`);
+      console.log(`Tag ${tagId} added to message ${messageUrl} for user ${userId} and workspace ${workspaceId}`);
 
       return NextResponse.json({ message: "Tag added successfully to message" });
     }

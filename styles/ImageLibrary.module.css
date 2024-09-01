@@ -1,0 +1,153 @@
+/* Thumbnail grid and container styles */
+.thumbnailContainer {
+    position: relative;
+    width: 75px;
+    height: 75px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 4px;
+    cursor: pointer;
+    background-repeat: no-repeat;
+  }
+  
+  .thumbnailContainer:hover .tagIcon,
+  .thumbnailContainer:hover .imageDelete {
+    display: block;
+  }
+  
+  .thumbnailGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 0;
+  }
+  
+  .thumbnailGridContainer {
+    padding: 10px;
+  }
+  
+  .thumbnailTitle {
+    margin-bottom: 5px;
+    color: gray;
+  }
+  
+  .thumbnail {
+    border-radius: 4px;
+    width: 75px;
+    height: 75px;
+  }
+  
+  /* Tag icon styles */
+  .tagIcon {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    display: none;
+    cursor: pointer;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 5px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+  }
+  
+  /* Image tag styles */
+  .imageTag {
+    background-color: #5a6268;
+    color: white;
+    padding: 2px 4px;
+    border-radius: 4px;
+    margin: 2px;
+    display: inline-block;
+  }
+  
+  /* Delete button styles for images */
+  .imageDelete {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    display: none;
+    cursor: pointer;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.8);
+    padding: 5px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+  }
+  
+  .popupOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+  }
+  
+  .popup {
+    background-color: white;
+    color: black !important;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    width: 300px;
+    max-width: 80%;
+  }
+
+  .popup h3 {
+    font-weight: 600;
+  }
+
+  .popup ul {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    padding: 5px;
+    border: 1px gray;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background-color: transparent;
+    overflow-y: auto;
+  }
+
+  .popupTitle {
+    font-size: 18px;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  .popupMessage {
+    font-size: 16px;
+    margin-bottom: 20px;
+    color: #555;
+  }
+  
+  .popupButtons {
+    display: flex;
+    justify-content: space-between;
+  }
+  
+  .confirmButton, .cancelButton {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 5px 5px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .confirmButton:hover, .cancelButton:hover {
+    background-color: #0056b3;
+  }
+  
+  .cancelButton {
+    background-color: #6c757d;
+  }
+  
+  .cancelButton:hover {
+    background-color: #5a6268;
+  }

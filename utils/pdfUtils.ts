@@ -49,24 +49,27 @@ const mapHtmlToPdfMake = (node: HTMLElement): any[] => {
             content.push({ text: mapHtmlToPdfMake(child), margin: [0, 2] });
             break;
           default:
-            // This case handles generic elements
             if (child.textContent) {
               content.push({ text: child.textContent });
             }
         }
+      } else if (child.nodeType === Node.TEXT_NODE) {
+        content.push({ text: child.textContent });
       }
     });
     
     return content;
 };  
-  
 
-export const generatePdfFromMarkdown = (markdownContent: string): void => {
-  const htmlContent = marked(markdownContent);
+export const generatePdfFromMarkdown = async (markdownContent: string): Promise<void> => {
+  const htmlContent = await Promise.resolve(marked(markdownContent)); // Ensure it's a string by awaiting
+
   const parser = new DOMParser();
   const doc = parser.parseFromString(htmlContent, 'text/html');
 
   const content = mapHtmlToPdfMake(doc.body);
+
+  console.log('Mapped content:', content); // Debug output to check content
 
   const docDefinition = {
     content: content,

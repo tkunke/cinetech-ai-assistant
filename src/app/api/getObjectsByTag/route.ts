@@ -4,49 +4,54 @@ import { sql } from '@vercel/postgres';
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get('userId');
   const tag = request.nextUrl.searchParams.get('tag');
+  const workspaceId = request.nextUrl.searchParams.get('workspaceId');
 
-  if (!userId || !tag) {
-    console.error("User ID and tag are required");
-    return NextResponse.json({ error: 'User ID and tag are required' }, { status: 400 });
+  if (!userId || !tag || !workspaceId) {
+    console.error("User ID, tag, and workspace ID are required");
+    return NextResponse.json({ error: 'User ID, tag, and workspace ID are required' }, { status: 400 });
   }
 
   try {
-    console.log(`Fetching objects for user: ${userId} with tag: ${tag}`);
+    console.log(`Fetching objects for tag: ${tag} in workspace: ${workspaceId}`);
 
-    // Fetch images associated with the tag
+    // Fetch images associated with the tag and workspace
     const imagesQuery = await sql`
       SELECT img.image_url, img.thumbnail_url
       FROM user_gen_images img
       INNER JOIN project_tag_images pti ON img.id = pti.image_id
-      INNER JOIN project_tags pt ON pti.tag_id = pt.id
-      WHERE pt.name = ${tag} AND img.user_id = ${userId}
+      WHERE pti.tag_id IN (
+        SELECT id FROM project_tags WHERE name = ${tag} AND workspace_id = ${workspaceId}
+      ) AND img.workspace_id = ${workspaceId}
     `;
     
-    // Fetch messages associated with the tag
+    // Fetch messages associated with the tag and workspace
     const messagesQuery = await sql`
       SELECT msg.message_url
       FROM user_gen_messages msg
       INNER JOIN project_tag_messages ptm ON msg.id = ptm.message_id
-      INNER JOIN project_tags pt ON ptm.tag_id = pt.id
-      WHERE pt.name = ${tag} AND msg.user_id = ${userId}
+      WHERE ptm.tag_id IN (
+        SELECT id FROM project_tags WHERE name = ${tag} AND workspace_id = ${workspaceId}
+      ) AND msg.workspace_id = ${workspaceId}
     `;
 
-    // Fetch generated files associated with the tag
+    // Fetch generated files associated with the tag and workspace
     const generatedFilesQuery = await sql`
       SELECT gf.file_url
       FROM user_gen_files gf
       INNER JOIN project_tag_files ptf ON gf.id = ptf.file_id
-      INNER JOIN project_tags pt ON ptf.tag_id = pt.id
-      WHERE pt.name = ${tag} AND gf.user_id = ${userId}
+      WHERE ptf.tag_id IN (
+        SELECT id FROM project_tags WHERE name = ${tag} AND workspace_id = ${workspaceId}
+      ) AND gf.workspace_id = ${workspaceId}
     `;
 
-    // Fetch uploaded files associated with the tag
+    // Fetch uploaded files associated with the tag and workspace
     const uploadedFilesQuery = await sql`
       SELECT uf.file_url
       FROM user_uploaded_files uf
       INNER JOIN project_tag_files ptf ON uf.id = ptf.file_id
-      INNER JOIN project_tags pt ON ptf.tag_id = pt.id
-      WHERE pt.name = ${tag} AND uf.user_id = ${userId}
+      WHERE ptf.tag_id IN (
+        SELECT id FROM project_tags WHERE name = ${tag} AND workspace_id = ${workspaceId}
+      ) AND uf.workspace_id = ${workspaceId}
     `;
 
     const images = imagesQuery.rows;

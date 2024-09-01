@@ -3,24 +3,31 @@ import { sql } from '@vercel/postgres';
 
 export async function GET(request: NextRequest) {
   const userId = request.nextUrl.searchParams.get('userId');
+  const workspaceId = request.nextUrl.searchParams.get('workspaceId'); // Get the workspaceId from the query params
 
-  if (!userId) {
-    console.error("User ID not provided");
-    return NextResponse.json({ error: "User ID not provided" }, { status: 400 });
+  if (!userId || !workspaceId) {
+    console.error("User ID or Workspace ID not provided");
+    return NextResponse.json({ error: "User ID or Workspace ID not provided" }, { status: 400 });
   }
 
   try {
-    console.log("Executing query: SELECT * FROM user_gen_messages WHERE user_id =", userId);
+    console.log("Executing query to fetch messages associated with the workspace");
     const messagesQuery = await sql`
-      SELECT *
+      SELECT id, message_url
       FROM user_gen_messages
-      WHERE user_id = ${userId}
+      WHERE user_id = ${userId} AND workspace_id = ${workspaceId}
     `;
 
     console.log("Raw data from database:", messagesQuery.rows);
 
+    if (!messagesQuery.rows || messagesQuery.rows.length === 0) {
+      console.error("No rows returned from database");
+      return NextResponse.json({ messages: [] });
+    }
+
     const messages = messagesQuery.rows.map(message => ({
-      messageUrl: message.message_url
+      messageUrl: message.message_url,
+      messageId: message.id
     }));
 
     const responseData = { messages: messages || [] };

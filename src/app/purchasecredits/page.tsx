@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from '@/styles/productorder.module.css';
+import styles from '@/styles/purchasecredits.module.css';
 
 const ProductOrderPage: React.FC = () => {
   return (

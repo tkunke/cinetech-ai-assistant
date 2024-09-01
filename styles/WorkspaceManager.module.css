@@ -1,0 +1,357 @@
+/* Container for the Workspace Manager */
+.workspaceManagerContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+}
+
+/* Styles for each Workspace Item */
+.workspaceItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 0;
+  padding-right: 10px;
+  width: 100%;
+}
+
+/* Ellipsis Icon (Menu Trigger) */
+.workspaceMenuIcon {
+  position: relative;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+  display: none;
+  cursor: pointer;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.8);
+  padding: 5px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+}
+
+.workspaceMenuIcon::before {
+  content: '\2026'; /* Horizontal ellipsis */
+  font-size: 1.2rem;
+}
+
+.workspaceItem:hover .workspaceMenuIcon {
+  display: block; /* Show on hover */
+}
+
+.workspaceItem:hover .workspaceMenuIcon {
+  display: inline-block; /* Show on hover */
+}
+
+.workspaceMenu {
+  position: absolute;
+  /*top: 10px;*/
+  /*right: 5rem;*/
+  margin-left: 15rem;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  padding: 8px;
+  z-index: 1001; /* Ensure it's above other content */
+  /*min-width: 150px;*/
+  text-align: left;
+  display: inline-block; /* Ensure it's not accidentally hidden */
+}
+
+.workspaceMenu button {
+  background-color: transparent;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  color: #000;
+  width: 100%;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.workspaceMenu button:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Styles for the Active Workspace Container */
+.activeWorkspaceContainer {
+  margin-bottom: 1rem;
+  font-weight: bold;
+  text-align: left;
+}
+
+.activeWorkspaceContainer,
+.activeWorkspaceDisplay {
+  padding-left: 0.5rem;
+  font-size: 0.9rem;
+  color: #ffffff;
+  margin-top: 0.25rem;
+  margin-bottom: 1rem;
+  font-weight: bold;
+  width: 100%;
+}
+
+.activeWorkspaceDisplay {
+  padding-left: 0.5rem;
+  font-size: 0.9rem;
+  color: black;
+  margin-top: 0.25rem;
+  margin-bottom: 1rem;
+  font-weight: bold;
+  background-color: white;
+  border: 1px !important;
+  border-radius: 4px;
+}
+
+.activeHeader {
+  font-weight: bold;
+  margin-top: 1rem;
+}
+
+/* Button to toggle Workspaces */
+.toggleWorkspacesButton {
+  width: 100%;
+  padding: 8px;
+  background-color: transparent;
+  color: #fff;
+  border: 1px solid #fff;
+  border-radius: 5px;
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 1rem;
+}
+
+/* Styles for Individual Workspaces */
+.workspaceContainer {
+  margin-bottom: 0.125rem;
+  width: 100%;
+}
+
+.workspaceButton {
+  width: 100%;
+  padding: 2px 10px;
+  background-color: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s;
+  margin-bottom: 0.5rem;
+}
+
+.workspaceButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.menuIcon {
+  cursor: pointer;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: white;
+  display: none; /* Initially hidden */
+}
+
+.workspaceItem:hover .menuIcon {
+  display: block; /* Show when hovering over the workspace item */
+}
+
+/* Add Workspace Button (FaPlus Icon) */
+.addWorkspaceIcon {
+  margin-left: auto; /* Pushes the icon to the far right */
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: white;
+}
+
+.addWorkspaceIcon:hover {
+  color: #007bff;
+}
+
+/* Invitation Popup */
+.invitationPopupOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5); /* Dark background with transparency */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; /* Ensure it appears on top */
+}
+
+.invitationPopup {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  color: #333;
+}
+
+/* General Form and Button Styles */
+.inputField,
+.selectField {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.submitButton {
+  display: block;
+  width: 100%;
+  padding: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.errorMessage {
+  color: red;
+  font-size: 0.9rem;
+}
+
+.successMessage {
+  color: green;
+}
+
+/* Content Libraries */
+.librarySection {
+  margin-top: 5px;
+}
+
+.libraryButton {
+  width: 100%;
+  padding: 2px 10px;
+  background-color: transparent;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s;
+  margin-bottom: 0.5rem;
+}
+
+.libraryButton:hover,
+.libraryButton.active {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.libraryContent {
+  margin-top: 0;
+  flex-grow: 1;
+  max-height: none;
+}
+
+/* Popup for Creating Shared Workspace */
+.popupOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.popup {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 400px;
+  position: relative;
+  color: gray;
+}
+
+.closeButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: gray;
+}
+
+/* Section Titles */
+.workspaceSectionTitle {
+  font-weight: bold;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0px;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  line-height: 1;
+  position: relative;
+  width: 100%;
+}
+
+.workspaceSectionTitle span {
+  flex-grow: 1; /* Ensures the span takes up available space */
+}
+
+.workspaceSectionTitle:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+/* Member List */
+.membersList {
+  background-color: white;
+  color: black;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+.memberItem {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 0.9rem;
+}
+
+.memberIcon {
+  margin-right: 8px;
+  font-size: 1rem;
+}
+
+.addButton {
+  margin-top: 10px;
+}
+
+.addTagIcon {
+  margin-left: 0.5rem;
+  cursor: pointer;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #ffffff;
+  transition: color 0.3s;
+}
+
+.addTagIcon:hover {
+  color: #007bff;
+}

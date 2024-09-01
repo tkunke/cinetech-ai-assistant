@@ -1,0 +1,47 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { sql } from '@vercel/postgres';
+
+// POST: Add a member to a workspace
+export async function POST(request: NextRequest) {
+  const { workspaceId, email, role } = await request.json();
+
+  try {
+    // Check if the user exists
+    const user = await sql`SELECT id, username FROM users WHERE email = ${email}`;
+
+    if (user.rows.length === 0) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    }
+
+    const userId = user.rows[0].id;
+
+    // Insert the user into the 'workspace_users' table with the specified role
+    await sql`
+      INSERT INTO workspace_users (workspace_id, user_id, role)
+      VALUES (${workspaceId}, ${userId}, ${role});
+    `;
+
+    return NextResponse.json({ message: 'Member added successfully', username: user.rows[0].username });
+  } catch (error) {
+    console.error('Error adding member:', error);
+    return NextResponse.json({ message: 'Error adding member' }, { status: 500 });
+  }
+}
+
+// DELETE: Remove a member from a workspace
+export async function DELETE(request: NextRequest) {
+  const { workspaceId, userId } = await request.json();
+
+  try {
+    // Delete the user from the 'workspace_users' table
+    await sql`
+      DELETE FROM workspace_users 
+      WHERE workspace_id = ${workspaceId} AND user_id = ${userId};
+    `;
+
+    return NextResponse.json({ message: 'Member removed successfully' });
+  } catch (error) {
+    console.error('Error removing member:', error);
+    return NextResponse.json({ message: 'Error removing member' }, { status: 500 });
+  }
+}

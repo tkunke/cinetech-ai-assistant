@@ -40,80 +40,175 @@ const UserProfileSettings = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl w-full space-y-8">
-        <div className="flex justify-between items-center">
-          <h2 className="text-3xl font-extrabold text-gray-900">Profile Settings</h2>
-          <button
-            onClick={handleBackToAssistant}
-            className="group relative flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500"
-          >
-            Back to Assistant
-          </button>
+    <div className={styles.pageContainer}>
+      <button
+        onClick={handleBackToAssistant}
+        className={styles.customButton}
+      >
+        Back to Assistant
+      </button>
+      
+      {/* Profile Information Panel */}
+      <div className={styles.profileContainer}>
+        <div className={styles.profileContent}>
+          <form className={styles.profileForm} onSubmit={handleSubmit}>
+            <div className={styles.profileSection}>
+              <h3 className={styles.sectionTitle}>Profile Information</h3>
+              <div className={styles.sectionContent}>
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>First Name</label>
+                  <input
+                    type="text"
+                    disabled
+                    className={`${styles.inputField} ${styles.disabledInput}`}
+                    value={username}
+                    readOnly
+                  />
+                  <label className={styles.inputLabel}>Last Name</label>
+                  <input
+                    type="text"
+                    disabled
+                    className={`${styles.inputField} ${styles.disabledInput}`}
+                    value={username}
+                    readOnly
+                  />
+                  <label className={styles.inputLabel}>Preferred Name</label>
+                  <input
+                    type="text"
+                    disabled
+                    className={`${styles.inputField} ${styles.disabledInput}`}
+                    value={username}
+                    readOnly
+                  />
+                  <label className={styles.inputLabel}>Username</label>
+                  <input
+                    type="text"
+                    disabled
+                    className={`${styles.inputField} ${styles.disabledInput}`}
+                    value={username}
+                    readOnly
+                  />
+                  <label className={styles.inputLabel}>Password</label>
+                  <input
+                    type="password"
+                    placeholder="Enter new password"
+                    className={styles.inputField}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <label className={styles.inputLabel}>Email</label>
+                  <input
+                    type="text"
+                    disabled
+                    className={`${styles.inputField} ${styles.disabledInput}`}
+                    value={username}
+                    readOnly
+                  />
+                  <label className={styles.inputLabel}>Avatar</label>
+                  <input
+                    type="text"
+                    disabled
+                    className={`${styles.inputField} ${styles.disabledInput}`}
+                    value={username}
+                    readOnly
+                  />
+                </div>
+              </div>
+            </div>
+            <div className={styles.submitSection}>
+              <button
+                type="submit"
+                className={styles.submitButton}
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
         </div>
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm space-y-4 bg-white p-6">
-            <h3 className="text-xl font-semibold text-gray-900">Profile Information</h3>
-            <div className="space-y-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Username</label>
-                <input
-                  type="text"
-                  disabled
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm bg-gray-100"
-                  value={username}
-                  readOnly
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Password</label>
-                <input
-                  type="password"
-                  placeholder="Enter new password"
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-md shadow-sm space-y-4 bg-white p-6">
-            <h3 className="text-xl font-semibold text-gray-900">Assistant Settings</h3>
-            <div className="space-y-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Assistant&apos;s Name</label>
-                <input
-                  type="text"
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-                  value={assistantName}
-                  onChange={(e) => setAssistantName(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Default Greeting</label>
-                <input
-                  type="text"
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm"
-                  value={defaultGreeting}
-                  onChange={(e) => setDefaultGreeting(e.target.value)}
-                />
+      </div>
+      
+      {/* Assistant Settings Panel */}
+      <div className={styles.assistantContainer}>
+        <div className={styles.assistantContent}>
+          <form className={styles.assistantForm} onSubmit={handleSubmit}>
+            <div className={styles.assistantSection}>
+              <h3 className={styles.sectionTitle}>Assistant Settings</h3>
+              <div className={styles.sectionContent}>
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Assistant Name</label>
+                  <input
+                    type="text"
+                    className={styles.inputField}
+                    value={assistantName}
+                    onChange={(e) => setAssistantName(e.target.value)}
+                  />
+                  <label className={styles.inputLabel}>Custom Greeting</label>
+                  <input
+                    type="text"
+                    className={styles.inputField}
+                    value={defaultGreeting}
+                    onChange={(e) => setDefaultGreeting(e.target.value)}
+                  />
+                  <label className={styles.inputLabel}>Verbosity Setting</label>
+                  <input
+                    type="text"
+                    className={styles.inputField}
+                    value={defaultGreeting}
+                    onChange={(e) => setDefaultGreeting(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-cyan-600 hover:bg-cyan-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
+            <div className={styles.submitSection}>
+              <button
+                type="submit"
+                className={styles.submitButton}
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      
+      {/* Account Settings Panel */}
+      <div className={styles.accountContainer}>
+        <div className={styles.accountContent}>
+          <form className={styles.accountForm} onSubmit={handleSubmit}>
+            <div className={styles.accountSection}>
+              <h3 className={styles.sectionTitle}>Account Settings</h3>
+              <div className={styles.sectionContent}>
+                <div className={styles.inputGroup}>
+                  <label className={styles.inputLabel}>Payment Method</label>
+                  <input
+                    type="text"
+                    className={styles.inputField}
+                    value={assistantName}
+                    onChange={(e) => setAssistantName(e.target.value)}
+                  />
+                  <label className={styles.inputLabel}>Account Type</label>
+                  <input
+                    type="text"
+                    className={styles.inputField}
+                    value={defaultGreeting}
+                    onChange={(e) => setDefaultGreeting(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className={styles.submitSection}>
+              <button
+                type="submit"
+                className={styles.submitButton}
+              >
+                Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
-  );
+  );        
 };
 
 export default UserProfileSettings;

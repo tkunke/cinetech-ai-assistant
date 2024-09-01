@@ -9,6 +9,7 @@ import { FaFilm, FaImages, FaAsterisk, FaNewspaper, FaCheckCircle } from 'react-
 import { useSession } from 'next-auth/react';
 import { upload } from '@vercel/blob/client';
 import { useLibrary } from '@/context/LibraryContext';
+import { useWorkspace } from '@/context/WorkspaceContext';
 
 function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, assistantName, imageEngineMap }) {
   const tableRef = useRef(null);
@@ -18,6 +19,7 @@ function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedM
   const userId = session?.user?.id ? String(session.user.id) : '';
   const userName = session?.user?.name ? session.user.name : 'User';
   const { addImage, addMessage } = useLibrary();
+  const { activeWorkspaceId } = useWorkspace();
 
   if (!message) return null;
   if (!message.role) return null;
@@ -81,6 +83,10 @@ function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedM
       console.error('User ID is missing from session');
       return;
     }
+    if (!activeWorkspaceId) {
+      console.error('Active workspace ID is missing');
+      return;
+    }
   
     try {
       const response = await fetch(`/api/fetch-image?url=${encodeURIComponent(imageUrl)}`);
@@ -130,6 +136,7 @@ function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedM
           userId: userId,
           imageUrl: newBlob.url,
           type: 'image',
+          workspaceId: activeWorkspaceId,
         }),
       });
   
@@ -142,6 +149,7 @@ function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedM
         thumbnailUrl: newBlob.url,
         tags: [],
       });
+
     } catch (error) {
       console.error('Error uploading image:', error);
       if (error.response) {
@@ -154,6 +162,10 @@ function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedM
   const handleSaveMessage = async (messageContent) => {
     if (!userId) {
       console.error('User ID is missing from session');
+      return;
+    }
+    if (!activeWorkspaceId) {
+      console.error('Active workspace ID is missing');
       return;
     }
   
@@ -204,6 +216,7 @@ function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedM
           userId: userId,
           messageUrl: newBlob.url,
           type: 'message',
+          workspaceId: activeWorkspaceId,
         }),
       });
   
@@ -217,6 +230,7 @@ function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedM
         timestamp: timestamp,
         tags: [],
       });
+
     } catch (error) {
       console.error('Error uploading message:', error);
       if (error.response) {

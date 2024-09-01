@@ -33,10 +33,22 @@ export async function POST(request: NextRequest) {
       RETURNING *
     `;
 
-    return NextResponse.json({ message: 'User created successfully', user: newUser.rows[0] });
+    const userId = newUser.rows[0].id; // Get the new user's ID
+
+    // Create the initial private workspace for the new user
+    const newWorkspace: QueryResult<QueryResultRow> = await sql`
+      INSERT INTO workspaces (user_id, name, type)
+      VALUES (${userId}, 'My Workspace', 'private')
+      RETURNING *
+    `;
+
+    return NextResponse.json({ 
+      message: 'User and workspace created successfully', 
+      user: newUser.rows[0],
+      workspace: newWorkspace.rows[0] 
+    });
   } catch (error) {
-    console.error('Error creating user:', error);
-    return NextResponse.json({ message: 'Error creating user' }, { status: 500 });
+    console.error('Error creating user and workspace:', error);
+    return NextResponse.json({ message: 'Error creating user and workspace' }, { status: 500 });
   }
 }
-

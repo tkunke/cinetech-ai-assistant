@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from '@/styles/sidebar.module.css';
-import { useRouter } from 'next/navigation';
-import Workspace from '@/components/workspace';
+import WorkspaceManager from '@/components/WorkspaceManager';
 import TokenCounter from '@/components/token-counter';
 import { useThreads } from '@/context/ThreadsContext';
 
-// Define the type for a thread
 interface Thread {
   id: string;
   title: string;
@@ -22,11 +21,12 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messagesUpdated, onSelectThread }) => {
-  const [isSidebarVisible, setIsSidebarVisible] = useState(false);
+  const { data: session } = useSession();
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState(false);
+  const [activeLibrary, setActiveLibrary] = useState<string | null>(null);
 
   const { threads, fetchThreads } = useThreads();
-  const router = useRouter();
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -36,31 +36,16 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
     setIsWorkspaceExpanded(!isWorkspaceExpanded);
   };
 
+  const toggleLibrary = (library: string) => {
+    setActiveLibrary(activeLibrary === library ? null : library);
+  };
+
   const handleThreadClick = (threadId: string) => {
     console.log('Clicked thread ID:', threadId);
     onSelectThread(threadId);
+    sessionStorage.setItem('threadId', threadId);
   };
 
-  useEffect(() => {
-    console.log('Sidebar threads:', threads);  // Add this to debug
-  }, [threads]);  
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth > 768) {
-        setIsSidebarVisible(true);
-      } else {
-        setIsSidebarVisible(false);
-      }
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Fetch threads when userId is available
   useEffect(() => {
     if (userId) {
       fetchThreads(userId);
@@ -73,39 +58,36 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
         ☰
       </button>
       <div className={`${styles.sidebar} ${isSidebarVisible ? styles.visible : ''}`}>
+        {/* Top Section: Logo */}
         <div className={styles.topSection}>
           <Link href="/">
             <Image
               src="/cinetech_art.png"
               alt="Cinetech Logo"
-              width="250"
-              height="250"
-              className={styles.cinetechArtImage} /* Apply the new class here */
+              width="150"
+              height="150"
+              className={styles.cinetechArtImage}
             />
           </Link>
         </div>
+
+        {/* Middle Section: Workspaces and Content Libraries */}
         <div className={styles.middleSection}>
-          <div className={styles.buttonsContainer}>
-            <button
-              className="mt-4 w-full bg-opacity-100 hover:bg-gray-700 text-left text-white font-bold py-2 px-4 rounded"
-              onClick={toggleWorkspaceExpand}
-            >
-              Workspaces
-            </button>
-            {isWorkspaceExpanded && (
-              <div className={styles.expandedSection}>
-                <Workspace userId={userId} />
-              </div>
-            )}
+          <div className={styles.workspaceManagerContainer}>
+            <WorkspaceManager
+              userId={userId}
+              activeLibrary={activeLibrary}
+              toggleLibrary={toggleLibrary}
+            />
           </div>
           <div className={styles.threadListSection}>
-            <h3 className="text-white font-bold text-left">Conversations</h3>
+            <h3 className={styles.sectionTitle}>Conversations</h3>
             <ul className={styles.threadList}>
               {threads.map((thread: Thread) => (
                 <li key={thread.id} className={styles.threadListItem}>
                   <button
                     onClick={() => handleThreadClick(thread.id)}
-                    className={`${styles.textLine}`}
+                    className={styles.textLine}
                   >
                     {thread.title}
                   </button>
@@ -114,10 +96,14 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
             </ul>
           </div>
         </div>
+        {/* Bottom Section: Conversations and Token Counter */}
         <div className={styles.bottomSection}>
-          <div className={styles.tokenCounter}>
-            <TokenCounter userId={userId} runId={runId} runCompleted={runCompleted} messagesUpdated={messagesUpdated} />
-          </div>
+          <TokenCounter
+            userId={userId}
+            runId={runId}
+            runCompleted={runCompleted}
+            messagesUpdated={messagesUpdated}
+          />
         </div>
       </div>
     </>
