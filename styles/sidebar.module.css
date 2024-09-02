@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Limelight&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&display=swap');
+
 /* Sidebar styles */
 .sidebar {
   width: 20rem;
@@ -12,6 +14,8 @@
   padding: 1rem;
   transition: transform 0.3s ease;
   z-index: 997;
+  /*font-family: 'Raleway', sans-serif; /* Slightly more character for contrast */
+  font-family: 'Lato', sans-serif; /* Clean and neutral body text */
 }
 
 .sidebar.visible {

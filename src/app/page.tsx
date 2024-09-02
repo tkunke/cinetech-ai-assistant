@@ -26,62 +26,76 @@ const HomePage: React.FC = () => {
 
   return (
     <div className={styles.pageWrapper}>
-      <div className={styles.videoBackground}>
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className={styles.backgroundVideo}
-        >
-          <source src="/banana_grab.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-        {/* Alternatively, use an image if a video is not available */}
-        {/* <Image src="/background-image.jpg" alt="Background" layout="fill" objectFit="cover" className={styles.backgroundImage} /> */}
-      </div>
-      
       <div className={styles.content}>
         <header className={styles.header}>
-          <Image
-            src="/cinetech_art.png"
-            alt="Cinetech Logo"
-            width={225}
-            height={125}
-            className={styles.overlayImage}
-          />
-          <h1>Welcome to the CineTech Assistant</h1>
-        </header>
-
-        <section className={styles.section}>
-          <h2>Explore the Future of Filmmaking</h2>
-          <p>The CineTech Assistant is designed as an advanced virtual aide for industry professionals and enthusiasts.</p>
-        </section>
-
-        <section className={styles.section}>
-        <Image
-            src="/testpic.png"
-            alt="Cinetech Logo"
-            width={225}
-            height={125}
-            className={styles.overlayImage}
-          />
-          <div className={styles.buttonContainer}>
-            <Link href="/assistant">
-              <button onClick={handleSignUp}>
-                Try the Assistant
-              </button>
+          <h1 className={styles.headerTitle}>CineTech AI</h1>
+          <p className={styles.description}>AI for film production</p>
+          <div className={styles.headerButtons}>
+            <Link href="/login">
+              <button className={styles.loginButton}>Login</button>
+            </Link>
+            <Link href="/signup">
+              <button className={styles.signupButton}>Sign Up for Free</button>
             </Link>
           </div>
-        </section>
-
+        </header>
+  
         <section className={styles.section}>
-          <h2>Join the Community</h2>
-          <p>Already have an account? <Link href="/login" className={styles.loginLink}>Login</Link></p>
+          <div className={styles.imageTextContainer}>
+            <Image
+              src="/smokingman.png"
+              alt="Cinetech Logo"
+              width={225}
+              height={125}
+              className={styles.sectionImage}
+            />
+            <div className={styles.textContent}>
+              <h2>Your Creative Partner</h2>
+              <p>We provide AI-driven solutions for filmmakers and creatives in the entertainment industry.</p>
+            </div>
+            <Image
+              src="/spinning_reels.gif"  /* Replace with your second image */
+              alt="Another Cinetech Logo"
+              width={225}
+              height={125}
+              className={styles.sectionImage}
+            />
+            <div className={styles.textContent}>
+              <h2>Innovative Tools</h2>
+              <p>Explore innovative tools designed to enhance your creative workflow and bring your visions to life.</p>
+            </div>
+          </div>
+        </section>
+  
+        <section className={styles.videoSection}>
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className={styles.backgroundVideo}
+          >
+            <source src="/banana_grab.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </section>
+  
+        <section className={styles.bottomSection}>
+          <div className={styles.bottomImageTextContainer}>
+            <Image
+              src="/cinetech_art.png"
+              alt="Cinetech Logo"
+              width={500}
+              height={500}
+              className={styles.bottomSectionImage}
+            />
+            <h2>Join the Community</h2>
+            <p>Already have an account? <Link href="/login" className={styles.loginLink}>Login</Link></p>
+          </div>
         </section>
       </div>
     </div>
-  );
+  );      
 };
 
 export default HomePage;

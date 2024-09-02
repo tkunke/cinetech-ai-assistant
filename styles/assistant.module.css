@@ -1,22 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Limelight&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&display=swap');
+
 .header {
-    position: fixed;
-    top: 0;
-    left: 20rem; /* Offset by the width of the sidebar */
-    width: calc(100% - 20rem); /* Full width minus the sidebar width */
-    background-color: #ffffff;
-    box-shadow: none;
-    z-index: 999;
-    padding: 0.5rem 1rem;
-    height: 3rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    /*border-bottom: 2px solid #aaa;*/
+  position: fixed;
+  top: 0;
+  left: 20rem; /* Offset by the width of the sidebar */
+  width: calc(100% - 20rem); /* Full width minus the sidebar width */
+  background-color: #ffffff;
+  box-shadow: none;
+  z-index: 999;
+  padding: 0.5rem 1rem;
+  height: 3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Lato', sans-serif;
+  /*border-bottom: 2px solid #aaa;*/
 }
 
 .leftSection {
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 }
 
 .middleSection {
@@ -155,19 +158,19 @@
 }
 
 .main {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    margin-top: 3rem;
-    margin-bottom: 4.5rem;
-    left: 20rem;
-    overflow: auto;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  margin-top: 3rem;
+  margin-bottom: 4.5rem;
+  left: 20rem;
+  overflow: auto;
 }
 
 @media (max-width: 360px) {
-    .main {
-        left: 0;
-    }
+  .main {
+      left: 0;
+  }
 }
 
 /* Logout button styles */
