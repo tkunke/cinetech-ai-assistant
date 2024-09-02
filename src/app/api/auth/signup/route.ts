@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     // Create the initial private workspace for the new user
     const newWorkspace: QueryResult<QueryResultRow> = await sql`
-      INSERT INTO workspaces (user_id, name, type)
+      INSERT INTO workspaces (owner, name, type)
       VALUES (${userId}, 'My Workspace', 'private')
       RETURNING *
     `;
