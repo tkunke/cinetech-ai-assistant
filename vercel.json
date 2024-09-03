@@ -1,14 +1,9 @@
 {
-    "functions": {
-      "api/resetCredits.ts": {
-        "runtime": "nodejs14.x"
-      }
-    },
-    "cron": {
-      "resetCreditsJob": {
-        "schedule": "0 0 * * *",
-        "path": "/api/resetCredits"
-      }
+  "crons": [
+    {
+      "path": "/api/resetCredits",
+      "schedule": "0 0 * * *"
     }
-  }
+  ]
+}
   
