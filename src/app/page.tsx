@@ -34,9 +34,6 @@ const HomePage: React.FC = () => {
             <Link href="/login">
               <button className={styles.loginButton}>Login</button>
             </Link>
-            <Link href="/signup">
-              <button className={styles.signupButton}>Sign Up for Free</button>
-            </Link>
           </div>
         </header>
   
@@ -64,6 +61,13 @@ const HomePage: React.FC = () => {
               <h2>Innovative Tools</h2>
               <p>Explore innovative tools designed to enhance your creative workflow and bring your visions to life.</p>
             </div>
+          </div>
+          <div className={styles.freeTrialContainer}>
+            <p>Try it out for free!
+              <Link href="/freetrial">
+                <button className={styles.signupButton}>Free Trial</button>
+              </Link>
+            </p>
           </div>
         </section>
   
@@ -95,7 +99,7 @@ const HomePage: React.FC = () => {
         </section>
       </div>
     </div>
-  );      
+  );        
 };
 
 export default HomePage;

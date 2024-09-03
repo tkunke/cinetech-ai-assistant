@@ -85,6 +85,7 @@
   margin-bottom: 10rem;
   border-radius: 10px;
   font-family: 'Raleway', sans-serif;
+  position: relative;
 }
 
 .imageTextContainer {
@@ -175,5 +176,35 @@
 .loginLink {
   color: #3b82f6;
   text-decoration: underline;
+}
+
+.freeTrialContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: auto; /* Pushes content to the bottom */
+  text-align: center;
+  width: 100%;
+  position: absolute; /* Positions the container absolutely within the section */
+  bottom: 0; /* Adjust this value to control distance from the bottom */
+}
+
+.freeTrialContainer p {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+} 
+
+.signupButton {
+  padding: 0.25rem 0.75rem;
+  background-color: white;
+  margin-left: 1rem;
+  color: black;
+  font-weight: bold;
+  border-radius: 9999px;
+  transition: background-color 0.3s ease;
+}
+
+.signupButton:hover {
+  background-color: #2563eb;
 }
 

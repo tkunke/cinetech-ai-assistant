@@ -152,6 +152,9 @@
   display: flex;
   justify-content: center; /* Centers the image horizontally */
   align-items: center;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 1rem;
   margin: 0 auto; /* Centers the container itself */
 }
 
@@ -275,6 +278,7 @@
 }
 
 .imageEngine {
+  margin-top: 0.5rem;
   position: absolute;
   top: -20px; /* Adjust based on the desired space above the image */
   right: 0;

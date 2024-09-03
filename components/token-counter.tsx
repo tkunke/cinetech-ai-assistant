@@ -9,6 +9,13 @@ interface TokenCounterProps {
 
 const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted, messagesUpdated }) => {
   const [credits, setCredits] = useState<number | null>(null);
+  const [localRunId, setLocalRunId] = useState<string | null>(null); // Local state to preserve runId
+
+  useEffect(() => {
+    if (runId) {
+      setLocalRunId(runId); // Set localRunId when runId is provided
+    }
+  }, [runId]);
 
   const fetchCurrentCredits = async () => {
     try {
@@ -22,16 +29,16 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
   };
 
   const handleCreditUpdate = async () => {
-    if (!runId) return;
+    if (!localRunId) return;
 
     let attempt = 0;
-    const maxAttempts = 15; // Increased number of attempts
-    const pollInterval = 3000; // 3 seconds delay
+    const maxAttempts = 15;
+    const pollInterval = 3000;
 
     const pollCredits = async () => {
       attempt++;
       try {
-        const response = await fetch(`/api/tokenCalc?runId=${runId}`);
+        const response = await fetch(`/api/tokenCalc?runId=${localRunId}`);
         if (response.ok) {
           const data = await response.json();
           const creditsSpent = data.credits;
@@ -40,7 +47,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
             const newCredits = credits - creditsSpent;
             await updateCreditsInDatabase(newCredits);
             fetchCurrentCredits();
-            return; // Stop polling if successful
+            return;
           }
         }
         if (attempt < maxAttempts) {
@@ -56,7 +63,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
       }
     };
 
-    setTimeout(pollCredits, 5000); // Initial delay of 5 seconds before polling starts
+    setTimeout(pollCredits, 5000);
   };
 
   const updateCreditsInDatabase = async (newCredits: number) => {
@@ -79,10 +86,10 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
   }, [userId]);
 
   useEffect(() => {
-    if (userId && runId && runCompleted && messagesUpdated) {
+    if (userId && localRunId && runCompleted && messagesUpdated) {
       handleCreditUpdate();
     }
-  }, [userId, runId, runCompleted, messagesUpdated]);
+  }, [userId, localRunId, runCompleted, messagesUpdated]);
 
   return (
     <div className="font-extrabold text-left">
