@@ -417,7 +417,11 @@ export async function POST(request: NextRequest) {
 
     // Get the initial runId from the assistantStream
     let initialRunId: string | undefined;
-    while (!initialRunId) {
+    const MAX_RETRIES = 10; // Maximum number of retries
+    const RETRY_INTERVAL = 1000; // 1 second between retries
+    let retryCount = 0;
+      
+    while (!initialRunId && retryCount < MAX_RETRIES) {
       const runStatus = assistantStream.currentRun();
       if (runStatus) {
         initialRunId = runStatus.id;
@@ -429,9 +433,16 @@ export async function POST(request: NextRequest) {
         };
         console.log('Initial run status stored:', runStatusStore[threadId]);
       } else {
-        console.log('Initial run is undefined, retrying...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        retryCount++;
+        console.log(`Initial run is undefined, retrying... (${retryCount}/${MAX_RETRIES})`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_INTERVAL));
       }
+    }
+    
+    if (!initialRunId) {
+      console.error('Failed to retrieve initial run ID after maximum retries. Operation aborted.');
+      // You can return an error response to the client here or handle the error appropriately
+      return new Response('Failed to start the run. Please try again later.', { status: 500 });
     }
 
     // Call the simulateEventSubscription function with the threadId and initialRunId

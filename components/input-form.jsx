@@ -2,8 +2,10 @@ import React, { useState, useEffect, useRef, memo } from 'react';
 import { AiOutlineSend, AiOutlineFile, AiOutlinePaperClip, AiOutlineClose } from 'react-icons/ai';
 import CinetechSpinner from './message-spinner';
 import styles from '@/styles/input-form.module.css';
+import { useUser } from '@/context/UserContext';
 
 const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputRef, handleFileChange }) => {
+  const { trialExpired, credits } = useUser();
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
   const [showWarning, setShowWarning] = useState(false);
@@ -102,7 +104,8 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
           <AiOutlinePaperClip 
             size={30} 
             className={`${styles['file-attach-button']} mr-2`}
-            onClick={triggerFileInput} 
+            onClick={triggerFileInput}
+            disabled={trialExpired || credits <= 0}
           />
           <input 
             type="file" 
@@ -110,14 +113,21 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
             ref={fileInputRef}
             onChange={onFileChange} 
             style={{ display: 'none' }} // Hide the input element
+            disabled={trialExpired || credits <= 0}
           />
           <div className={`${styles['textarea-container']}`}>
             <textarea
-              disabled={isLoading}
+              disabled={isLoading || trialExpired || credits <= 0}
               className={`${styles.textarea} border rounded py-2 px-3 text-gray-700 mb-2 resize-none`}
               onChange={handlePromptChange}
               value={prompt}
-              placeholder="Start new conversation"
+              placeholder={
+                trialExpired 
+                  ? "Your trial has expired."
+                  : credits <= 0 
+                    ? "You've exhausted your available credits."
+                    : "Start new conversation"
+              }              
               ref={inputRef}
               rows="1"
               onInput={(e) => {
@@ -127,12 +137,12 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
               onKeyDown={handleKeyDown}
             />
           </div>
-          {isLoading ? (
+          {isLoading || trialExpired || credits <= 0 ? (
             <button
               disabled
               className={`${styles.button} focus:outline-none focus:shadow-outline mb-2`}
             >
-              <CinetechSpinner />
+              {isLoading ? <CinetechSpinner /> : <AiOutlineSend />}
             </button>
           ) : (
             <button

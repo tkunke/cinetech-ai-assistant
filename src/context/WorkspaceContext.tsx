@@ -29,9 +29,12 @@ interface WorkspaceContextType {
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
   createWorkspace: (workspaceDetails: WorkspaceDetails) => void;
+  addMemberToWorkspace: (workspaceId: string, member: { email: string; role: 'viewer' | 'editor' }) => void;
   deleteWorkspace: (id: string) => void;
   switchWorkspace: (id: string) => void;
   getActiveWorkspace: () => Workspace | null;
+  fetchWorkspaceMembers: (workspaceId: string, userId: string) => Promise<"viewer" | "editor" | "owner" | null>;
+  userRole: 'viewer' | 'editor' | 'owner' | null;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
@@ -55,6 +58,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
 
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<'viewer' | 'editor' | 'owner' | null>(null);
 
   useEffect(() => {
     const fetchWorkspaces = async () => {
@@ -80,7 +84,24 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     if (userId && status === 'authenticated') {
       fetchWorkspaces();
     }
-  }, [userId, status]);    
+  }, [userId, status]);
+
+  useEffect(() => {
+    if (activeWorkspaceId && userId) {
+      // Clear the previous role state before fetching new role
+      setUserRole(null);
+  
+      fetchWorkspaceMembers(activeWorkspaceId, userId)
+        .then((role) => {
+          setUserRole(role); // Set the role state with the returned value
+          console.log('Set user role:', role);
+        })
+        .catch((error) => {
+          console.error('Failed to fetch workspace members:', error);
+        });
+    }
+  }, [activeWorkspaceId, userId]);  
+
 
   const createWorkspace = async (workspaceDetails: WorkspaceDetails) => {
     const { name, owner, members } = workspaceDetails;
@@ -109,6 +130,52 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     } catch (error) {
       console.error('Error creating workspace:', error);
     }
+  };
+
+  const addMemberToWorkspace = async (workspaceId: string, member: { email: string; role: 'viewer' | 'editor' }) => {
+    try {
+      const response = await fetch('/api/workspaceHandler', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ workspaceId, member }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Update the workspace state with the new member
+        setWorkspaces((prevWorkspaces) =>
+          prevWorkspaces.map((workspace) =>
+            workspace.id === workspaceId
+              ? { ...workspace, members: [...workspace.members, data.member] }
+              : workspace
+          )
+        );
+      } else {
+        console.error('Error adding member to workspace:', await response.json());
+      }
+    } catch (error) {
+      console.error('Error adding member to workspace:', error);
+    }
+  };
+
+  const fetchWorkspaceMembers = async (workspaceId: string, userId: string): Promise<"viewer" | "editor" | "owner" | null> => {
+    try {
+      const response = await fetch(`/api/workspaceMembers?workspaceId=${workspaceId}&userId=${userId}`);
+      const data = await response.json();
+  
+      if (response.ok && data.role) {
+        return data.role; // Return the role directly
+      } else {
+        console.error('Error fetching workspace members:', data.message);
+        return null; // Return null if there's an issue
+      }
+    } catch (error) {
+      console.error('Error fetching workspace members:', error);
+      return null; // Return null on error
+    }
   };  
 
   const deleteWorkspace = (id: string) => {
@@ -130,9 +197,12 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     workspaces,
     activeWorkspaceId,
     createWorkspace,
+    addMemberToWorkspace,
     deleteWorkspace,
     switchWorkspace,
     getActiveWorkspace,
+    fetchWorkspaceMembers,
+    userRole,
   };
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;

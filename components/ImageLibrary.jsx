@@ -7,7 +7,7 @@ import { useWorkspace } from '@/context/WorkspaceContext';
 
 const ImageLibrary = ({ userId, onTagIconClick }) => {
   const { fetchedImages, fetchImages, removeImage } = useLibrary();
-  const { activeWorkspaceId } = useWorkspace();
+  const { activeWorkspaceId, fetchWorkspaceMembers, userRole } = useWorkspace();
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
   const [currentImageToDelete, setCurrentImageToDelete] = useState(null);
   const [showTagPopup, setShowTagPopup] = useState(false);
@@ -16,9 +16,16 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
 
   useEffect(() => {
     if (userId && activeWorkspaceId) {
-      fetchImages(userId, activeWorkspaceId);
+      fetchImages(activeWorkspaceId);
     }
   }, [userId, activeWorkspaceId, fetchImages]);
+
+  useEffect(() => {
+    if (activeWorkspaceId && userId) {
+      fetchWorkspaceMembers(activeWorkspaceId, userId);
+      console.log('Users role:', userRole);
+    }
+  }, [activeWorkspaceId, userId]);
 
   const handleTagIconClick = async (image) => {
     setCurrentImageForTagging(image);
@@ -167,16 +174,20 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
                 className={styles.thumbnail}
               />
             </a>
-            <FaAsterisk
-              className={styles.tagIcon}
-              onClick={() => handleTagIconClick(image)} // Call handleTagIconClick on tag icon click
-              title="Tag Image"
-            />
-            <FaTrash
-              className={styles.imageDelete}
-              onClick={() => handleDeleteImageContent(userId, image.id, image.imageUrl)}
-              title="Delete Image"
-            />
+            {userRole !== 'viewer' && (
+              <>
+                <FaAsterisk
+                  className={styles.tagIcon}
+                  onClick={() => handleTagIconClick(image)} // Call handleTagIconClick on tag icon click
+                  title="Tag Image"
+                />
+                <FaTrash
+                  className={styles.imageDelete}
+                  onClick={() => handleDeleteImageContent(userId, image.id, image.imageUrl)}
+                  title="Delete Image"
+                />
+              </>
+            )}
             {image.tags?.map((tag) => (
               <span key={tag.id} className={styles.imageTag}>
                 {tag.name}

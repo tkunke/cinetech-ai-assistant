@@ -28,6 +28,33 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const workspaceId = searchParams.get('workspaceId');
+  const userId = searchParams.get('userId');
+
+  if (!workspaceId || !userId) {
+    return NextResponse.json({ message: 'Workspace ID and User ID are required' }, { status: 400 });
+  }
+
+  try {
+    const result = await sql`
+      SELECT role 
+      FROM workspace_users 
+      WHERE workspace_id = ${workspaceId} AND user_id = ${userId}
+    `;
+
+    if (result.rows.length === 0) {
+      return NextResponse.json({ message: 'User not found in this workspace' }, { status: 404 });
+    }
+
+    return NextResponse.json({ role: result.rows[0].role });
+  } catch (error) {
+    console.error('Error fetching workspace members:', error);
+    return NextResponse.json({ message: 'Error fetching workspace members' }, { status: 500 });
+  }
+}
+
 // DELETE: Remove a member from a workspace
 export async function DELETE(request: NextRequest) {
   const { workspaceId, userId } = await request.json();

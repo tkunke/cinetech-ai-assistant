@@ -4,6 +4,7 @@
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
+  margin-top: 1rem;
 }
 
 /* Styles for each Workspace Item */
@@ -82,27 +83,21 @@
   text-align: left;
 }
 
-.activeWorkspaceContainer,
 .activeWorkspaceDisplay {
-  padding-left: 0.5rem;
+  padding: 0 0.25rem;
   font-size: 0.9rem;
-  color: #ffffff;
-  margin-top: 0.25rem;
-  margin-bottom: 1rem;
   font-weight: bold;
-  width: 100%;
-}
-
-.activeWorkspaceDisplay {
-  padding-left: 0.5rem;
-  font-size: 0.9rem;
   color: black;
+  background-color: rgb(16, 239, 4);
+  border: 1px;
+  border-radius: 4px;
   margin-top: 0.25rem;
   margin-bottom: 1rem;
   font-weight: bold;
-  background-color: white;
-  border: 1px !important;
-  border-radius: 4px;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  position: relative;
 }
 
 .activeHeader {

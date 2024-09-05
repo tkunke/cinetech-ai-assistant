@@ -326,6 +326,10 @@ export default function CinetechAssistant({
   
     } catch (error) {
       console.error(`Error during request with thread ID: ${threadId}`, error);
+      setStreamingMessage({
+        role: 'assistant',
+        content: 'Sorry, there seems to be an issue processing your request. Please try again later.',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -339,12 +343,27 @@ export default function CinetechAssistant({
   
     try {
       const messagesResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({ threadId }));
-      const allMessages = await messagesResponse.json();
-      setMessages(allMessages.messages);
+      const response = await messagesResponse.json();
+  
+      if (response.status === 'timeout') {
+        // Inform the user about the timeout
+        setStreamingMessage({
+          role: 'assistant',
+          content: 'The operation timed out. Please try again later.',
+        });
+      } else {
+        setMessages(response.messages);
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
+      setStreamingMessage({
+        role: 'assistant',
+        content: 'An error occurred while fetching the assistant’s response. Please try again later.',
+      });
+      setIsLoading(false);
+      setShowLoadingGif(false);
     }
-  }
+  }  
 
   useEffect(() => {
     if (readerDone) {
@@ -375,6 +394,12 @@ export default function CinetechAssistant({
                 }
             } catch (error) {
                 console.error('Error polling run status:', error);
+                setStreamingMessage({
+                  role: 'assistant',
+                  content: 'Sorry, there was an issue generating a response. Please try again later.',
+                });
+                setShowLoadingGif(false); // Stop the loading indicator
+                clearInterval(pollInterval);
             }
         }, 1000);
 
@@ -455,8 +480,7 @@ export default function CinetechAssistant({
   );
 
   useEffect(() => {
-    const handleBeforeUnload = async (event) => {
-      event.preventDefault();
+    const handleBeforeUnload = async () => {
       if (runId && threadId) {
         try {
           await fetch('/api/cancelRun', {
@@ -478,7 +502,7 @@ export default function CinetechAssistant({
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [runId, threadId]);  
+  }, [runId, threadId]);    
 
   return (
     <div className="flex flex-col h-full justify-between">

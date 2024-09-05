@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useUser } from '@/context/UserContext';
 
 interface TokenCounterProps {
   userId: string;
@@ -10,12 +11,15 @@ interface TokenCounterProps {
 const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted, messagesUpdated }) => {
   const [credits, setCredits] = useState<number | null>(null);
   const [localRunId, setLocalRunId] = useState<string | null>(null); // Local state to preserve runId
+  const { fetchUserStatus } = useUser();
 
   useEffect(() => {
     if (runId) {
       setLocalRunId(runId); // Set localRunId when runId is provided
     }
   }, [runId]);
+
+  //console.log('token-counter has this for localRunId:', localRunId);
 
   const fetchCurrentCredits = async () => {
     try {
@@ -90,6 +94,12 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
       handleCreditUpdate();
     }
   }, [userId, localRunId, runCompleted, messagesUpdated]);
+
+  useEffect(() => {
+    if (credits !== null && runCompleted && typeof fetchUserStatus === 'function') {
+      fetchUserStatus(userId); // Fetch user status after updating credits
+    }
+  }, [credits, runCompleted, fetchUserStatus]);
 
   return (
     <div className="font-extrabold text-left">

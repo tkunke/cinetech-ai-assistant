@@ -7,7 +7,7 @@ import MessagePopup from '@/components/MessagePopup';
 
 const MessagesLibrary = ({ userId, onTagIconClick }) => {
   const { fetchedMessages, fetchMessages: libraryFetchMessages } = useLibrary();
-  const { activeWorkspaceId } = useWorkspace(); // Get the active workspace ID
+  const { activeWorkspaceId, fetchWorkspaceMembers, userRole } = useWorkspace(); // Get the active workspace ID
   const [messagesWithContent, setMessagesWithContent] = useState([]);
   const [isTaggingPopupVisible, setIsTaggingPopupVisible] = useState(false);
   const [taggingMessage, setTaggingMessage] = useState(null);
@@ -57,6 +57,13 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
   }, []);
 
   useEffect(() => {
+    if (activeWorkspaceId && userId) {
+      fetchWorkspaceMembers(activeWorkspaceId, userId);
+      console.log('Users role:', userRole);
+    }
+  }, [activeWorkspaceId, userId]);
+
+  useEffect(() => {
     if (userId && activeWorkspaceId && !hasFetchedTags) {
       fetchTags(userId, activeWorkspaceId);
     }
@@ -64,7 +71,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
 
   useEffect(() => {
     if (userId && activeWorkspaceId) { 
-      libraryFetchMessages(userId, activeWorkspaceId).then((formattedMessages) => {
+      libraryFetchMessages(activeWorkspaceId).then((formattedMessages) => {
         fetchMessageContents(formattedMessages);
       });
     }
@@ -258,21 +265,25 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
               {messages.map((message, messageIndex) => (
                 <li key={messageIndex} className={styles.textLine} onClick={() => setSelectedMessage(message)}>
                   {truncateText(message.content, 42)}
-                  <FaAsterisk
-                    className={styles.tagIcon}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleTagIconClick(message);
-                    }}
-                  />
-                  <FaTrash
-                    className={styles.messageDelete}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteContent(userId, message.id, message.url, 'message');
-                    }}
-                    title="Delete Message"
-                  />
+                  {userRole !== 'viewer' && (
+                    <>
+                      <FaAsterisk
+                        className={styles.tagIcon}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTagIconClick(message);
+                        }}
+                      />
+                      <FaTrash
+                        className={styles.messageDelete}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteContent(userId, message.id, message.url, 'message');
+                        }}
+                        title="Delete Message"
+                      />
+                    </>
+                  )}
                   {message.tags &&
                     message.tags.map((tag) => (
                       <span key={tag.id} className={styles.messageTag}>

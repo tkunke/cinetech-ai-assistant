@@ -34,7 +34,7 @@ interface WorkspaceManagerProps {
 const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibrary, toggleLibrary }) => {
   const { data: session } = useSession();
   const firstName = session?.user?.first_name;
-  const { workspaces, switchWorkspace, activeWorkspaceId, createWorkspace } = useWorkspace();
+  const { workspaces, switchWorkspace, activeWorkspaceId, createWorkspace, addMemberToWorkspace } = useWorkspace();
   const { invitations, fetchInvitations } = useUser();
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [isAddMemberPopupVisible, setIsAddMemberPopupVisible] = useState(false);
@@ -97,9 +97,9 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
   };
 
   const handleAddMember = async () => {
-    if (!selectedWorkspaceId) return;
 
     try {
+      console.log('Email to verify:', setEmail);
       const response = await fetch(`/api/checkUser?email=${encodeURIComponent(email)}`);
       const data = await response.json();
 
@@ -140,6 +140,19 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
     setMembers([]);
     setIsPopupVisible(false);
   };
+
+  const handleAddMemberToWorkspace = async () => {
+    if (selectedWorkspaceId) {
+      try {
+        await addMemberToWorkspace(selectedWorkspaceId, { email, role });
+        setIsAddMemberPopupVisible(false);
+        setEmail('');
+      } catch (error) {
+        console.error('Error adding member to existing workspace:', error);
+      }
+    }
+  };
+  
 
   const handleAcceptInvite = async (invitationId: string, userId: string) => {
     try {
@@ -225,12 +238,11 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
       )}
 
       {/* Active Workspace Display */}
-      <h2 className={styles.activeHeader}>Active Workspace</h2>
       {activeWorkspaceId && (
         <div className={styles.activeWorkspaceDisplay}>
           {workspaces.find((ws) => ws.id === activeWorkspaceId)?.name === 'My Workspace'
-            ? `${firstName || 'My'}'s Workspace`
-            : workspaces.find((ws) => ws.id === activeWorkspaceId)?.name}
+            ? `Active: ${firstName || 'My'}'s Workspace`
+            : `Active: ${workspaces.find((ws) => ws.id === activeWorkspaceId)?.name}`}
         </div>
       )}
 
@@ -267,14 +279,18 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
                 {ws.type === 'public' && showMembers[ws.id] && (
                   <div className={styles.membersList}>
                     <ul>
-                      {ws.members.map((member: Member, index: number) => (
-                        <li key={index} className={styles.memberItem}>
-                          <span className={styles.memberIcon}>👤</span> {/* Small user icon */}
-                          {member.username} ({member.role}) {member.status === 'pending' ? '(pending)' : ''}
-                        </li>
-                      ))}
+                      {Array.isArray(ws.members) && ws.members.length > 0 ? (
+                        ws.members.map((member: Member, index: number) => (
+                          <li key={index} className={styles.memberItem}>
+                            <span className={styles.memberIcon}>👤</span> {/* Small user icon */}
+                            {member.username} ({member.role}) {member.status === 'pending' && '(Pending)'}
+                          </li>
+                        ))
+                      ) : (
+                        <li>No members available</li>
+                      )}
                     </ul>
-                  </div>
+                  </div>     
                 )}
               </div>
             ))}
@@ -407,7 +423,7 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
               <option value="editor">Editor</option>
             </select>
 
-            <button onClick={handleAddMember}>
+            <button onClick={handleAddMemberToWorkspace}>
               Add Member
             </button>
             {/* Display Username or Error Message */}

@@ -49,9 +49,9 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
   const [fetchedMessages, setFetchedMessages] = useState<Message[]>([]);
   const { activeWorkspaceId } = useWorkspace();  // Get the active workspace ID from context
 
-  const fetchImages = useCallback(async (userId: string, workspaceId: string) => {
+  const fetchImages = useCallback(async (workspaceId: string) => {
     try {
-      const response = await fetch(`/api/get-lib-images?userId=${userId}&workspaceId=${workspaceId}&t=${Date.now()}`);
+      const response = await fetch(`/api/get-lib-images?workspaceId=${workspaceId}&t=${Date.now()}`);
       const data = await response.json();
       if (response.ok) {
         if (Array.isArray(data.images)) {
@@ -74,9 +74,9 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
     }
   }, []);  
 
-  const fetchMessages = useCallback(async (userId: string, workspaceId: string) => {
+  const fetchMessages = useCallback(async (workspaceId: string) => {
     try {
-      const response = await fetch(`/api/get-lib-messages?userId=${userId}&workspaceId=${workspaceId}&t=${Date.now()}`);
+      const response = await fetch(`/api/get-lib-messages?workspaceId=${workspaceId}&t=${Date.now()}`);
       const data = await response.json();
       if (response.ok) {
         console.log('API response data:', data);

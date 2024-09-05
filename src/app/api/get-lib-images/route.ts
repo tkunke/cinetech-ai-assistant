@@ -2,12 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sql } from '@vercel/postgres';
 
 export async function GET(request: NextRequest) {
-  const userId = request.nextUrl.searchParams.get('userId');
   const workspaceId = request.nextUrl.searchParams.get('workspaceId'); // Get the workspaceId from the query params
 
-  if (!userId || !workspaceId) {
-    console.error("User ID or Workspace ID not provided");
-    return NextResponse.json({ error: "User ID or Workspace ID not provided" }, { status: 400 });
+  if (!workspaceId) {
+    console.error("Workspace ID not provided");
+    return NextResponse.json({ error: "Workspace ID not provided" }, { status: 400 });
   }
 
   try {
@@ -15,7 +14,7 @@ export async function GET(request: NextRequest) {
     const imagesQuery = await sql`
       SELECT id, image_url, thumbnail_url
       FROM user_gen_images
-      WHERE user_id = ${userId} AND workspace_id = ${workspaceId}
+      WHERE workspace_id = ${workspaceId}
     `;
 
     console.log("Raw output from database query:", imagesQuery);

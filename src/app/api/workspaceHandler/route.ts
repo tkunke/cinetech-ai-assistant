@@ -99,35 +99,20 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { userId, name, members, type } = await request.json();
+  const { userId, name, members, type, workspaceId, member } = await request.json();
 
-  if (!userId || !name) {
-    return NextResponse.json({ message: 'User ID and workspace name are required' }, { status: 400 });
-  }
-
-  const workspaceType = type || 'public';
-
-  try {
-    // Insert the new workspace
-    const result: QueryResult<QueryResultRow> = await sql`
-      INSERT INTO workspaces (owner, name, type)
-      VALUES (${userId}, ${name}, ${workspaceType})
-      RETURNING *
-    `;
-
-    const workspaceId = result.rows[0].id;
-
-    for (const member of members) {
+  if (workspaceId && member) {
+    // Adding a member to an existing workspace
+    try {
       const memberResult = await sql`
         SELECT id FROM users WHERE email = ${member.email}
       `;
 
       if (memberResult.rows.length === 0) {
-        console.warn(`User with email ${member.email} not found.`);
-        continue;  // Skip adding this member if the user is not found
+        return NextResponse.json({ message: `User with email ${member.email} not found.` }, { status: 404 });
       }
 
-      const token = uuidv4(); // Generate a unique token for future use if needed
+      const token = uuidv4(); // Generate a unique token for the invite
 
       // Insert the user as a pending member in workspace_users
       await sql`
@@ -141,12 +126,62 @@ export async function POST(request: NextRequest) {
         VALUES (${workspaceId}, ${memberResult.rows[0].id}, ${token}, 'pending')
       `;
 
-      // Email notification is omitted here
+      // Optionally: Send email notification here
+
+      return NextResponse.json({ member: { ...member, status: 'pending' } });
+    } catch (error) {
+      console.error('Error adding member to workspace:', error);
+      return NextResponse.json({ message: 'Error adding member to workspace' }, { status: 500 });
+    }
+  } else {
+    // Handle workspace creation as before
+    if (!userId || !name) {
+      return NextResponse.json({ message: 'User ID and workspace name are required' }, { status: 400 });
     }
 
-    return NextResponse.json({ workspace: result.rows[0] });
-  } catch (error) {
-    console.error('Error creating workspace:', error);
-    return NextResponse.json({ message: 'Error creating workspace' }, { status: 500 });
+    const workspaceType = type || 'public';
+
+    try {
+      // Insert the new workspace
+      const result: QueryResult<QueryResultRow> = await sql`
+        INSERT INTO workspaces (owner, name, type)
+        VALUES (${userId}, ${name}, ${workspaceType})
+        RETURNING *
+      `;
+
+      const workspaceId = result.rows[0].id;
+
+      for (const member of members) {
+        const memberResult = await sql`
+          SELECT id FROM users WHERE email = ${member.email}
+        `;
+
+        if (memberResult.rows.length === 0) {
+          console.warn(`User with email ${member.email} not found.`);
+          continue; // Skip adding this member if the user is not found
+        }
+
+        const token = uuidv4(); // Generate a unique token for future use if needed
+
+        // Insert the user as a pending member in workspace_users
+        await sql`
+          INSERT INTO workspace_users (workspace_id, user_id, role, status)
+          VALUES (${workspaceId}, ${memberResult.rows[0].id}, ${member.role}, 'pending')
+        `;
+
+        // Store the invite with the generated token in workspace_invites
+        await sql`
+          INSERT INTO workspace_invites (workspace_id, user_id, token, status)
+          VALUES (${workspaceId}, ${memberResult.rows[0].id}, ${token}, 'pending')
+        `;
+
+        // Email notification is omitted here
+      }
+
+      return NextResponse.json({ workspace: result.rows[0] });
+    } catch (error) {
+      console.error('Error creating workspace:', error);
+      return NextResponse.json({ message: 'Error creating workspace' }, { status: 500 });
+    }
   }
 }
