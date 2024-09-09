@@ -38,21 +38,41 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const result = await sql`
-      SELECT role 
-      FROM workspace_users 
-      WHERE workspace_id = ${workspaceId} AND user_id = ${userId}
+    // Fetch members from workspace_users table
+    const membersResult = await sql`
+      SELECT u.id as "userId", u.email, u.username, wu.role, wu.status 
+      FROM workspace_users wu 
+      JOIN users u ON wu.user_id = u.id 
+      WHERE wu.workspace_id = ${workspaceId}
     `;
-
-    if (result.rows.length === 0) {
-      return NextResponse.json({ message: 'User not found in this workspace' }, { status: 404 });
+  
+    // Fetch the owner from the workspaces table
+    const ownerResult = await sql`
+      SELECT u.id as "userId", u.email, u.username 
+      FROM workspaces w 
+      JOIN users u ON w.owner = u.id 
+      WHERE w.id = ${workspaceId}
+    `;
+  
+    const members = membersResult.rows;
+    const owner = ownerResult.rows[0];
+  
+    // Add the owner to the members array with the role 'owner'
+    if (owner) {
+      members.push({
+        userId: owner.userId,  // Ensure consistent casing
+        email: owner.email,
+        username: owner.username,
+        role: 'owner',
+        status: 'confirmed',
+      });
     }
-
-    return NextResponse.json({ role: result.rows[0].role });
+  
+    return NextResponse.json({ members, role: members.find(member => member.userId === userId)?.role });
   } catch (error) {
     console.error('Error fetching workspace members:', error);
     return NextResponse.json({ message: 'Error fetching workspace members' }, { status: 500 });
-  }
+  }  
 }
 
 // DELETE: Remove a member from a workspace

@@ -4,20 +4,28 @@ import { sql } from '@vercel/postgres';
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const email = searchParams.get('email');
+  const username = searchParams.get('username');  // New: Added to check for username
   const userId = searchParams.get('userId');
 
-  if (!email && !userId) {
-    return NextResponse.json({ message: 'Email or User ID is required' }, { status: 400 });
+  if (!email && !username && !userId) {
+    return NextResponse.json({ message: 'Email, Username, or User ID is required' }, { status: 400 });
   }
 
   try {
     let userQuery;
 
+    // Query by email or username, or by userId if provided
     if (email) {
       userQuery = await sql`
         SELECT id, username
         FROM users
         WHERE email = ${email}
+      `;
+    } else if (username) {  // New: Check for username
+      userQuery = await sql`
+        SELECT id, username
+        FROM users
+        WHERE username = ${username}
       `;
     } else if (userId) {
       userQuery = await sql`
@@ -60,7 +68,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       exists: true,
-      username: user.username,  // For the existing call using email
+      username: user.username,  // For the existing call using email or username
       trialExpired: trialExpired,  // New field for UserContext
       credits: credits,  // New field for UserContext
       status: shouldBeInactive ? 'inactive' : user.status,  // New field for UserContext

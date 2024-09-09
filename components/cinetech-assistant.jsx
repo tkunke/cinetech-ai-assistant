@@ -39,7 +39,6 @@ export default function CinetechAssistant({
   const inputRef = useRef(null);
   const [chunkCounter, setChunkCounter] = useState(0);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [imageEngineMap, setImageEngineMap] = useState({});
   const [runCompleted, setRunCompleted] = useState(false);
   const [showLoadingGif, setShowLoadingGif] = useState(false);
   const [runId, setRunId] = useState(null);
@@ -307,7 +306,6 @@ export default function CinetechAssistant({
                     };
   
                     setMessages((prevMessages) => [...prevMessages, newImageMessage]);
-                    setImageEngineMap((prevMap) => ({ ...prevMap, [imageUrl]: engine }));
                     scrollToBottom();
                   }
                   break;
@@ -409,29 +407,6 @@ export default function CinetechAssistant({
   }, [readerDone, runId, threadId]);
 
   useEffect(() => {
-    const fetchEngineInfo = async (imageUrl) => {
-      try {
-        //console.log('Fetching engine info for:', imageUrl);
-        const response = await fetch(`/api/cinetech-assistant?type=engineInfo&imageUrl=${encodeURIComponent(imageUrl)}`);
-        const data = await response.json();
-        if (data.engine) {
-          setImageEngineMap((prevMap) => ({ ...prevMap, [imageUrl]: data.engine }));
-        }
-      } catch (error) {
-        console.error('Error fetching engine info:', error);
-      }
-    };
-
-    messages.forEach((message) => {
-      const imageUrlMatch = message.content.match(/!\[image\]\((.*?)\)/i);  // Case-insensitive regex for 'image'
-      if (imageUrlMatch && imageUrlMatch[1]) {
-        //console.log('Image URL found:', imageUrlMatch[1]);  // Log the found image URL
-        fetchEngineInfo(imageUrlMatch[1]);
-      }
-    });
-  }, [messages]);
-
-  useEffect(() => {
     scrollToBottom();
   }, [messages, chunkCounter, scrollToBottom]);
 
@@ -521,7 +496,6 @@ export default function CinetechAssistant({
             addToImageLibrary={addToImageLibrary}
             addToMessagesLibrary={addToMessagesLibrary}
             assistantName={session?.user?.assistant_name}
-            imageEngineMap={imageEngineMap}
           />
         ))}
         {isLoading && <CinetechAssistantMessage message={streamingMessage} />}

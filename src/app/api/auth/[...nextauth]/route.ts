@@ -9,6 +9,7 @@ import { JWT } from "next-auth/jwt";
 interface LocalUser {
   id: string;
   username: string;
+  email: string;
   password: string;
   assistant_name: string;
   default_greeting: string;
@@ -19,6 +20,7 @@ interface LocalUser {
 declare module "next-auth" {
   interface User {
     id: string;
+    email: string;
     assistant_name: string;
     default_greeting: string;
     first_name: string;
@@ -27,6 +29,7 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
+      email: string;
       name: string;
       assistant_name: string;
       default_greeting: string;
@@ -39,6 +42,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     id: string;
+    email: string;
     assistant_name: string;
     default_greeting: string;
     first_name: string;
@@ -66,6 +70,7 @@ const authOptions: NextAuthOptions = {
           return {
             id: user.id,
             name: user.username,
+            email: user.email,
             first_name: user.first_name,
             assistant_name: user.assistant_name,
             default_greeting: user.default_greeting,
@@ -88,6 +93,7 @@ const authOptions: NextAuthOptions = {
         //console.log('User in JWT callback:', user);
         token.id = user.id as string; // Use type assertion here
         token.name = user.name;
+        token.email = user.email;
         token.first_name = user.first_name;
         token.assistant_name = user.assistant_name;
         token.default_greeting = user.default_greeting;
@@ -101,6 +107,7 @@ const authOptions: NextAuthOptions = {
         //console.log('Setting session user data');
         session.user.id = token.id as string;
         session.user.name = token.name as string;
+        session.user.email = token.email as string;
         session.user.first_name = token.first_name as string;
         session.user.assistant_name = token.assistant_name as string;
         session.user.default_greeting = token.default_greeting as string;

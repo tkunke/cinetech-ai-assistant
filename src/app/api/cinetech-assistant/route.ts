@@ -237,8 +237,9 @@ async function handleRunStatusEvent(event: { status: string, threadId: string, r
 }
 
 async function postTokenCost(runId: string, usage: RunUsage, imageGenerated: boolean) {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
   try {
-    const response = await fetch(`http://localhost:3000/api/tokenCalc`, {
+    const response = await fetch(`${baseUrl}/api/tokenCalc`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

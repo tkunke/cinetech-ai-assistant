@@ -21,8 +21,9 @@ interface Image {
 interface Member {
   email: string;
   username: string;
-  role: 'viewer' | 'editor';
+  role: 'viewer' | 'contributor' | 'owner';
   status: 'pending' | 'confirmed';
+  userId: string;
 }
 
 interface WorkspaceManagerProps {
@@ -34,25 +35,28 @@ interface WorkspaceManagerProps {
 const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibrary, toggleLibrary }) => {
   const { data: session } = useSession();
   const firstName = session?.user?.first_name;
-  const { workspaces, switchWorkspace, activeWorkspaceId, createWorkspace, addMemberToWorkspace } = useWorkspace();
+  const userName = session?.user?.name;
+  const { workspaces, switchWorkspace, activeWorkspaceId, createWorkspace, addMember, fetchWorkspaces, fetchAllWorkspaceMembers, fetchWorkspaceMembers, setMembers, members, setUserRole, userRole } = useWorkspace();
   const { invitations, fetchInvitations } = useUser();
   const [isPopupVisible, setIsPopupVisible] = useState(false);
   const [isAddMemberPopupVisible, setIsAddMemberPopupVisible] = useState(false);
   const [workspaceName, setWorkspaceName] = useState('');
   const [showWorkspaces, setShowWorkspaces] = useState(false);
-  const [showMembers, setShowMembers] = useState<{ [key: string]: boolean }>({});
   const [showLibraries, setShowLibraries] = useState(false);
   const [libraryOrder, setLibraryOrder] = useState<string[]>(['messages', 'images', 'tags']);
-  const [members, setMembers] = useState<Member[]>([]);
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState<'viewer' | 'editor'>('viewer');
+  const [role, setRole] = useState<'viewer' | 'contributor'>('viewer');
   const [errorMessage, setErrorMessage] = useState('');
   const [usernameResult, setUsernameResult] = useState<string | null>(null);
   const [showInvitationPopup, setShowInvitationPopup] = useState(false);
+  const [showGlobalWorkspaceMenu, setShowGlobalWorkspaceMenu] = useState(false);
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
   const [showWorkspaceMenuId, setShowWorkspaceMenuId] = useState<string | null>(null);
+  const [expandedWorkspaceId, setExpandedWorkspaceId] = useState<string | null>(null);
+
   const menuRef = useRef<HTMLDivElement | null>(null);
   const ellipsisRef = useRef<HTMLDivElement | null>(null);
+  
 
   useEffect(() => {
     fetchInvitations(); // Fetch invitations on component mount
@@ -65,11 +69,24 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
     }
   }, [invitations]);
 
-  const toggleWorkspaceList = () => {
-    setShowWorkspaces((prev) => !prev);
+  const toggleGlobalWorkspaceMenu = () => {
+    setShowGlobalWorkspaceMenu(!showGlobalWorkspaceMenu);
   };
 
-  const toggleWorkspaceMenu = (workspaceId: string) => {
+  const handleShowInvitations = () => {
+    setShowInvitationPopup(true); // Show invitations
+    setShowGlobalWorkspaceMenu(false);  // Close the global workspace menu
+  };
+
+  const toggleWorkspaceList = () => {
+    setShowWorkspaces((prev) => !prev);
+
+    if (!showWorkspaces) {
+      fetchAllWorkspaceMembers(userId);
+    }
+  };
+
+  const toggleWorkspaceMenu = (workspaceId: string, userRole: 'owner' | 'contributor' | 'viewer') => {
     console.log('Ellipsis clicked for workspace:', workspaceId); // Debug line
     if (showWorkspaceMenuId === workspaceId) {
       console.log('Closing menu for workspace:', workspaceId); // Debug line
@@ -96,75 +113,75 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
     });
   };
 
-  const handleAddMember = async () => {
-
+  const handleAddMember = async (workspaceId: string) => {
+    if (!email) {
+      setErrorMessage('Please provide either an email or username.');
+      return;
+    }
+  
     try {
-      console.log('Email to verify:', setEmail);
-      const response = await fetch(`/api/checkUser?email=${encodeURIComponent(email)}`);
+      // Check if user exists by either email or username
+      const queryParam = `email=${encodeURIComponent(email)}`;
+      const response = await fetch(`/api/checkUser?${queryParam}`);
       const data = await response.json();
-
+  
       if (data.exists) {
-        setUsernameResult(data.username);
-        setMembers([...members, { email, username: data.username, role, status: 'pending' }]);
+        // Proceed with adding the member to the selected workspace
+        await addMember(workspaceId, {
+          email: data.email,
+          role: role,
+        });
+  
         setErrorMessage('');
+        setMembers([...members, { email: data.email, username: data.username, role, status: 'pending', userId: data.userId }]);
       } else {
-        setUsernameResult(null);
-        setErrorMessage('This email is not registered.');
+        setErrorMessage('User not found.');
       }
     } catch (error) {
-      console.error('Error checking email:', error);
-      setErrorMessage('Failed to validate email. Please try again.');
+      console.error('Error adding member:', error);
+      setErrorMessage('Failed to validate user. Please try again.');
     }
-  };
+  };     
 
   const handleRemoveMember = (emailToRemove: string) => {
     setMembers(members.filter((member) => member.email !== emailToRemove));
   };
-
+  
   const handleCreateWorkspace = async () => {
     const workspaceDetails: WorkspaceDetails = {
       name: workspaceName,
-      owner: session?.user?.id || '',
-      members: members.map(member => ({
-        email: member.email,
-        role: member.role,
-        status: member.status,
-      })),
+      owner: session?.user?.id || '', // Use session data to get the user's ID
+      members: [], // No members will be added during creation
     };
-
-    createWorkspace(workspaceDetails);
-
-    // After creation, the workspace state is updated in the context, so no need to manually update state here
-    setWorkspaceName('');
-    setEmail('');
-    setMembers([]);
-    setIsPopupVisible(false);
-  };
-
-  const handleAddMemberToWorkspace = async () => {
-    if (selectedWorkspaceId) {
-      try {
-        await addMemberToWorkspace(selectedWorkspaceId, { email, role });
-        setIsAddMemberPopupVisible(false);
-        setEmail('');
-      } catch (error) {
-        console.error('Error adding member to existing workspace:', error);
-      }
-    }
-  };
   
-
+    // Await the result of createWorkspace and ensure its return type is handled
+    const newWorkspaceId = await createWorkspace(workspaceDetails);
+  
+    if (newWorkspaceId) {
+      // Workspace created successfully
+      console.log(`Workspace "${workspaceName}" created with ID: ${newWorkspaceId}`);
+    } else {
+      console.error('Failed to create workspace');
+    }
+  
+    // Reset form fields after workspace creation
+    setWorkspaceName(''); // Clear the workspace name input field
+    setIsPopupVisible(false); // Close the popup after creation
+  };
+    
+  
   const handleAcceptInvite = async (invitationId: string, userId: string) => {
     try {
-      const response = await fetch(`/api/acceptInvitation`, {
+      const response = await fetch(`/api/handleInvitations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ invitationId, userId }),
+        body: JSON.stringify({ invitationId, userId, action: 'accept' }),
       });
 
       if (response.ok) {
+        fetchWorkspaces();
         fetchInvitations(); // Refresh invitations after accepting
         setShowInvitationPopup(false);
       } else {
@@ -175,19 +192,56 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
     }
   };
 
-  const handleDeclineInvite = (inviteId: string) => {
-    // Handle declining the invitation (e.g., remove from invitations, call an API)
-    setShowInvitationPopup(false);
-  };
+  const handleDeclineInvite = async (invitationId: string, userId: string) => {
+    try  {
+      const response = await fetch('/api/handleInvitations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ invitationId, userId, action: 'decline' }),
+      });
 
-  const handleToggleMembers = (workspaceId: string | null) => {
-    if (workspaceId !== null) {
-      setShowMembers((prevState) => ({
-        ...prevState,
-        [workspaceId]: !prevState[workspaceId],
-      }));
+      if (response.ok) {
+        fetchInvitations();
+        setShowInvitationPopup(false);
+      } else {
+        console.error('Failed to decline invitation');
+      }
+    } catch (error) {
+      console.error('Decline invitation error', error);
     }
   };
+
+  const handleToggleMembers = async (workspaceId: string) => {
+    if (expandedWorkspaceId === workspaceId) {
+      setExpandedWorkspaceId(null); // Collapse the workspace if it's already expanded
+    } else {
+      setExpandedWorkspaceId(workspaceId); // Expand the clicked workspace
+    }
+  };
+
+  const handleLeaveWorkspace = async (workspaceId: string, userId: string) => {
+    try {
+      const response = await fetch(`/api/workspaceMembers`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ workspaceId, userId }), // Send the data in the request body
+      });
+  
+      if (response.ok) {
+        console.log('Successfully left workspace');
+        // Refetch workspaces to update the UI
+        fetchWorkspaces();
+      } else {
+        console.error('Failed to leave workspace');
+      }
+    } catch (error) {
+      console.error('Error leaving workspace:', error);
+    }
+  };    
 
   const makeWorkspaceActive = (workspaceId: string) => {
     switchWorkspace(workspaceId);
@@ -220,19 +274,32 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      setMembers([]);
+    };
+  }, []);
+
   return (
     <div className={styles.workspaceManagerContainer}>
       {/* Invitation Popup */}
-      {showInvitationPopup && invitations.length > 0 && (
+      {showInvitationPopup && (
         <div className={styles.invitationPopupOverlay}>
           <div className={styles.invitationPopup}>
-            {invitations.map((invite) => (
-              <div key={invite.id} className={styles.invitationMessage}>
-                <p>{invite.ownerName} has invited you to join {invite.workspaceName}.</p>
-                <button onClick={() => handleAcceptInvite(invite.id, userId)}>Join</button>
-                <button onClick={() => handleDeclineInvite(invite.id)}>Decline</button>
+            {invitations.length > 0 ? (
+              invitations.map((invite) => (
+                <div key={invite.id} className={styles.invitationMessage}>
+                  <p>{invite.ownerName} has invited you to join {invite.workspaceName}.</p>
+                  <button className={styles.joinButton} onClick={() => handleAcceptInvite(invite.id, userId)}>Join</button>
+                  <button className={styles.declineButton} onClick={() => handleDeclineInvite(invite.id, userId)}>Decline</button>
+                </div>
+              ))
+            ) : (
+              <div className={styles.invitationMessage}>
+                <p>You don&apost have any invitations at the moment.</p>
               </div>
-            ))}
+            )}
+            <button className={styles.closeButton} onClick={() => setShowInvitationPopup(false)}>x</button>
           </div>
         </div>
       )}
@@ -246,54 +313,96 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
         </div>
       )}
 
-      {/* Workspaces Section */}
-      <h2 className={styles.workspaceSectionTitle} onClick={toggleWorkspaceList}>
-        <span>Workspaces</span>
-        <FaPlus className={styles.addWorkspaceIcon} onClick={handleNewWorkspaceClick} />
+      {/* Workspaces Header with Global Ellipsis Icon */}
+      <h2 className={styles.workspaceSectionTitle}>
+        <span onClick={toggleWorkspaceList}>Workspaces</span>
+        <FaEllipsisH 
+          className={styles.menuIcon} 
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent the click from propagating up to the parent
+            toggleGlobalWorkspaceMenu();
+          }} 
+        />
       </h2>
+
+      {/* Global Workspace Dropdown Menu */}
+      {showGlobalWorkspaceMenu && (
+        <div className={styles.workspaceMenu} onMouseLeave={() => setShowGlobalWorkspaceMenu(false)}>
+          <button onClick={handleNewWorkspaceClick}>Create New Workspace</button>
+          <button onClick={handleShowInvitations}>View Invitations</button>
+        </div>
+      )}
+
       {showWorkspaces && (
         <>
-          {workspaces
-            .map((ws) => (
-              <div key={ws.id} className={styles.workspaceContainer}>
-                <div className={styles.workspaceItem}>
-                  <button
-                    className={styles.workspaceButton}
-                    onClick={() => handleToggleMembers(ws.id)}
+          {workspaces.map((ws) => (
+            <div key={ws.id} className={styles.workspaceContainer}>
+              <div className={styles.workspaceItem}>
+                <button
+                  className={`${styles.workspaceButton} ${expandedWorkspaceId === ws.id ? styles.active : ''}`}
+                  onClick={() => handleToggleMembers(ws.id)}
+                >
+                  {ws.name === 'My Workspace'
+                    ? `${firstName}'s Workspace (private)`
+                    : ws.name}
+                </button>
+                {showWorkspaceMenuId === ws.id && (
+                  <div
+                    ref={menuRef} 
+                    className={styles.workspaceMenu}
+                    onMouseLeave={() => setShowWorkspaceMenuId(null)} // Close the menu when the mouse leaves
                   >
-                    {ws.name === 'My Workspace'
-                      ? `${firstName}'s Workspace (private)`
-                      : ws.name}
-                  </button>
-                  {showWorkspaceMenuId === ws.id && (
-                    <div ref={menuRef} className={styles.workspaceMenu}>
+                    {/* Check if workspace is private */}
+                    {ws.type === 'private' ? (
+                      // Private workspace: Only show 'Make Active'
                       <button onClick={() => makeWorkspaceActive(ws.id)}>Make Active</button>
-                      <button onClick={() => openAddMemberPopup(ws.id)}>Add Member</button>
-                      <button onClick={() => handleRemoveMember(ws.id)}>Remove Member</button>
-                    </div>
-                  )}
-                  <div ref={ellipsisRef} onClick={() => toggleWorkspaceMenu(ws.id)}>
-                    <FaEllipsisH className={styles.menuIcon} />
+                    ) : userRole === 'owner' ? (
+                      // Public workspace owned by the user: Show both 'Make Active' and 'Add Member'
+                      <>
+                        <button onClick={() => makeWorkspaceActive(ws.id)}>Make Active</button>
+                        <button onClick={() => openAddMemberPopup(ws.id)}>Add Member</button>
+                      </>
+                    ) : (
+                      // Public workspace where user is not the owner: Show 'Make Active' and 'Leave Workspace'
+                      <>
+                        <button onClick={() => makeWorkspaceActive(ws.id)}>Make Active</button>
+                        <button onClick={() => handleLeaveWorkspace(ws.id, userId)}>Leave Workspace</button>
+                      </>
+                    )}
                   </div>
-                </div>
-                {ws.type === 'public' && showMembers[ws.id] && (
-                  <div className={styles.membersList}>
-                    <ul>
-                      {Array.isArray(ws.members) && ws.members.length > 0 ? (
-                        ws.members.map((member: Member, index: number) => (
-                          <li key={index} className={styles.memberItem}>
-                            <span className={styles.memberIcon}>👤</span> {/* Small user icon */}
-                            {member.username} ({member.role}) {member.status === 'pending' && '(Pending)'}
-                          </li>
-                        ))
-                      ) : (
-                        <li>No members available</li>
-                      )}
-                    </ul>
-                  </div>     
                 )}
+                <div ref={ellipsisRef} onClick={() => userRole && toggleWorkspaceMenu(ws.id, userRole)}>
+                  <FaEllipsisH className={styles.menuIcon} />
+                </div>
               </div>
-            ))}
+              
+              {/* Only render the members list for public workspaces */}
+              {ws.type === 'public' && expandedWorkspaceId === ws.id && (
+                <div className={styles.membersList}>
+                  <ul>
+                    {members
+                      .sort((a, b) => (a.role === 'owner' ? -1 : 1)) // Sort to make the owner appear first
+                      .map((member: Member, index: number) => {
+                        const isCurrentUser = member.username === userName;
+                        const isOwner = member.role === 'owner';
+                        return (
+                          <li 
+                            key={index} 
+                            className={`${styles.memberItem} ${isOwner ? styles.ownerItem : ''}`} // Add a class if the member is the owner
+                          >
+                            <span className={styles.memberIcon}>👤</span>
+                            {isCurrentUser 
+                              ? `You (${member.role})`
+                              : `${member.username} (${member.role})`}
+                            {member.status === 'pending' && ' (Pending)'}
+                          </li>
+                        );
+                      })}
+                  </ul>
+                </div>
+              )}
+            </div>
+          ))}
         </>
       )}
 
@@ -339,14 +448,14 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
         )}
       </div>
 
-      {/* Popup for Creating Shared Workspace */}
+      {/* Popup for Creating New Workspace */}
       {isPopupVisible && (
         <div className={styles.popupOverlay}>
           <div className={styles.popup}>
             <button className={styles.closeButton} onClick={() => setIsPopupVisible(false)}>
               &times;
             </button>
-            <h3>Create Shared Workspace</h3>
+            <h3>Create New Workspace</h3>
             <input
               type="text"
               value={workspaceName}
@@ -355,44 +464,7 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
               required
               className={styles.inputField}
             />
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Invite Member by Email"
-              className={styles.inputField}
-            />
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value as 'viewer' | 'editor')}
-              className={styles.selectField}
-            >
-              <option value="viewer">Viewer</option>
-              <option value="editor">Editor</option>
-            </select>
-
-            <button onClick={handleAddMember}>
-              Add Member
-            </button>
-            {/* Display Username or Error Message */}
-            {usernameResult ? (
-              <p className={styles.successMessage}>User found: {usernameResult}</p>
-            ) : (
-              errorMessage && <p className={styles.errorMessage}>{errorMessage}</p>
-            )}
-
-            <ul>
-              {members.map((member, index) => (
-                <li key={index}>
-                  {member.username} ({member.role}) {member.status === 'pending' ? '(pending)' : ''}
-                  <button type="button" onClick={() => handleRemoveMember(member.email)}>
-                    Remove
-                  </button>
-                </li>
-              ))}
-            </ul>
-
-            <button type="button" onClick={handleCreateWorkspace} className={styles.submitButton}>
+            <button onClick={handleCreateWorkspace} className={styles.submitButton}>
               Create Workspace
             </button>
           </div>
@@ -416,14 +488,14 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
             />
             <select
               value={role}
-              onChange={(e) => setRole(e.target.value as 'viewer' | 'editor')}
+              onChange={(e) => setRole(e.target.value as 'viewer' | 'contributor')}
               className={styles.selectField}
             >
               <option value="viewer">Viewer</option>
-              <option value="editor">Editor</option>
+              <option value="contributor">contributor</option>
             </select>
 
-            <button onClick={handleAddMemberToWorkspace}>
+            <button onClick={() => handleAddMember(selectedWorkspaceId!)}>
               Add Member
             </button>
             {/* Display Username or Error Message */}
