@@ -51,7 +51,12 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
 
   const fetchImages = useCallback(async (workspaceId: string) => {
     try {
-      const response = await fetch(`/api/get-lib-images?workspaceId=${workspaceId}&t=${Date.now()}`);
+      const response = await fetch(`/api/get-lib-images?workspaceId=${workspaceId}&t=${Date.now()}`, {
+        headers: {
+          'Cache-Control': 'no-store', // Ensure no caching of the response
+          'Pragma': 'no-cache' // Additional header for backwards compatibility with older HTTP/1.0 caches
+        }
+      });
       const data = await response.json();
       if (response.ok) {
         if (Array.isArray(data.images)) {
