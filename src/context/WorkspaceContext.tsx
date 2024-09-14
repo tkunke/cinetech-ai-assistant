@@ -200,22 +200,36 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
 
   const fetchAllWorkspaceMembers = async (userId: string) => {
     try {
+      console.log("Fetching members for all workspaces...");
+      console.log("Workspaces to fetch members for:", workspaces);
       const allMembers = await Promise.all(
         workspaces.map(async (workspace) => {
+          console.log(`Fetching members for workspace: ${workspace.id}`);
           const { members, role } = await fetchWorkspaceMembers(workspace.id, userId);
+
+          console.log(`Fetched members for workspace ${workspace.id}:`, members);
+          console.log(`Fetched role for workspace ${workspace.id}:`, role);
+
           return { workspaceId: workspace.id, members, role };
         })
       );
+
+      console.log("All members fetched:", allMembers);
   
       // After fetching all members, update the context state for each workspace
       allMembers.forEach(({ workspaceId, members, role }) => {
+        console.log(`Updating state for workspace ${workspaceId}`);
         setWorkspaces((prevWorkspaces) =>
           prevWorkspaces.map((ws) =>
             ws.id === workspaceId ? { ...ws, members } : ws
           )
         );
+
+        console.log(`Updated workspace ${workspaceId} with members`, members);
+
         // Optionally set the role for the active workspace
         if (workspaceId === activeWorkspaceId) {
+          console.log(`Setting user role for active workspace ${activeWorkspaceId}:`, role);
           setUserRole(role);
         }
       });

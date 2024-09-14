@@ -360,28 +360,19 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
                   className={`${styles.workspaceButton} ${expandedWorkspaceId === ws.id ? styles.active : ''}`}
                   onClick={() => handleToggleMembers(ws.id)}
                 >
-                  {ws.name === 'My Workspace'
-                    ? `${firstName}'s Workspace (private)`
-                    : ws.name}
+                  {ws.name === 'My Workspace' ? `${firstName}'s Workspace (private)` : ws.name}
                 </button>
+                    
                 {showWorkspaceMenuId === ws.id && (
-                  <div
-                    ref={menuRef} 
-                    className={styles.workspaceMenu}
-                    onMouseLeave={() => setShowWorkspaceMenuId(null)} // Close the menu when the mouse leaves
-                  >
-                    {/* Check if workspace is private */}
+                  <div ref={menuRef} className={styles.workspaceMenu}>
                     {ws.type === 'private' ? (
-                      // Private workspace: Only show 'Make Active'
                       <button onClick={() => makeWorkspaceActive(ws.id)}>Make Active</button>
                     ) : userRole === 'owner' ? (
-                      // Public workspace owned by the user: Show both 'Make Active' and 'Add Member'
                       <>
                         <button onClick={() => makeWorkspaceActive(ws.id)}>Make Active</button>
                         <button onClick={() => openAddMemberPopup(ws.id)}>Add Member</button>
                       </>
                     ) : (
-                      // Public workspace where user is not the owner: Show 'Make Active' and 'Leave Workspace'
                       <>
                         <button onClick={() => makeWorkspaceActive(ws.id)}>Make Active</button>
                         <button onClick={() => handleLeaveWorkspace(ws.id, userId)}>Leave Workspace</button>
@@ -389,6 +380,7 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
                     )}
                   </div>
                 )}
+          
                 <div ref={ellipsisRef} onClick={() => userRole && toggleWorkspaceMenu(ws.id, userRole)}>
                   <FaEllipsisH className={styles.menuIcon} />
                 </div>
@@ -398,20 +390,18 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
               {ws.type === 'public' && expandedWorkspaceId === ws.id && (
                 <div className={styles.membersList}>
                   <ul>
-                    {members
-                      .sort((a, b) => (a.role === 'owner' ? -1 : 1)) // Sort to make the owner appear first
+                    {ws.members
+                      ?.sort((a, b) => (a.role === 'owner' ? -1 : 1)) // Sort to make the owner appear first
                       .map((member: Member, index: number) => {
                         const isCurrentUser = member.username === userName;
                         const isOwner = member.role === 'owner';
                         return (
-                          <li 
-                            key={index} 
-                            className={`${styles.memberItem} ${isOwner ? styles.ownerItem : ''}`} // Add a class if the member is the owner
+                          <li
+                            key={index}
+                            className={`${styles.memberItem} ${isOwner ? styles.ownerItem : ''}`}
                           >
                             <span className={styles.memberIcon}>👤</span>
-                            {isCurrentUser 
-                              ? `You (${member.role})`
-                              : `${member.username} (${member.role})`}
+                            {isCurrentUser ? `You (${member.role})` : `${member.username} (${member.role})`}
                             {member.status === 'pending' && ' (Pending)'}
                           </li>
                         );

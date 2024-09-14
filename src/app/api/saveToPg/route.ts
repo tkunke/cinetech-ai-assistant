@@ -14,8 +14,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const { userId, threadId, title, type, workspaceId } = requestBody;
 
-    if (!userId || !type || !workspaceId) {
-      throw new Error('User ID, workspace ID, or type is missing');
+    // Common checks for all types
+    if (!userId || !type) {
+      throw new Error('User ID or type is missing');
+    }
+
+    // Workspace ID is required only for images and messages
+    if ((type === 'image' || type === 'message') && !workspaceId) {
+      throw new Error('Workspace ID is required for images and messages');
     }
 
     const id = uuidv4();
@@ -26,12 +32,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       if (!threadId || !title) {
         throw new Error('Thread ID or title is missing');
       }
+
+      // Saving the thread
       await client.query(
         'INSERT INTO user_threads (id, user_id, thread_id, title, created_at) VALUES ($1, $2, $3, $4, $5)',
         [id, userId, threadId, title, createdAt]
       );
       console.log('Thread metadata saved successfully in SQL database');
       contentId = threadId;
+
     } else if (type === 'image') {
       const imageUrl = requestBody.imageUrl;
       if (!imageUrl) throw new Error('Image URL is missing');
@@ -43,6 +52,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
       console.log('Image metadata saved successfully in SQL database');
       contentId = result.rows[0].id;
+
     } else if (type === 'message') {
       const messageUrl = requestBody.messageUrl;
       const preview = requestBody.preview;
@@ -53,6 +63,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
       console.log('Message metadata saved successfully in SQL database');
       contentId = result.rows[0].id;
+
     } else {
       throw new Error('Invalid type provided');
     }
