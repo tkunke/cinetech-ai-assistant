@@ -11,10 +11,17 @@ const MessagePopup = ({ message, onClose }) => {
     generatePdfFromMarkdown(messageContent);
   };
 
+  const formattedTimestamp = new Date(message.timestamp).toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'long', // Full month name
+    day: 'numeric',
+  });
+
   return ReactDOM.createPortal(
     <div className={styles.messagePopupOverlay}>
       <div className={styles.messagePopup}>
         <div className={styles.messagePopupHeader}>
+          <div className={styles.timestamp}>{formattedTimestamp}</div>
           {/* Left-aligned buttons */}
           <div className={styles.leftButtons}>
             <button

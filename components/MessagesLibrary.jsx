@@ -8,7 +8,6 @@ import MessagePopup from '@/components/MessagePopup';
 const MessagesLibrary = ({ userId, onTagIconClick }) => {
   const { fetchedMessages, fetchMessages: libraryFetchMessages } = useLibrary();
   const { activeWorkspaceId, fetchWorkspaceMembers, userRole } = useWorkspace(); // Get the active workspace ID
-  const [messagesWithContent, setMessagesWithContent] = useState([]);
   const [isTaggingPopupVisible, setIsTaggingPopupVisible] = useState(false);
   const [taggingMessage, setTaggingMessage] = useState(null);
   const [tags, setTags] = useState([]);
@@ -17,28 +16,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
   const [currentMessageToDelete, setCurrentMessageToDelete] = useState(null);
 
-  const fetchMessageContents = useCallback(async (messages) => {
-    try {
-      const messagesWithContent = await Promise.all(
-        messages.map(async (message) => {
-          const response = await fetch(message.url);
-          const data = await response.json();
-
-          const formattedTimestamp = new Date(data.timestamp).toLocaleDateString(undefined, {
-            year: 'numeric',
-            month: 'short', // Abbreviated month
-            day: 'numeric',
-          });
-
-          return { ...message, content: data.content, timestamp: formattedTimestamp };
-        })
-      );
-      setMessagesWithContent(messagesWithContent);
-    } catch (error) {
-      console.error('Error fetching message contents:', error);
-    }
-  }, []);
-
+  // Fetch the tags for the current user and workspace
   const fetchTags = useCallback(async (userId, workspaceId) => {
     if (!userId || !workspaceId) return;
 
@@ -56,10 +34,38 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
     }
   }, []);
 
+  // Fetch the full message content for the popup
+  const fetchMessageContentForPopup = async (messageUrl) => {
+    try {
+      const response = await fetch(messageUrl);
+      const data = await response.json();
+      return data.content; // Return the full message content
+    } catch (error) {
+      console.error('Error fetching message content for popup:', error);
+      return null;
+    }
+  };
+
+  const handleMessageClick = async (message) => {
+    try {
+      // Fetch the full content for the selected message
+      const fullContent = await fetchMessageContentForPopup(message.url);
+      
+      if (fullContent) {
+        // Update the message with the full content
+        setSelectedMessage({ ...message, content: fullContent });
+      } else {
+        console.error('Failed to fetch full content for the message');
+      }
+    } catch (error) {
+      console.error('Error fetching full content:', error);
+    }
+  };
+
   useEffect(() => {
     if (activeWorkspaceId && userId) {
       fetchWorkspaceMembers(activeWorkspaceId, userId);
-      console.log('Users role:', userRole);
+      console.log('User\'s role:', userRole);
     }
   }, [activeWorkspaceId, userId]);
 
@@ -71,33 +77,9 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
 
   useEffect(() => {
     if (userId && activeWorkspaceId) { 
-      libraryFetchMessages(activeWorkspaceId).then((formattedMessages) => {
-        fetchMessageContents(formattedMessages);
-      });
+      libraryFetchMessages(activeWorkspaceId);
     }
-  }, [userId, activeWorkspaceId, libraryFetchMessages, fetchMessageContents]);
-
-  useEffect(() => {
-    setMessagesWithContent((prevMessages) => {
-      const combinedMessages = [...prevMessages];
-
-      fetchedMessages.forEach((fetchedMessage) => {
-        const existingIndex = combinedMessages.findIndex((msg) => msg.url === fetchedMessage.url);
-        if (existingIndex > -1) {
-          combinedMessages[existingIndex] = {
-            ...combinedMessages[existingIndex],
-            ...fetchedMessage,
-            content: fetchedMessage.content || combinedMessages[existingIndex].content,
-            timestamp: fetchedMessage.timestamp || combinedMessages[existingIndex].timestamp,
-          };
-        } else {
-          combinedMessages.push(fetchedMessage);
-        }
-      });
-
-      return combinedMessages;
-    });
-  }, [fetchedMessages]);
+  }, [userId, activeWorkspaceId, libraryFetchMessages]);
 
   const truncateText = (text, maxLength) => {
     if (!text) {
@@ -140,11 +122,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
         });
 
         if (response.ok) {
-          setMessagesWithContent((prevMessages) =>
-            prevMessages.map((msg) =>
-              msg.url === taggingMessage.url ? updatedMessage : msg
-            )
-          );
+          // Update the message with the new tag
         } else {
           console.error('Error updating tag:', await response.json());
         }
@@ -213,7 +191,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
         });
 
         if (blobResponse.ok) {
-          setMessagesWithContent(prevMessages => prevMessages.filter(message => message.id !== messageId));
+          // Remove the message from state
         } else {
           const errorResult = await blobResponse.json();
           console.error('Failed to delete file from blob storage:', errorResult.error);
@@ -249,7 +227,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
     }, {});
   };
 
-  const groupedMessages = groupMessagesByMonth(messagesWithContent);
+  const groupedMessages = groupMessagesByMonth(fetchedMessages);
 
   const handleCancelTagging = () => {
     setIsTaggingPopupVisible(false);
@@ -263,8 +241,8 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
             <div className={styles.monthHeader}>{monthYear}</div>
             <ul className={styles.nestedList}>
               {messages.map((message, messageIndex) => (
-                <li key={messageIndex} className={styles.textLine} onClick={() => setSelectedMessage(message)}>
-                  {truncateText(message.content, 42)}
+                <li key={messageIndex} className={styles.textLine} onClick={() => handleMessageClick(message)}>
+                  {truncateText(message.preview, 42)}
                   {userRole !== 'viewer' && (
                     <>
                       <FaAsterisk
@@ -337,7 +315,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
         </div>
       )}
     </>
-  );
+  );  
 };
 
 export default MessagesLibrary;

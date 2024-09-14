@@ -2,7 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import styles from '@/styles/ProjectTags.module.css';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { createClient } from '@supabase/supabase-js';
 import MessagePopup from '@/components/MessagePopup';
+
+const supabaseUrl = 'https://xeatvqzhnxnxdbxfaduh.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const ProjectTags = ({ userId }) => {
   const { activeWorkspaceId } = useWorkspace();
@@ -32,6 +37,46 @@ const ProjectTags = ({ userId }) => {
       console.error('Error fetching tags:', error);
     }
   }, [userId, activeWorkspaceId]);
+
+  useEffect(() => {
+    if (!hasFetchedTags && userId && activeWorkspaceId) {
+      fetchTags();
+    }
+  }, [hasFetchedTags, userId, activeWorkspaceId, fetchTags]);
+
+  // Real-time updates for project tags
+  useEffect(() => {
+    if (!activeWorkspaceId) return;
+
+    const projectTagChannel = supabase
+      .channel(`workspace-${activeWorkspaceId}-tags`)  // Workspace-specific channel
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'project_tags', filter: `workspace_id=eq.${activeWorkspaceId}` },
+        (payload) => {
+          console.log('Real-time tag change received:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setTags((prevTags) => [...prevTags, payload.new]);
+          } else if (payload.eventType === 'UPDATE') {
+            setTags((prevTags) =>
+              prevTags.map((tag) =>
+                tag.id === payload.new.id ? payload.new : tag
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setTags((prevTags) =>
+              prevTags.filter((tag) => tag.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(projectTagChannel);  // Cleanup the subscription on unmount
+    };
+  }, [activeWorkspaceId]);
 
   const fetchObjectsByTag = async (tag) => {
     if (!userId || !activeWorkspaceId) return;
@@ -132,12 +177,6 @@ const ProjectTags = ({ userId }) => {
       console.error('Error deleting tag:', error);
     }
   };
-
-  useEffect(() => {
-    if (!hasFetchedTags && userId && activeWorkspaceId) {
-      fetchTags();
-    }
-  }, [hasFetchedTags, userId, activeWorkspaceId, fetchTags]);
 
   const truncateText = (text, maxLength) => {
     if (!text) return '';

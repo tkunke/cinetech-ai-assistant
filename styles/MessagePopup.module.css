@@ -203,6 +203,12 @@
     border-top: 2px solid #ddd;
     margin: 2rem 0;
   }
+
+  .timestamp {
+    font-size: 14px;
+    color: #999;
+    margin-bottom: 10px;
+  }  
   
   /* Timestamp styles */
   .timestampList {

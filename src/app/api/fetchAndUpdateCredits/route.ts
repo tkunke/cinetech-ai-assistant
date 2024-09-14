@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { Pool } from 'pg';
+
+// Create a new connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL, // Use the Supabase connection string here
+});
 
 // Handler for GET requests
 export async function GET(request: NextRequest) {
+  const client = await pool.connect();
   const userId = request.nextUrl.searchParams.get('userId');
 
   if (!userId) {
@@ -12,7 +18,10 @@ export async function GET(request: NextRequest) {
 
   try {
     console.log(`GET request received for userId: ${userId}`);
-    const userQuery = await sql`SELECT credits FROM users WHERE id = ${userId}`;
+    const userQuery = await client.query(
+      `SELECT credits FROM users WHERE id = $1`,
+      [userId]
+    );
     if (userQuery.rows.length === 0) {
       console.error(`User not found for ID: ${userId}`);
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -23,14 +32,17 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error fetching credit count:", error);
     return NextResponse.json({ error: "Failed to fetch credit count" }, { status: 500 });
+  } finally {
+    client.release(); // Always release the client in the finally block
   }
 }
 
 // Handler for POST requests
 export async function POST(request: NextRequest) {
+  const client = await pool.connect();
   const body = await request.json();
   const userId = body.userId;
-  const newCredits = body.newCredits; // Change this to reflect the actual data being passed
+  const newCredits = body.newCredits; // The number of credits to update
 
   console.log(`POST request received with body: ${JSON.stringify(body)}`);
 
@@ -40,10 +52,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    await sql`UPDATE users SET credits = ${newCredits} WHERE id = ${userId}`; // Update this to newCredits
+    // Use parameterized query for security (no direct interpolation)
+    await client.query(
+      `UPDATE users SET credits = $1 WHERE id = $2`,
+      [newCredits, userId]
+    );
     return NextResponse.json({ message: "Credit count updated successfully in DB" });
   } catch (error) {
     console.error("Error updating credit count:", error);
     return NextResponse.json({ error: "Failed to update credit count in DB" }, { status: 500 });
+  } finally {
+    client.release(); // Ensure connection release
   }
 }

@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql, QueryResult, QueryResultRow } from '@vercel/postgres';
 import bcrypt from 'bcryptjs';
+import { Pool, PoolClient } from 'pg';
+
+// Create a new connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL, // Use the Supabase connection string here
+});
 
 export async function POST(request: NextRequest) {
-  const { firstName, lastName, email, username, password, assistantName, defaultGreeting, accountType } = await request.json();
+  const { firstName, lastName, email, username, password, assistantName, accountType } = await request.json();
 
   // Check for missing required fields
   if (!firstName || !lastName || !email || !username || !password || !accountType) {
@@ -12,12 +17,13 @@ export async function POST(request: NextRequest) {
 
   // Set default values for optional fields if not provided or left blank
   const finalAssistantName = assistantName && assistantName.trim() !== '' ? assistantName : 'CT Assistant';
-  const finalDefaultGreeting = defaultGreeting && defaultGreeting.trim() !== '' ? defaultGreeting : 'Hey there, how can I help?';
+
+  const client = await pool.connect(); // Connect to the database
 
   try {
     // Check if the user already exists by email or username to avoid duplicates
-    const existingUserByUsername: QueryResult<QueryResultRow> = await sql`SELECT * FROM users WHERE username = ${username}`;
-    const existingUserByEmail: QueryResult<QueryResultRow> = await sql`SELECT * FROM users WHERE email = ${email}`;
+    const existingUserByUsername = await client.query('SELECT * FROM users WHERE username = $1', [username]);
+    const existingUserByEmail = await client.query('SELECT * FROM users WHERE email = $1', [email]);
 
     if (existingUserByUsername.rows.length > 0 || existingUserByEmail.rows.length > 0) {
       return NextResponse.json({ message: 'User already exists with the given username or email' }, { status: 400 });
@@ -27,23 +33,23 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Save the new user
-    const newUser: QueryResult<QueryResultRow> = await sql`
-      INSERT INTO users (first_name, last_name, email, username, password, assistant_name, default_greeting)
-      VALUES (${firstName}, ${lastName}, ${email}, ${username}, ${hashedPassword}, ${finalAssistantName}, ${finalDefaultGreeting})
-      RETURNING *
-    `;
+    const newUser = await client.query(
+      `INSERT INTO users (first_name, last_name, email, username, password, assistant_name)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [firstName, lastName, email, username, hashedPassword, finalAssistantName]
+    );
 
     const userId = newUser.rows[0].id; // Get the new user's ID
 
     // Initialize the user's credits based on the account type
-    await initializeUserCredits(userId, accountType);
+    await initializeUserCredits(client, userId, accountType);
 
     // Create the initial private workspace for the new user
-    const newWorkspace: QueryResult<QueryResultRow> = await sql`
-      INSERT INTO workspaces (owner, name, type)
-      VALUES (${userId}, 'My Workspace', 'private')
-      RETURNING *
-    `;
+    const newWorkspace = await client.query(
+      `INSERT INTO workspaces (owner, name, type)
+       VALUES ($1, $2, $3) RETURNING *`,
+      [userId, 'My Workspace', 'private']
+    );
 
     return NextResponse.json({ 
       message: 'User and workspace created successfully', 
@@ -53,11 +59,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error creating user and workspace:', error);
     return NextResponse.json({ message: 'Error creating user and workspace' }, { status: 500 });
+  } finally {
+    client.release(); // Always release the client back to the pool
   }
 }
 
 // Initialize User Credits Function
-async function initializeUserCredits(userId: string, accountType: 'trial' | 'standard' | 'pro') {
+async function initializeUserCredits(client: PoolClient, userId: string, accountType: 'trial' | 'standard' | 'pro') {
   let initialCredits = 150; // Default for trial
 
   if (accountType === 'standard' || accountType === 'pro') {
@@ -67,22 +75,24 @@ async function initializeUserCredits(userId: string, accountType: 'trial' | 'sta
     nextBillingDate.setMonth(nextBillingDate.getMonth() + 1); // Set the next billing date to one month from now
     const nextBillingDateString = nextBillingDate.toISOString().split('T')[0];
 
-    await sql`
-      UPDATE users
-      SET credits = ${initialCredits},
-          subscription_type = ${subscriptionType},
-          subscription_start_date = NOW(),
-          next_billing_date = ${nextBillingDateString},
-          annual_credit_total = ${initialCredits}
-      WHERE id = ${userId};
-    `;
+    await client.query(
+      `UPDATE users
+       SET credits = $1,
+           subscription_type = $2,
+           subscription_start_date = NOW(),
+           next_billing_date = $3,
+           annual_credit_total = $4
+       WHERE id = $5`,
+      [initialCredits, subscriptionType, nextBillingDateString, initialCredits, userId]
+    );
   } else {
     // For trial users, set trial_start_date and initialize credits without setting subscription details
-    await sql`
-      UPDATE users
-      SET credits = ${initialCredits},
-          trial_start_date = NOW()
-      WHERE id = ${userId};
-    `;
+    await client.query(
+      `UPDATE users
+       SET credits = $1,
+           trial_start_date = NOW()
+       WHERE id = $2`,
+      [initialCredits, userId]
+    );
   }
 }

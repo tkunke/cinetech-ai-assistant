@@ -19,11 +19,11 @@ interface Image {
 }
 
 interface Member {
-  email: string;
-  username: string;
+  email?: string;
+  username?: string;
   role: 'viewer' | 'contributor' | 'owner';
-  status: 'pending' | 'confirmed';
-  userId: string;
+  status?: 'pending' | 'confirmed';
+  userId?: string;
 }
 
 interface WorkspaceManagerProps {
@@ -114,26 +114,44 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
   };
 
   const handleAddMember = async (workspaceId: string) => {
-    if (!email) {
+    if (!email && !userName) {
       setErrorMessage('Please provide either an email or username.');
       return;
     }
   
     try {
+      // Build the query parameter string based on email or username
+      let queryParam = '';
+      if (email) {
+        queryParam = `email=${encodeURIComponent(email)}`;
+      } else if (userName) {
+        queryParam = `username=${encodeURIComponent(userName)}`;
+      }
+  
       // Check if user exists by either email or username
-      const queryParam = `email=${encodeURIComponent(email)}`;
       const response = await fetch(`/api/checkUser?${queryParam}`);
       const data = await response.json();
+
+      console.log('CheckUser API response:', data);
   
       if (data.exists) {
         // Proceed with adding the member to the selected workspace
-        await addMember(workspaceId, {
-          email: data.email,
+        console.log('Calling addMember with:', {
+          email: data.email || undefined,
+          username: data.username,
+          role: role,
+        });
+        
+        const addMemberResponse = await addMember(workspaceId, {
+          email: data.email || undefined, // Send email if present
+          username: data.username || undefined, // Send username if present
           role: role,
         });
   
+        console.log('Add member response:', addMemberResponse);
+  
         setErrorMessage('');
-        setMembers([...members, { email: data.email, username: data.username, role, status: 'pending', userId: data.userId }]);
+        setMembers([...members, { email: data.email || '', username: data.username, role, status: 'pending', userId: data.userId }]);
       } else {
         setErrorMessage('User not found.');
       }
@@ -141,7 +159,7 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
       console.error('Error adding member:', error);
       setErrorMessage('Failed to validate user. Please try again.');
     }
-  };     
+  };           
 
   const handleRemoveMember = (emailToRemove: string) => {
     setMembers(members.filter((member) => member.email !== emailToRemove));

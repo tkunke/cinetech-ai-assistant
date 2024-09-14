@@ -1,3 +1,5 @@
+console.log('TokenCounter component has mounted');
+
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 
@@ -24,33 +26,36 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
   const fetchCurrentCredits = async () => {
     try {
       const response = await fetch(`/api/fetchAndUpdateCredits?userId=${userId}`);
-      if (!response.ok) throw new Error('Failed to fetch current credits');
       const data = await response.json();
+      console.log('Fetched current credits:', data); // <-- Add this for debugging
+      if (!response.ok) throw new Error('Failed to fetch current credits');
       setCredits(data.tokenCount);
+      console.log('Credits set to:', data.tokenCount);
     } catch (error) {
       console.error('Error fetching current credits:', error);
     }
-  };
+  };  
 
   const handleCreditUpdate = async () => {
     if (!localRunId) return;
-
+  
     let attempt = 0;
     const maxAttempts = 15;
     const pollInterval = 3000;
-
+  
     const pollCredits = async () => {
       attempt++;
       try {
         const response = await fetch(`/api/tokenCalc?runId=${localRunId}`);
+        const data = await response.json();
+        console.log('TokenCalc API response:', data); // <-- Add this for debugging
         if (response.ok) {
-          const data = await response.json();
           const creditsSpent = data.credits;
-
           if (credits !== null && creditsSpent !== null) {
             const newCredits = credits - creditsSpent;
+            console.log('Updating credits:', newCredits); // <-- Add this for debugging
             await updateCreditsInDatabase(newCredits);
-            fetchCurrentCredits();
+            fetchCurrentCredits(); // <-- Ensure this is called to fetch the updated credits
             return;
           }
         }
@@ -66,9 +71,9 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
         }
       }
     };
-
+  
     setTimeout(pollCredits, 5000);
-  };
+  };  
 
   const updateCreditsInDatabase = async (newCredits: number) => {
     try {
@@ -86,8 +91,12 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
   };
 
   useEffect(() => {
-    if (userId) fetchCurrentCredits();
-  }, [userId]);
+    console.log('User ID in TokenCounter:', userId); // Log userId on mount
+    if (userId) {
+      console.log('User ID available, fetching current credits for user:', userId);
+      fetchCurrentCredits();
+    }
+  }, [userId]);    
 
   useEffect(() => {
     if (userId && localRunId && runCompleted && messagesUpdated) {
@@ -100,6 +109,11 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
       fetchUserStatus(userId); // Fetch user status after updating credits
     }
   }, [credits, runCompleted, fetchUserStatus]);
+
+  if (!userId) {
+    console.log('User ID not available yet, not rendering TokenCounter.');
+    return null;  // Don't render anything if userId is not available yet
+  }
 
   return (
     <div className="font-extrabold text-left">

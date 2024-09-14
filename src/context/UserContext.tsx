@@ -13,7 +13,7 @@ interface UserContextType {
   fetchInvitations: () => void;
   fetchUserStatus: (userId: string) => Promise<void>;
   trialExpired: boolean;
-  credits: number;
+  credits: number | undefined;
   // other user-related state and functions
 }
 
@@ -33,9 +33,10 @@ interface UserProviderProps {
 
 export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const { data: session } = useSession();  // Use useSession to access session data
+  const userId = session?.user?.id;
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [trialExpired, setTrialExpired] = useState<boolean>(false);
-  const [credits, setCredits] = useState<number>(0);
+  const [credits, setCredits] = useState<number | undefined>(undefined);
 
   const fetchInvitations = async (userId: string) => {
     try {
@@ -52,21 +53,20 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     try {
       const response = await fetch(`/api/checkUser?userId=${userId}`);
       const data = await response.json();
+      console.log('User Status:', data);
       setTrialExpired(data.trialExpired);
       setCredits(data.credits);
     } catch (error) {
       console.error('Error fetching user status:', error);
     }
-  };
+  };  
 
   useEffect(() => {
-    // Fetch invitations whenever the user logs in
-    const userId = session?.user?.id;
     if (userId) {
       fetchInvitations(userId);
       fetchUserStatus(userId);
     }
-  }, [session?.user?.id]);
+  }, [userId]);
 
   const value = {
     invitations,

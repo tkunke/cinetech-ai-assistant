@@ -1,7 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { Pool } from 'pg';
+
+// Create a new connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL, // Use the Supabase connection string here
+});
 
 export async function POST(request: NextRequest) {
+  const client = await pool.connect();
+
   try {
     const body = await request.json();
     const { messageId, imageId, fileId } = body;
@@ -9,6 +16,9 @@ export async function POST(request: NextRequest) {
     if (!messageId && !imageId && !fileId) {
       return NextResponse.json({ error: 'No valid ID provided' }, { status: 400 });
     }
+
+    // Start a transaction
+    await client.query('BEGIN');
 
     // Prepare a response object
     const response = {
@@ -18,46 +28,61 @@ export async function POST(request: NextRequest) {
       uploadedFileTags: false,
     };
 
-    // Step 1: Check and delete entries in project_tag_messages
+    // Step 1: Delete entries in project_tag_messages if messageId is provided
     if (messageId) {
-      const messageTagsQuery = await sql`SELECT * FROM project_tag_messages WHERE message_id = ${messageId}`;
-      if (messageTagsQuery?.rowCount && messageTagsQuery.rowCount > 0) {
+      const result = await client.query(
+        `DELETE FROM project_tag_messages WHERE message_id = $1 RETURNING *`,
+        [messageId]
+      );
+      if (result.rowCount && result.rowCount > 0) {
         response.messageTags = true;
-        await sql`DELETE FROM project_tag_messages WHERE message_id = ${messageId}`;
       }
     }
 
-    // Step 2: Check and delete entries in project_tag_images
+    // Step 2: Delete entries in project_tag_images if imageId is provided
     if (imageId) {
-      const imageTagsQuery = await sql`SELECT * FROM project_tag_images WHERE image_id = ${imageId}`;
-      if (imageTagsQuery?.rowCount && imageTagsQuery.rowCount > 0) {
+      const result = await client.query(
+        `DELETE FROM project_tag_images WHERE image_id = $1 RETURNING *`,
+        [imageId]
+      );
+      if (result.rowCount && result.rowCount > 0) {
         response.imageTags = true;
-        await sql`DELETE FROM project_tag_images WHERE image_id = ${imageId}`;
       }
     }
 
-    // Step 3: Check and delete entries in project_tag_files
+    // Step 3: Delete entries in project_tag_files if fileId is provided
     if (fileId) {
-      const fileTagsQuery = await sql`SELECT * FROM project_tag_files WHERE file_id = ${fileId}`;
-      if (fileTagsQuery?.rowCount && fileTagsQuery.rowCount > 0) {
+      const result = await client.query(
+        `DELETE FROM project_tag_files WHERE file_id = $1 RETURNING *`,
+        [fileId]
+      );
+      if (result.rowCount && result.rowCount > 0) {
         response.fileTags = true;
-        await sql`DELETE FROM project_tag_files WHERE file_id = ${fileId}`;
       }
     }
 
-    // Step 4: Check and delete entries in project_tag_uploaded_files
+    // Step 4: Delete entries in project_tag_uploaded_files if fileId is provided
     if (fileId) {
-      const uploadedFileTagsQuery = await sql`SELECT * FROM project_tag_uploaded_files WHERE file_id = ${fileId}`;
-      if (uploadedFileTagsQuery?.rowCount && uploadedFileTagsQuery.rowCount > 0) {
+      const result = await client.query(
+        `DELETE FROM project_tag_uploaded_files WHERE file_id = $1 RETURNING *`,
+        [fileId]
+      );
+      if (result.rowCount && result.rowCount > 0) {
         response.uploadedFileTags = true;
-        await sql`DELETE FROM project_tag_uploaded_files WHERE file_id = ${fileId}`;
       }
     }
+
+    // Commit the transaction
+    await client.query('COMMIT');
 
     return NextResponse.json(response);
 
   } catch (error) {
-    console.error('Error removing tags from join tables:', error);
+    // Rollback the transaction in case of error
+    await client.query('ROLLBACK');
+    console.error('Error: Failed to remove tags from join tables:', error);
     return NextResponse.json({ error: 'Failed to remove tags from join tables' }, { status: 500 });
+  } finally {
+    client.release();
   }
 }

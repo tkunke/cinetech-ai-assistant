@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { Pool } from 'pg';
+
+// Create a new connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL, // Use the Supabase connection string here
+});
 
 export async function GET(request: NextRequest) {
+  const client = await pool.connect();
   const { searchParams } = new URL(request.url);
   const email = searchParams.get('email');
-  const username = searchParams.get('username');  // New: Added to check for username
+  const username = searchParams.get('username');  // Check for username
   const userId = searchParams.get('userId');
 
   if (!email && !username && !userId) {
@@ -14,25 +20,28 @@ export async function GET(request: NextRequest) {
   try {
     let userQuery;
 
-    // Query by email or username, or by userId if provided
+    // Query by email, username, or userId if provided
     if (email) {
-      userQuery = await sql`
-        SELECT id, username
+      userQuery = await client.query(
+        `SELECT id, username
         FROM users
-        WHERE email = ${email}
-      `;
-    } else if (username) {  // New: Check for username
-      userQuery = await sql`
-        SELECT id, username
+        WHERE email = $1`,
+        [email]
+      );
+    } else if (username) {  // Check for username
+      userQuery = await client.query(
+        `SELECT id, username
         FROM users
-        WHERE username = ${username}
-      `;
+        WHERE username = $1`,
+        [username]
+      );
     } else if (userId) {
-      userQuery = await sql`
-        SELECT id, username, trial_start_date, credits, status
+      userQuery = await client.query(
+        `SELECT id, username, trial_start_date, credits, status
         FROM users
-        WHERE id = ${userId}
-      `;
+        WHERE id = $1`,
+        [userId]
+      );
     }
 
     if (!userQuery || userQuery.rows.length === 0) {
@@ -40,42 +49,16 @@ export async function GET(request: NextRequest) {
     }
 
     const user = userQuery.rows[0];
-    let trialExpired = false;
-    let credits = user.credits;
-    let statusUpdated = false;
-
-    // Check if trial_start_date is null
-    if (user.trial_start_date) {
-      const trialStartDate = new Date(user.trial_start_date);
-      const currentDate = new Date();
-      const daysSinceTrialStart = Math.floor((currentDate.getTime() - trialStartDate.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (daysSinceTrialStart > 7) {
-        trialExpired = true;
-      }
-    }
-
-    const shouldBeInactive = trialExpired || credits <= 0;
-
-    if (shouldBeInactive && user.status !== 'inactive') {
-      await sql`
-        UPDATE users
-        SET status = 'inactive'
-        WHERE id = ${user.id}
-      `;
-      statusUpdated = true;
-    }
-
+    console.log('User found:', user);
+    // We only return the username (as the email is not required to be exposed)
     return NextResponse.json({
       exists: true,
-      username: user.username,  // For the existing call using email or username
-      trialExpired: trialExpired,  // New field for UserContext
-      credits: credits,  // New field for UserContext
-      status: shouldBeInactive ? 'inactive' : user.status,  // New field for UserContext
-      statusUpdated: statusUpdated,  // New field for UserContext
+      username: user.username,  // Return the username for validation
     });
   } catch (error) {
     console.error('Error checking user status:', error);
     return NextResponse.json({ message: 'Error checking user status' }, { status: 500 });
+  } finally {
+    client.release();
   }
 }

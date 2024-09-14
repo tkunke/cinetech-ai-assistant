@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import NextAuth, { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { sql, QueryResult } from "@vercel/postgres";
 import bcrypt from 'bcryptjs';
+import { Pool } from 'pg';
 import { JWT } from "next-auth/jwt";
 
 // Define the expected structure of the user object
@@ -12,7 +12,6 @@ interface LocalUser {
   email: string;
   password: string;
   assistant_name: string;
-  default_greeting: string;
   first_name: string;
 }
 
@@ -22,7 +21,6 @@ declare module "next-auth" {
     id: string;
     email: string;
     assistant_name: string;
-    default_greeting: string;
     first_name: string;
   }
 
@@ -32,7 +30,6 @@ declare module "next-auth" {
       email: string;
       name: string;
       assistant_name: string;
-      default_greeting: string;
       first_name: string;
     }
   }
@@ -44,10 +41,14 @@ declare module "next-auth/jwt" {
     id: string;
     email: string;
     assistant_name: string;
-    default_greeting: string;
     first_name: string;
   }
 }
+
+// Create a new connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL, // Use the Supabase connection string here
+});
 
 const authOptions: NextAuthOptions = {
   providers: [
@@ -62,20 +63,30 @@ const authOptions: NextAuthOptions = {
           return null;
         }
 
-        // Query the PostgreSQL database for the user
-        const userQuery: QueryResult<LocalUser> = await sql`SELECT * FROM users WHERE username = ${credentials.username}`;
-        const user = userQuery.rows.length > 0 ? userQuery.rows[0] : null;
+        // Connect to the database
+        const client = await pool.connect();
 
-        if (user && await bcrypt.compare(credentials.password, user.password)) {
-          return {
-            id: user.id,
-            name: user.username,
-            email: user.email,
-            first_name: user.first_name,
-            assistant_name: user.assistant_name,
-            default_greeting: user.default_greeting,
-          };
+        try {
+          // Query the PostgreSQL database for the user
+          const result = await client.query<LocalUser>(
+            'SELECT * FROM users WHERE username = $1',
+            [credentials.username]
+          );
+          const user = result.rows.length > 0 ? result.rows[0] : null;
+
+          if (user && await bcrypt.compare(credentials.password, user.password)) {
+            return {
+              id: user.id,
+              name: user.username,
+              email: user.email,
+              first_name: user.first_name,
+              assistant_name: user.assistant_name,
+            };
+          }
+        } finally {
+          client.release(); // Always release the client
         }
+
         return null;
       }
     }),
@@ -90,31 +101,22 @@ const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        //console.log('User in JWT callback:', user);
-        token.id = user.id as string; // Use type assertion here
+        token.id = user.id as string;
         token.name = user.name;
         token.email = user.email;
         token.first_name = user.first_name;
         token.assistant_name = user.assistant_name;
-        token.default_greeting = user.default_greeting;
       }
-      //console.log('Token in JWT callback:', token);
       return token;
     },
     async session({ session, token }) {
-      //console.log('Token in Session callback:', token);
-      if (typeof token.id === 'string' && token.assistant_name && token.default_greeting) {
-        //console.log('Setting session user data');
+      if (typeof token.id === 'string' && token.assistant_name) {
         session.user.id = token.id as string;
         session.user.name = token.name as string;
         session.user.email = token.email as string;
         session.user.first_name = token.first_name as string;
         session.user.assistant_name = token.assistant_name as string;
-        session.user.default_greeting = token.default_greeting as string;
-      } else {
-        console.log('Token did not pass the condition:', token);
       }
-      //console.log('Session in Session callback:', session);
       return session;
     },
     async redirect({ url, baseUrl }) {

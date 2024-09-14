@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql, QueryResult, QueryResultRow } from '@vercel/postgres';
+import { Pool, QueryResult } from 'pg';
 import { v4 as uuidv4 } from 'uuid';
 
 interface Member {
@@ -17,17 +17,25 @@ interface Workspace {
   owner: Member;
 }
 
+// Create a new connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL, // Use your Supabase connection string here
+});
+
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('userId');
-
-  if (!userId) {
-    return NextResponse.json({ message: 'User ID is required' }, { status: 400 });
-  }
-
+  const client = await pool.connect();
   try {
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json({ message: 'User ID is required' }, { status: 400 });
+    }
+
     console.log(`Fetching workspaces for userId: ${userId}`);
-    const result: QueryResult<QueryResultRow> = await sql`
+
+    // Fetch workspaces and users in one query
+    const result = await client.query(`
       SELECT 
         w.id AS workspace_id, 
         w.name AS workspace_name, 
@@ -44,20 +52,16 @@ export async function GET(request: NextRequest) {
       LEFT JOIN workspace_users wu ON wu.workspace_id = w.id
       LEFT JOIN users u ON u.id = wu.user_id
       LEFT JOIN users owner ON owner.id = w.owner
-      WHERE w.owner = ${userId} 
-      OR (wu.user_id = ${userId} AND wu.status = 'confirmed')
-    `;
+      WHERE w.owner = $1 
+      OR (wu.user_id = $1 AND wu.status = 'confirmed')`,
+      [userId]
+    );
 
-    //console.log('Raw workspace result:', result.rows);
-    if (result.rows.length === 0) {
-      console.log('No workspaces found for this user.');
-      return NextResponse.json({ workspaces: [] });
-    }
+    const workspacesMap = new Map();  // To store workspaces and avoid duplicates
 
-    const workspaces = await result.rows.reduce(async (accPromise: Promise<Workspace[]>, row) => {
-      const acc = await accPromise;
-      let workspace = acc.find(ws => ws.id === row.workspace_id);
-    
+    result.rows.forEach(row => {
+      let workspace = workspacesMap.get(row.workspace_id);
+
       if (!workspace) {
         workspace = {
           id: row.workspace_id,
@@ -65,17 +69,17 @@ export async function GET(request: NextRequest) {
           type: row.workspace_type,
           members: [],
           owner: {
-            email: row.owner_email,     // Properly extract owner email
-            username: row.owner_username,  // Properly extract owner username
-            role: 'owner',              // Set role explicitly as 'owner'
-            status: 'confirmed'         // Owner is always 'confirmed'
-          }
+            email: row.owner_email,
+            username: row.owner_username,
+            role: 'owner',
+            status: 'confirmed',
+          },
         };
-        acc.push(workspace);
+        workspacesMap.set(row.workspace_id, workspace);
       }
-    
-      // Add members (other than owner) to the workspace
-      if (row.member_id && row.member_role && row.member_id !== row.owner_id) {
+
+      // Add members to the workspace, but exclude the owner
+      if (row.member_id && row.member_id !== row.owner_id) {
         workspace.members.push({
           email: row.member_email,
           username: row.member_username,
@@ -83,105 +87,140 @@ export async function GET(request: NextRequest) {
           status: row.member_status,
         });
       }
+    });
 
-      //console.log('Workspace after row processing:', JSON.stringify(workspace, null, 2));
-    
-      return acc;
-    }, Promise.resolve([]));
-
-    //console.log('Final workspaces structure:', JSON.stringify(workspaces, null, 2));
-
+    const workspaces = Array.from(workspacesMap.values());
     return NextResponse.json({ workspaces });
   } catch (error) {
     console.error('Error fetching workspaces:', error);
     return NextResponse.json({ message: 'Error fetching workspaces' }, { status: 500 });
+  } finally {
+    client.release();
   }
 }
 
 export async function POST(request: NextRequest) {
-  const { userId, name, members, type, workspaceId, member } = await request.json();
+  const client = await pool.connect();
+  try {
+    const { userId, name, members, type, workspaceId, member } = await request.json();
+    console.log('Received member payload:', member);
 
-  if (workspaceId && member) {
-    // Adding a member to an existing workspace
-    try {
-      const memberResult = await sql`
-        SELECT id FROM users WHERE email = ${member.email}
-      `;
+    if (workspaceId && member) {
+      // Adding a member to an existing workspace
+      try {
+        let memberResult: QueryResult<any> | undefined;  // Initialize memberResult
 
-      if (memberResult.rows.length === 0) {
-        return NextResponse.json({ message: `User with email ${member.email} not found.` }, { status: 404 });
-      }
-
-      const token = uuidv4(); // Generate a unique token for the invite
-
-      // Insert the user as a pending member in workspace_users
-      await sql`
-        INSERT INTO workspace_users (workspace_id, user_id, role, status)
-        VALUES (${workspaceId}, ${memberResult.rows[0].id}, ${member.role}, 'pending')
-      `;
-
-      // Store the invite with the generated token in workspace_invites
-      await sql`
-        INSERT INTO workspace_invites (workspace_id, user_id, token, status)
-        VALUES (${workspaceId}, ${memberResult.rows[0].id}, ${token}, 'pending')
-      `;
-
-      // Optionally: Send email notification here
-
-      return NextResponse.json({ member: { ...member, status: 'pending' } });
-    } catch (error) {
-      console.error('Error adding member to workspace:', error);
-      return NextResponse.json({ message: 'Error adding member to workspace' }, { status: 500 });
-    }
-  } else {
-    // Handle workspace creation as before
-    if (!userId || !name) {
-      return NextResponse.json({ message: 'User ID and workspace name are required' }, { status: 400 });
-    }
-
-    const workspaceType = type || 'public';
-
-    try {
-      // Insert the new workspace
-      const result: QueryResult<QueryResultRow> = await sql`
-        INSERT INTO workspaces (owner, name, type)
-        VALUES (${userId}, ${name}, ${workspaceType})
-        RETURNING *
-      `;
-
-      const workspaceId = result.rows[0].id;
-
-      for (const member of members) {
-        const memberResult = await sql`
-          SELECT id FROM users WHERE email = ${member.email}
-        `;
-
-        if (memberResult.rows.length === 0) {
-          console.warn(`User with email ${member.email} not found.`);
-          continue; // Skip adding this member if the user is not found
+        // Check for email first, fallback to username if no email is provided
+        if (member.email) {
+          memberResult = await client.query(
+            `SELECT id FROM users WHERE email = $1`,
+            [member.email]
+          );
+        } else if (member.username) {
+          memberResult = await client.query(
+            `SELECT id FROM users WHERE username = $1`,
+            [member.username]
+          );
         }
 
-        const token = uuidv4(); // Generate a unique token for future use if needed
+        if (!memberResult || memberResult.rows.length === 0) {
+          console.warn(`User with ${member.email ? 'email' : 'username'} ${member.email || member.username} not found.`);
+          return NextResponse.json({ message: `User with ${member.email ? 'email' : 'username'} ${member.email || member.username} not found.` }, { status: 404 });
+        }
 
-        // Insert the user as a pending member in workspace_users
-        await sql`
-          INSERT INTO workspace_users (workspace_id, user_id, role, status)
-          VALUES (${workspaceId}, ${memberResult.rows[0].id}, ${member.role}, 'pending')
-        `;
+        const token = uuidv4();
 
-        // Store the invite with the generated token in workspace_invites
-        await sql`
-          INSERT INTO workspace_invites (workspace_id, user_id, token, status)
-          VALUES (${workspaceId}, ${memberResult.rows[0].id}, ${token}, 'pending')
-        `;
+        // Transaction: Add member & workspace invite
+        await client.query('BEGIN');
 
-        // Email notification is omitted here
+        const insertUserResult = await client.query(
+          `INSERT INTO workspace_users (workspace_id, user_id, role, status)
+           VALUES ($1, $2, $3, 'pending')`,
+          [workspaceId, memberResult.rows[0].id, member.role]
+        );
+
+        console.log('Inserted into workspace_users:', insertUserResult);
+
+        const insertInviteResult = await client.query(
+          `INSERT INTO workspace_invites (workspace_id, user_id, token, status)
+           VALUES ($1, $2, $3, 'pending')`,
+          [workspaceId, memberResult.rows[0].id, token]
+        );
+
+        console.log('Inserted into workspace_invites:', insertInviteResult);
+
+        await client.query('COMMIT');
+
+        return NextResponse.json({ member: { ...member, status: 'pending' } });
+      } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error adding member to workspace:', error);
+        return NextResponse.json({ message: 'Error adding member to workspace' }, { status: 500 });
+      }
+    } else {
+      // Handle workspace creation as before
+      if (!userId || !name) {
+        return NextResponse.json({ message: 'User ID and workspace name are required' }, { status: 400 });
       }
 
-      return NextResponse.json({ workspace: result.rows[0] });
-    } catch (error) {
-      console.error('Error creating workspace:', error);
-      return NextResponse.json({ message: 'Error creating workspace' }, { status: 500 });
+      const workspaceType = type || 'public';
+
+      try {
+        // Transaction: Create workspace & add members
+        await client.query('BEGIN');
+
+        const newWorkspace = await client.query(
+          `INSERT INTO workspaces (owner, name, type)
+           VALUES ($1, $2, $3)
+           RETURNING id`,
+          [userId, name, workspaceType]
+        );
+
+        const workspaceId = newWorkspace.rows[0].id;
+
+        for (const member of members) {
+          let memberResult: QueryResult<any> | undefined;  // Initialize memberResult
+
+          if (member.email) {
+            memberResult = await client.query(
+              `SELECT id FROM users WHERE email = $1`,
+              [member.email]
+            );
+          } else if (member.username) {
+            memberResult = await client.query(
+              `SELECT id FROM users WHERE username = $1`,
+              [member.username]
+            );
+          }
+
+          if (memberResult && memberResult.rows.length > 0) {
+            const token = uuidv4();
+
+            await client.query(
+              `INSERT INTO workspace_users (workspace_id, user_id, role, status)
+               VALUES ($1, $2, $3, 'pending')`,
+              [workspaceId, memberResult.rows[0].id, member.role]
+            );
+
+            await client.query(
+              `INSERT INTO workspace_invites (workspace_id, user_id, token, status)
+               VALUES ($1, $2, $3, 'pending')`,
+              [workspaceId, memberResult.rows[0].id, token]
+            );
+          } else {
+            console.warn(`User with ${member.email ? 'email' : 'username'} ${member.email || member.username} not found.`);
+          }
+        }
+
+        await client.query('COMMIT');
+        return NextResponse.json({ workspace: newWorkspace.rows[0] });
+      } catch (error) {
+        await client.query('ROLLBACK');
+        console.error('Error creating workspace:', error);
+        return NextResponse.json({ message: 'Error creating workspace' }, { status: 500 });
+      }
     }
+  } finally {
+    client.release();
   }
 }

@@ -62,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
         <div className={styles.topSection}>
           <Link href="/">
             <Image
-              src="/cinetech_art.png"
+              src="/bw_logo.png"
               alt="Cinetech Logo"
               width="150"
               height="150"

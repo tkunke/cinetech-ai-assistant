@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sql } from '@vercel/postgres';
+import { Pool } from 'pg';
+
+// Create a new connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL, // Use the Supabase connection string here
+});
 
 // Handler for GET requests to fetch workspace-specific tags
 export async function GET(request: NextRequest) {
+  const client = await pool.connect();
   const userId = request.nextUrl.searchParams.get('userId');
   const workspaceId = request.nextUrl.searchParams.get('workspaceId');
 
@@ -15,11 +21,12 @@ export async function GET(request: NextRequest) {
     console.log(`Fetching tags for workspace: ${workspaceId}`);
 
     // Fetch tags associated with the workspace directly from project_tags
-    const tagsQuery = await sql`
+    const tagsQuery = await client.query(`
       SELECT id, name
       FROM project_tags
-      WHERE workspace_id = ${workspaceId}
-    `;
+      WHERE workspace_id = $1`,
+      [workspaceId]
+    );
 
     const tags = tagsQuery.rows.map(tag => ({ id: tag.id, name: tag.name }));
 
@@ -33,6 +40,7 @@ export async function GET(request: NextRequest) {
 
 // Handler for POST requests to add a new workspace-specific tag
 export async function POST(request: NextRequest) {
+  const client = await pool.connect();
   try {
     const body = await request.json();
     const { userId, workspaceId, tag } = body;
@@ -43,22 +51,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert new tag into the project_tags table directly with workspace_id
-    const insertTagQuery = await sql`
+    const insertTagQuery = await client.query(`
       INSERT INTO project_tags (user_id, name, workspace_id)
-      VALUES (${userId}, ${tag.name}, ${workspaceId})
-      RETURNING id, name
-    `;
+      VALUES ($1, $2, $3)
+      RETURNING id, name`,
+      [userId, tag.name, workspaceId]
+    );
 
     const newTag = insertTagQuery.rows[0];
 
     console.log(`New tag created for user ${userId} and associated with workspace ${workspaceId}`, newTag);
 
     // Fetch updated list of tags for the workspace
-    const tagsQuery = await sql`
+    const tagsQuery = await client.query(`
       SELECT id, name
       FROM project_tags
-      WHERE workspace_id = ${workspaceId}
-    `;
+      WHERE workspace_id = $1`,
+      [workspaceId]
+    );
     const tags = tagsQuery.rows.map(tag => ({ id: tag.id, name: tag.name }));
 
     return NextResponse.json({ tags });
@@ -70,6 +80,7 @@ export async function POST(request: NextRequest) {
 
 // Handler for DELETE requests to delete a tag
 export async function DELETE(request: NextRequest) {
+  const client = await pool.connect();
   try {
     const body = await request.json();
     const { userId, workspaceId, tagId } = body;
@@ -79,36 +90,41 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "User ID, Workspace ID, and Tag ID are required" }, { status: 400 });
     }
 
-    // Delete associations with images and messages first
-    await sql`
-      DELETE FROM project_tag_images WHERE tag_id = ${tagId}
-    `;
-    await sql`
-      DELETE FROM project_tag_messages WHERE tag_id = ${tagId}
-    `;
+    // Perform batch delete for images and messages associated with the tag
+    await client.query(`
+      DELETE FROM project_tag_images
+      WHERE tag_id = $1;
+      DELETE FROM project_tag_messages
+      WHERE tag_id = $1;
+    `, [tagId]);
 
     // Delete the tag from project_tags
-    await sql`
-      DELETE FROM project_tags WHERE id = ${tagId} AND workspace_id = ${workspaceId}
-    `;
+    await client.query(`
+      DELETE FROM project_tags WHERE id = $1 AND workspace_id = $2`,
+      [tagId, workspaceId]
+    );
 
     // Fetch updated list of tags for the workspace
-    const tagsQuery = await sql`
+    const tagsQuery = await client.query(`
       SELECT id, name
       FROM project_tags
-      WHERE workspace_id = ${workspaceId}
-    `;
+      WHERE workspace_id = $1`,
+      [workspaceId]
+    );
     const tags = tagsQuery.rows.map(tag => ({ id: tag.id, name: tag.name }));
 
     return NextResponse.json({ tags });
   } catch (error) {
     console.error("Error deleting tag:", error);
     return NextResponse.json({ error: "Failed to delete tag" }, { status: 500 });
+  } finally {
+    client.release();
   }
 }
 
 // Handler for PUT requests to tag an image or a message within a workspace
 export async function PUT(request: NextRequest) {
+  const client = await pool.connect();
   try {
     const body = await request.json();
     const { userId, workspaceId, imageUrl, messageUrl, tag }: { userId: string; workspaceId: string; imageUrl?: string; messageUrl?: string; tag: { id: string; name: string } } = body;
@@ -122,9 +138,10 @@ export async function PUT(request: NextRequest) {
 
     if (imageUrl) {
       // Fetch the image ID
-      const imageQuery = await sql`
-        SELECT id FROM user_gen_images WHERE user_id = ${userId} AND image_url = ${imageUrl} AND workspace_id = ${workspaceId}
-      `;
+      const imageQuery = await client.query(`
+        SELECT id FROM user_gen_images WHERE user_id = $1 AND image_url = $2 AND workspace_id = $3`,
+        [userId, imageUrl, workspaceId]
+      );
       const image = imageQuery.rows[0];
 
       if (!image) {
@@ -134,9 +151,10 @@ export async function PUT(request: NextRequest) {
       const imageId = image.id;
 
       // Check if the tag already exists for this image within the workspace
-      const tagQuery = await sql`
-        SELECT * FROM project_tag_images WHERE image_id = ${imageId} AND tag_id = ${tagId}
-      `;
+      const tagQuery = await client.query(`
+        SELECT * FROM project_tag_images WHERE image_id = $1 AND tag_id = $2`,
+        [imageId, tagId]
+      );
       const existingTag = tagQuery.rows[0];
 
       if (existingTag) {
@@ -144,10 +162,11 @@ export async function PUT(request: NextRequest) {
       }
 
       // Insert the new tag for this image
-      await sql`
+      await client.query(`
         INSERT INTO project_tag_images (tag_id, image_id)
-        VALUES (${tagId}, ${imageId})
-      `;
+        VALUES ($1, $2)`,
+        [tagId, imageId]
+      );
 
       console.log(`Tag ${tagId} added to image ${imageUrl} for user ${userId} and workspace ${workspaceId}`);
 
@@ -155,9 +174,10 @@ export async function PUT(request: NextRequest) {
 
     } else if (messageUrl) {
       // Fetch the message ID
-      const messageQuery = await sql`
-        SELECT id FROM user_gen_messages WHERE user_id = ${userId} AND message_url = ${messageUrl} AND workspace_id = ${workspaceId}
-      `;
+      const messageQuery = await client.query(`
+        SELECT id FROM user_gen_messages WHERE user_id = $1 AND message_url = $2 AND workspace_id = $3`,
+        [userId, messageUrl, workspaceId]
+      );
       const message = messageQuery.rows[0];
 
       if (!message) {
@@ -167,9 +187,10 @@ export async function PUT(request: NextRequest) {
       const messageId = message.id;
 
       // Check if the tag already exists for this message within the workspace
-      const tagQuery = await sql`
-        SELECT * FROM project_tag_messages WHERE message_id = ${messageId} AND tag_id = ${tagId}
-      `;
+      const tagQuery = await client.query(`
+        SELECT * FROM project_tag_messages WHERE message_id = $1 AND tag_id = $2`,
+        [messageId, tagId]
+      );
       const existingTag = tagQuery.rows[0];
 
       if (existingTag) {
@@ -177,10 +198,11 @@ export async function PUT(request: NextRequest) {
       }
 
       // Insert the new tag for this message
-      await sql`
+      await client.query(`
         INSERT INTO project_tag_messages (tag_id, message_id)
-        VALUES (${tagId}, ${messageId})
-      `;
+        VALUES ($1, $2)`,
+        [tagId, messageId]
+      );
 
       console.log(`Tag ${tagId} added to message ${messageUrl} for user ${userId} and workspace ${workspaceId}`);
 
@@ -193,6 +215,8 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     console.error("Error adding tag:", error);
     return NextResponse.json({ error: "Failed to add tag" }, { status: 500 });
+  } finally {
+    client.release();
   }
 }
 

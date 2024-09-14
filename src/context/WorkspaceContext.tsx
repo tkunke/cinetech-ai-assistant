@@ -2,11 +2,17 @@ import React, { createContext, useState, useContext, ReactNode, useEffect } from
 import { useSession } from 'next-auth/react';
 
 interface Member {
-  email: string;
-  username: string;
+  email?: string;
+  username?: string;
   role: 'viewer' | 'contributor' | 'owner';
-  status: 'pending' | 'confirmed';
-  userId: string;
+  status?: 'pending' | 'confirmed';
+  userId?: string;
+}
+
+interface AddableMember {
+  email?: string;
+  username?: string;
+  role: 'viewer' | 'contributor';  // Only allow these two roles
 }
 
 interface Workspace {
@@ -27,7 +33,7 @@ interface WorkspaceContextType {
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
   createWorkspace: (workspaceDetails: WorkspaceDetails) => Promise<string | null>;
-  addMember: (workspaceId: string, member: { email: string; role: 'viewer' | 'contributor' }) => void;
+  addMember: (workspaceId: string, member: AddableMember) => void;
   deleteWorkspace: (id: string) => void;
   switchWorkspace: (id: string) => void;
   getActiveWorkspace: () => Workspace | null;
@@ -138,7 +144,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     }
   };  
 
-  const addMember = async (workspaceId: string, member: { email?: string; username?: string; role: 'viewer' | 'contributor' }) => {
+  const addMember = async (workspaceId: string, member: AddableMember) => {
     try {
       const response = await fetch('/api/workspaceHandler', {
         method: 'POST',
@@ -165,7 +171,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
     } catch (error) {
       console.error('Error adding member to workspace:', error);
     }
-  };   
+  };       
 
   const fetchWorkspaceMembers = async (workspaceId: string, userId: string): Promise<{ members: Member[], role: "viewer" | "contributor" | "owner" | null }> => {
     try {
