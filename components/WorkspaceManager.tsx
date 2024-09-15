@@ -353,64 +353,70 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
 
       {showWorkspaces && (
         <>
-          {workspaces.map((ws) => (
-            <div key={ws.id} className={styles.workspaceContainer}>
-              <div className={styles.workspaceItem}>
-                <button
-                  className={`${styles.workspaceButton} ${expandedWorkspaceId === ws.id ? styles.active : ''}`}
-                  onClick={() => handleToggleMembers(ws.id)}
-                >
-                  {ws.name === 'My Workspace' ? `${firstName}'s Workspace (private)` : ws.name}
-                </button>
-                    
-                {showWorkspaceMenuId === ws.id && (
-                  <div ref={menuRef} className={styles.workspaceMenu}>
-                    {ws.type === 'private' ? (
-                      <button onClick={() => makeWorkspaceActive(ws.id)}>Make Active</button>
-                    ) : userRole === 'owner' ? (
-                      <>
+          {workspaces.map((ws) => {
+            const currentUser = ws.members.find(member => member.username === userName);
+            const userIsOwner = currentUser?.role === 'owner'; // Check if current user is the owner
+          
+            return (
+              <div key={ws.id} className={styles.workspaceContainer}>
+                <div className={styles.workspaceItem}>
+                  <button
+                    className={`${styles.workspaceButton} ${expandedWorkspaceId === ws.id ? styles.active : ''}`}
+                    onClick={() => handleToggleMembers(ws.id)}
+                  >
+                    {ws.name === 'My Workspace' ? `${firstName}'s Workspace (private)` : ws.name}
+                  </button>
+                      
+                  {showWorkspaceMenuId === ws.id && (
+                    <div ref={menuRef} className={styles.workspaceMenu}>
+                      {ws.type === 'private' ? (
                         <button onClick={() => makeWorkspaceActive(ws.id)}>Make Active</button>
-                        <button onClick={() => openAddMemberPopup(ws.id)}>Add Member</button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => makeWorkspaceActive(ws.id)}>Make Active</button>
-                        <button onClick={() => handleLeaveWorkspace(ws.id, userId)}>Leave Workspace</button>
-                      </>
-                    )}
+                      ) : userIsOwner ? (  // Use userIsOwner to check role
+                        <>
+                          <button onClick={() => makeWorkspaceActive(ws.id)}>Make Active</button>
+                          <button onClick={() => openAddMemberPopup(ws.id)}>Add Member</button>
+                          <button onClick={() => handleRemoveMember(ws.id)}>Remove Member</button>
+                        </>
+                      ) : (
+                        <>
+                          <button onClick={() => makeWorkspaceActive(ws.id)}>Make Active</button>
+                          <button onClick={() => handleLeaveWorkspace(ws.id, userId)}>Leave Workspace</button>
+                        </>
+                      )}
+                    </div>
+                  )}
+      
+                  <div ref={ellipsisRef} onClick={() => currentUser && toggleWorkspaceMenu(ws.id, currentUser.role)}>
+                    <FaEllipsisH className={styles.menuIcon} />
+                  </div>
+                </div>
+                
+                {/* Only render the members list for public workspaces */}
+                {ws.type === 'public' && expandedWorkspaceId === ws.id && (
+                  <div className={styles.membersList}>
+                    <ul>
+                      {ws.members
+                        ?.sort((a, b) => (a.role === 'owner' ? -1 : 1)) // Sort to make the owner appear first
+                        .map((member: Member, index: number) => {
+                          const isCurrentUser = member.username === userName;
+                          const isOwner = member.role === 'owner';
+                          return (
+                            <li
+                              key={index}
+                              className={`${styles.memberItem} ${isOwner ? styles.ownerItem : ''}`}
+                            >
+                              <span className={styles.memberIcon}>👤</span>
+                              {isCurrentUser ? `You (${member.role})` : `${member.username} (${member.role})`}
+                              {member.status === 'pending' && ' (Pending)'}
+                            </li>
+                          );
+                        })}
+                    </ul>
                   </div>
                 )}
-          
-                <div ref={ellipsisRef} onClick={() => userRole && toggleWorkspaceMenu(ws.id, userRole)}>
-                  <FaEllipsisH className={styles.menuIcon} />
-                </div>
               </div>
-              
-              {/* Only render the members list for public workspaces */}
-              {ws.type === 'public' && expandedWorkspaceId === ws.id && (
-                <div className={styles.membersList}>
-                  <ul>
-                    {ws.members
-                      ?.sort((a, b) => (a.role === 'owner' ? -1 : 1)) // Sort to make the owner appear first
-                      .map((member: Member, index: number) => {
-                        const isCurrentUser = member.username === userName;
-                        const isOwner = member.role === 'owner';
-                        return (
-                          <li
-                            key={index}
-                            className={`${styles.memberItem} ${isOwner ? styles.ownerItem : ''}`}
-                          >
-                            <span className={styles.memberIcon}>👤</span>
-                            {isCurrentUser ? `You (${member.role})` : `${member.username} (${member.role})`}
-                            {member.status === 'pending' && ' (Pending)'}
-                          </li>
-                        );
-                      })}
-                  </ul>
-                </div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </>
       )}
 

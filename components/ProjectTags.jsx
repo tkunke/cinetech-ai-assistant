@@ -137,8 +137,6 @@ const ProjectTags = ({ userId }) => {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setTags(data.tags);
         setNewTagName('');
         setIsCreateTagPopupVisible(false); // Close the create tag popup
       } else {

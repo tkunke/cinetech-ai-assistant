@@ -132,7 +132,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
     }
   };
 
-  const handleDeleteContent = async (userId, messageId, messageUrl, type) => {
+  const handleDeleteContent = async (userId, messageId, messageUrl, activeWorkspaceId, type) => {
     try {
         const checkTagsResponse = await fetch('/api/checkTagsInJoinTables', {
             method: 'POST',
@@ -146,11 +146,11 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
 
         if (checkTagsResult.messageTags) {
             setShowConfirmationPopup(true);
-            setCurrentMessageToDelete({ userId, messageId, messageUrl, type });
+            setCurrentMessageToDelete({ userId, messageId, messageUrl, activeWorkspaceId, type });
             return;
         }
 
-        setCurrentMessageToDelete({ userId, messageId, messageUrl, type });
+        setCurrentMessageToDelete({ userId, messageId, messageUrl, activeWorkspaceId, type });
         await handleConfirmDelete();
     } catch (error) {
         console.error('Error checking tags:', error);
@@ -160,7 +160,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
   const handleConfirmDelete = async () => {
     if (!currentMessageToDelete) return;
 
-    const { userId, messageId, messageUrl, type } = currentMessageToDelete;
+    const { userId, messageId, messageUrl, activeWorkspaceId, type } = currentMessageToDelete;
 
     try {
       const removeTagsResponse = await fetch('/api/removeTagsFromJoinTables', {
@@ -182,7 +182,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId, contentUrl: messageUrl, type }), 
+        body: JSON.stringify({ userId, workspaceId: activeWorkspaceId, contentUrl: messageUrl, type }), 
       });
 
       if (dbResponse.ok) {
@@ -256,7 +256,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
                         className={styles.messageDelete}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteContent(userId, message.id, message.url, 'message');
+                          handleDeleteContent(userId, message.id, message.url, activeWorkspaceId, 'message');
                         }}
                         title="Delete Message"
                       />
@@ -280,8 +280,8 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
             <h3>Select a Tag</h3>
             <ul>
               {tags.map((tag) => (
-                <li key={tag.id} onClick={() => handleTagSelect(tag)}>
-                  {tag.name}
+                <li key={tag.id}> 
+                  <button onClick={() => handleTagSelect(tag)}>{tag.name}</button>
                 </li>
               ))}
             </ul>
@@ -305,7 +305,8 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
               <button className={styles.confirmButton} onClick={() => handleConfirmDelete(
                 currentMessageToDelete.userId,
                 currentMessageToDelete.contentId,
-                currentMessageToDelete.type
+                currentMessageToDelete.type,
+                currentMessageToDelete.activeWorkspaceId,
               )}>
                 Yes, Delete
               </button>

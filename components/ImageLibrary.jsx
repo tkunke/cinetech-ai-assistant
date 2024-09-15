@@ -45,7 +45,7 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
     }
   };
 
-  const handleDeleteImageContent = async (userId, imageId, imageUrl) => {
+  const handleDeleteImageContent = async (userId, imageId, imageUrl, activeWorkspaceId) => {
     try {
       const checkTagsResponse = await fetch('/api/checkTagsInJoinTables', {
         method: 'POST',
@@ -59,12 +59,12 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
 
       if (checkTagsResult.imageTags) {
         setShowConfirmationPopup(true);
-        setCurrentImageToDelete({ userId, imageId, imageUrl });
+        setCurrentImageToDelete({ userId, imageId, imageUrl, activeWorkspaceId });
         return;
       }
 
-      setCurrentImageToDelete({ userId, imageId, imageUrl });
-      await handleConfirmDeleteImage(userId, imageId, imageUrl);
+      setCurrentImageToDelete({ userId, imageId, imageUrl, activeWorkspaceId });
+      await handleConfirmDeleteImage(userId, imageId, imageUrl, activeWorkspaceId);
 
     } catch (error) {
       console.error('Error checking tags:', error);
@@ -73,7 +73,7 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
 
   const handleConfirmDeleteImage = async () => {
     if (!currentImageToDelete) return;
-    const { userId, imageId, imageUrl } = currentImageToDelete;
+    const { userId, imageId, imageUrl, activeWorkspaceId } = currentImageToDelete;
 
     try {
       const removeTagsResponse = await fetch('/api/removeTagsFromJoinTables', {
@@ -95,7 +95,7 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId, contentUrl: imageUrl, type: 'image' }),
+        body: JSON.stringify({ userId, workspaceId: activeWorkspaceId, contentUrl: imageUrl, type: 'image' }),
       });
 
       if (dbResponse.ok) {
@@ -183,7 +183,7 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
                 />
                 <FaTrash
                   className={styles.imageDelete}
-                  onClick={() => handleDeleteImageContent(userId, image.id, image.imageUrl)}
+                  onClick={() => handleDeleteImageContent(userId, image.id, image.imageUrl, activeWorkspaceId)}
                   title="Delete Image"
                 />
               </>
