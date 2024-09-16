@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
   const email = searchParams.get('email');
   const username = searchParams.get('username');  // Check for username
   const userId = searchParams.get('userId');
+  const details = searchParams.get('details') === 'true'; // Check for details param
 
   if (!email && !username && !userId) {
     return NextResponse.json({ message: 'Email, Username, or User ID is required' }, { status: 400 });
@@ -36,12 +37,23 @@ export async function GET(request: NextRequest) {
         [username]
       );
     } else if (userId) {
-      userQuery = await client.query(
-        `SELECT id, username, trial_start_date, credits, status
-        FROM users
-        WHERE id = $1`,
-        [userId]
-      );
+      if (details) {
+        // Return detailed information if requested
+        userQuery = await client.query(
+          `SELECT id, username, trial_start_date, credits, status
+          FROM users
+          WHERE id = $1`,
+          [userId]
+        );
+      } else {
+        // Only check if the user exists and return basic information
+        userQuery = await client.query(
+          `SELECT id, username
+          FROM users
+          WHERE id = $1`,
+          [userId]
+        );
+      }
     }
 
     if (!userQuery || userQuery.rows.length === 0) {
@@ -50,7 +62,19 @@ export async function GET(request: NextRequest) {
 
     const user = userQuery.rows[0];
     console.log('User found:', user);
-    // We only return the username (as the email is not required to be exposed)
+
+    // Return more detailed user information if requested
+    if (details) {
+      return NextResponse.json({
+        exists: true,
+        username: user.username,
+        credits: user.credits,
+        trialExpired: checkIfTrialExpired(user.trial_start_date), // Add your own logic here
+        status: user.status,
+      });
+    }
+
+    // Return the username for validation
     return NextResponse.json({
       exists: true,
       username: user.username,  // Return the username for validation
@@ -61,4 +85,12 @@ export async function GET(request: NextRequest) {
   } finally {
     client.release();
   }
+}
+
+// Add a helper function to check trial expiration based on your logic
+function checkIfTrialExpired(trialStartDate: string): boolean {
+  const trialPeriodDays = 7; // Example: 30 days trial
+  const trialEndDate = new Date(trialStartDate);
+  trialEndDate.setDate(trialEndDate.getDate() + trialPeriodDays);
+  return new Date() > trialEndDate;
 }

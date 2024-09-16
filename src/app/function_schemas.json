@@ -1,0 +1,61 @@
+{
+  "functions": [
+    {
+      "name": "generateImage",
+      "description": "Generate an image based on the user's prompt",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The user's prompt to generate an image"
+          }
+        },
+        "required": ["content"]
+      }
+    },
+    {
+      "name": "alternateImage",
+      "description": "Generate an alternate image based on the user's prompt",
+      "strict": false,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The user's prompt to generate an image"
+          }
+        },
+        "required": ["content"]
+      }
+    },
+    {
+      "name": "performBingSearch",
+      "description": "Perform a Bing search based on the user's request",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "user_request": {
+            "type": "string",
+            "description": "The user's request to generate a search query for Bing"
+          }
+        },
+        "required": ["user_request"]
+      }
+    },
+    {
+      "name": "imageRecognition",
+      "description": "Perform image recognition on the user's prompt",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "description": "The user's prompt to recognize an image"
+          }
+        },
+        "required": ["content"]
+      }
+    }
+  ]
+}

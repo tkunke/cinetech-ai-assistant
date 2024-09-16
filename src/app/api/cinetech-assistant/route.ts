@@ -498,7 +498,9 @@ export async function GET(request: NextRequest) {
       //console.log('Retrieved run status directly from OpenAI:', runStatus);
     }
 
-    const threadMessages = await openai.beta.threads.messages.list(threadId);
+    const threadMessages = await openai.beta.threads.messages.list(threadId, {
+      limit: 100,
+    });
     const cleanMessages = threadMessages.data.map((m) => {
       let content = '';
       if (m.content && Array.isArray(m.content) && m.content.length > 0) {

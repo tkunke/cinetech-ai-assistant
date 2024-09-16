@@ -52,7 +52,13 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
         if (response.ok) {
           const creditsSpent = data.credits;
           if (credits !== null && creditsSpent !== null) {
-            const newCredits = credits - creditsSpent;
+            let newCredits = credits - creditsSpent;
+  
+            // Ensure credits never go below zero
+            if (newCredits < 0) {
+              newCredits = 0;
+            }
+  
             console.log('Updating credits:', newCredits); // <-- Add this for debugging
             await updateCreditsInDatabase(newCredits);
             fetchCurrentCredits(); // <-- Ensure this is called to fetch the updated credits
@@ -73,7 +79,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
     };
   
     setTimeout(pollCredits, 5000);
-  };  
+  };    
 
   const updateCreditsInDatabase = async (newCredits: number) => {
     try {

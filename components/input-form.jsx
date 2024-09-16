@@ -12,6 +12,15 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    console.log('Current credits:', credits);
+  }, [credits]);  
+  
+  useEffect(() => {
+    if (fileInputRef.current) {
+    }
+  }, [fileInputRef]);
+
+  useEffect(() => {
     if (selectedFile) {
       if (selectedFile.type.startsWith('image/')) {
         const fileURL = URL.createObjectURL(selectedFile);
@@ -33,17 +42,23 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
 
   const onFileChange = (e) => {
     const file = e.target.files[0];
+    console.log('File selected:', file);
     setSelectedFile(file);
     handleFileChange(file); // Pass the file to the parent component
   };
 
   const triggerFileInput = () => {
+    console.log('Attempting to trigger file input');
     if (fileInputRef.current) {
+      console.log('File input exists, triggering click');
       fileInputRef.current.click();
+    } else {
+      console.error('File input ref is null');
     }
   };
 
   const removeFile = () => {
+    console.log('File removed');
     resetFileInput(); // Reset the file input so the same file can be re-added
     handleFileChange(null); // Notify the parent component that the file was removed
   };
@@ -126,7 +141,7 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
                   ? "Your trial has expired."
                   : credits <= 0 
                     ? "You've exhausted your available credits."
-                    : "Start new conversation"
+                    : "Start typing here..."
               }              
               ref={inputRef}
               rows="1"

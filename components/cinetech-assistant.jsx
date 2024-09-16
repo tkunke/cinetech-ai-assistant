@@ -93,7 +93,7 @@ export default function CinetechAssistant({
       const existingThread = data.threads.find(thread => thread.thread_id === threadId);
   
       if (!existingThread) {
-        const title = `Started ${new Date().toLocaleString()}`;
+        const title = `Saved on ${new Date().toLocaleString()}`;
         await saveThread(userId, threadId, title);
       }
     }
@@ -216,7 +216,6 @@ export default function CinetechAssistant({
     });
   
     setIsLoading(true);
-  
     setMessages((prevMessages) => [
       ...prevMessages,
       {
@@ -225,6 +224,7 @@ export default function CinetechAssistant({
         content: prompt,
       },
     ]);
+
     setPrompt('');
     setSelectedFile(null); // Clear the file input after submission
   
@@ -417,28 +417,30 @@ export default function CinetechAssistant({
   }, [isLoading, messages]);
 
   useEffect(() => {
-    const handleSessionEnd = async () => {
+    const handleSessionEnd = () => {
       if (threadId && userId) {
-        const newThread = {
+        navigator.sendBeacon('/api/saveToPg', JSON.stringify({
           userId,
           threadId,
-          title: `Thread ${new Date().toLocaleString()}`,
-        };
-        await addThread(newThread);
+          title: `Saved on ${new Date().toLocaleString()}`,
+          type: 'thread'
+        }));
       }
     };
-
+  
+    // Trigger the save when the session ends
     if (!session) {
       handleSessionEnd();
     }
-
+  
     if (typeof window !== 'undefined') {
+      // Use sendBeacon for synchronous save on session end
       window.addEventListener('beforeunload', handleSessionEnd);
       return () => {
         window.removeEventListener('beforeunload', handleSessionEnd);
       };
     }
-  }, [session, threadId, userId]);
+  }, [session, threadId, userId]);    
 
   const handleFileChange = useCallback((file) => {
     setSelectedFile(file);

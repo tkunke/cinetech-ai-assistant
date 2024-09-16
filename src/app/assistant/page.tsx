@@ -19,6 +19,8 @@ interface Message {
 export default function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
+
+  const [assistantId, setAssistantId] = useState('');
   
   useEffect(() => {
     console.log('Session data:', session);
@@ -37,6 +39,20 @@ export default function Home() {
     threadId = sessionStorage.getItem('threadId') || '';
   }
 
+  // Load assistantId from session storage or URL parameters
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const assistantIdFromUrl = queryParams.get('assistantId');
+    const assistantIdFromSession = sessionStorage.getItem('assistantId');
+
+    if (assistantIdFromUrl) {
+      setAssistantId(assistantIdFromUrl);
+    } else if (assistantIdFromSession) {
+      setAssistantId(assistantIdFromSession);
+    } else {
+      console.error('No assistant ID found');
+    }
+  }, []);
 
   const toggleCreativeToolsExpand = () => {
     setIsCreativeToolsExpanded(!isCreativeToolsExpanded);
@@ -70,7 +86,7 @@ export default function Home() {
 
   const handleCreditAdd = () => {
     router.push('/purchasecredits');
-  }
+  };
 
   const handleMouseLeave = () => {
     setIsCreativeToolsExpanded(false);
@@ -176,7 +192,7 @@ export default function Home() {
         </header>
         <main className={styles.main}>
           <CinetechAssistant
-            assistantId="asst_fmjzsttDthGzzJud4Vv2bDGq"
+            assistantId={assistantId}
             setSelectedMessages={setSelectedMessages}
             selectedMessages={selectedMessages}
             resetMessagesRef={resetMessagesRef}
