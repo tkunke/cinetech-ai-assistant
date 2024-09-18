@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaPlus, FaTrash } from 'react-icons/fa';
+import { FaPlus, FaTrash, FaSave, FaEdit } from 'react-icons/fa';
 import styles from '@/styles/ProjectTags.module.css';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { useLibrary } from '@/context/LibraryContext';
@@ -7,11 +7,12 @@ import MessagePopup from '@/components/MessagePopup';
 
 const ProjectTags = ({ userId }) => {
   const { activeWorkspaceId } = useWorkspace();
-  const { fetchedTags, fetchTags, createTag, deleteTag } = useLibrary(); // Use tag management from LibraryContext
+  const { fetchedTags, fetchTags, createTag, deleteTag, updateTag } = useLibrary(); // Use tag management from LibraryContext
   const [selectedTag, setSelectedTag] = useState(null);
   const [isCreateTagPopupVisible, setIsCreateTagPopupVisible] = useState(false);
   const [isTagDetailsPopupVisible, setIsTagDetailsPopupVisible] = useState(false);
   const [newTagName, setNewTagName] = useState('');
+  const [isEditingTagName, setIsEditingTagName] = useState(false);
   const [objectsWithTag, setObjectsWithTag] = useState([]);
   const [messagesWithTag, setMessagesWithTag] = useState([]);
   const [selectedMessage, setSelectedMessage] = useState(null);
@@ -78,13 +79,24 @@ const ProjectTags = ({ userId }) => {
     setIsTagDetailsPopupVisible(false); // Close the tag details popup
   };
 
+  const handleRenameTag = () => {
+    setIsEditingTagName(true);
+    setNewTagName(selectedTag.name);
+  };
+
+  const handleSaveTagName = async () => {
+    if (!newTagName.trim() || !selectedTag) return;
+
+    await updateTag(userId, activeWorkspaceId, selectedTag.id, newTagName); // Call updateTag function
+    setSelectedTag({ ...selectedTag, name: newTagName }); // Update the selected tag locally
+    setIsEditingTagName(false); // Exit edit mode
+  };
+
   const truncateText = (text, maxLength) => {
     if (!text) return '';
     if (text.length <= maxLength) return text;
     return text.slice(0, maxLength) + '...';
   };
-
-  console.log("Fetched Tags before rendering: ", fetchedTags);
 
   return (
     <div>
@@ -110,7 +122,30 @@ const ProjectTags = ({ userId }) => {
             <button className={styles.closeButton} onClick={() => setIsTagDetailsPopupVisible(false)}>
               &times;
             </button>
-            <h3>{selectedTag.name}</h3>
+            
+            <div className={styles.tagHeader}>
+              {isEditingTagName ? (
+                <>
+                  <input
+                    type="text"
+                    value={newTagName}
+                    onChange={(e) => setNewTagName(e.target.value)}
+                    placeholder="Rename Tag"
+                    className={styles.inputField}
+                  />
+                  <button className={styles.saveButton} onClick={handleSaveTagName}>
+                    <FaSave />
+                  </button>
+                </>
+              ) : (
+                <div className={styles.tagNameWrapper}>
+                  <h3 className={styles.tagName}>{selectedTag.name}</h3>
+                  <button className={styles.editButton} onClick={handleRenameTag}>
+                    <FaEdit />
+                  </button>
+                </div>
+              )}
+            </div>
 
             <div className={styles.messagesSection}>
               <h4>Messages</h4>

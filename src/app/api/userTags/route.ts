@@ -125,21 +125,37 @@ export async function DELETE(request: NextRequest) {
 // Handler for PUT requests to tag an image or a message within a workspace
 export async function PUT(request: NextRequest) {
   const client = await pool.connect();
-  
+
   try {
     await client.query('BEGIN'); // Start the transaction
 
     const body = await request.json();
     const { userId, workspaceId, imageUrl, messageUrl, tag }: { userId: string; workspaceId: string; imageUrl?: string; messageUrl?: string; tag: { id: string; name: string } } = body;
 
-    if (!userId || !workspaceId || (!imageUrl && !messageUrl) || !tag?.id) {
+    // Validate the required fields
+    if (!userId || !workspaceId || !tag?.id) {
       console.error("Invalid request body");
       return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
     }
 
     const tagId = tag.id;
 
-    if (imageUrl) {
+    // Case 1: Update the tag's name
+    if (!imageUrl && !messageUrl && tag.name) {
+      // Update the tag name in the database
+      await client.query(
+        `UPDATE project_tags SET name = $1 WHERE id = $2 AND workspace_id = $3`,
+        [tag.name, tagId, workspaceId]
+      );
+
+      console.log(`Tag ${tagId} updated to name ${tag.name} for workspace ${workspaceId}`);
+      await client.query('COMMIT'); // Commit the transaction
+
+      return NextResponse.json({ message: "Tag updated successfully" });
+
+    } else if (imageUrl) {
+      // Case 2: Handle tag assignment to an image
+
       // Fetch the image ID
       const imageQuery = await client.query(`
         SELECT id FROM user_gen_images WHERE user_id = $1 AND image_url = $2 AND workspace_id = $3`,
@@ -179,6 +195,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ message: "Tag added successfully to image" });
 
     } else if (messageUrl) {
+      // Case 3: Handle tag assignment to a message
+
       // Fetch the message ID
       const messageQuery = await client.query(`
         SELECT id FROM user_gen_messages WHERE user_id = $1 AND message_url = $2 AND workspace_id = $3`,
@@ -224,8 +242,8 @@ export async function PUT(request: NextRequest) {
 
   } catch (error) {
     await client.query('ROLLBACK'); // Roll back the transaction in case of any error
-    console.error("Error adding tag:", error);
-    return NextResponse.json({ error: "Failed to add tag" }, { status: 500 });
+    console.error("Error handling tag:", error);
+    return NextResponse.json({ error: "Failed to handle tag" }, { status: 500 });
   } finally {
     client.release(); // Always release the client after completing the request
   }

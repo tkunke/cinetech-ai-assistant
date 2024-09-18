@@ -37,6 +37,7 @@ interface LibraryContextType {
   fetchMessages: (userId: string, workspaceId: string) => Promise<Message[]>;
   fetchTags: (userId: string, workspaceId: string) => Promise<void>;
   createTag: (userId: string, workspaceId: string, tagName: string) => Promise<void>;
+  updateTag: (userId: string, workspaceId: string, tagId: string, newTagName: string) => Promise<void>;
   deleteTag: (userId: string, workspaceId: string, tagId: string) => Promise<void>;
   addImage: (image: Image) => void;
   addMessage: (message: Message) => void;
@@ -163,7 +164,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
       });
       if (response.ok) {
         const newTag = await response.json();
-        setTags((prevTags) => [...prevTags, newTag]); // Add the new tag to state
+        setFetchedTags((prevTags) => [...prevTags, newTag]); // Add the new tag to state
       } else {
         console.error('Failed to create tag');
       }
@@ -171,6 +172,29 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
       console.error('Error creating tag:', error);
     }
   };
+
+  const updateTag = async (userId: string, workspaceId: string, tagId: string, newTagName: string) => {
+    if (!userId || !workspaceId || !tagId || !newTagName.trim()) return;
+    try {
+      const response = await fetch('/api/userTags', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, workspaceId, tag: { id: tagId, name: newTagName.trim() } }), // Update to send the tag as an object
+      });
+      if (response.ok) {
+        setFetchedTags((prevTags) =>
+          prevTags.map((tag) => (tag.id === tagId ? { ...tag, name: newTagName } : tag))
+        );
+      } else {
+        console.error('Failed to update tag');
+      }
+    } catch (error) {
+      console.error('Error updating tag:', error);
+    }
+  };  
+  
 
   const deleteTag = async (userId: string, workspaceId: string, tagId: string) => {
     if (!userId || !workspaceId || !tagId) return;
@@ -183,7 +207,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
         body: JSON.stringify({ userId, workspaceId, tagId }),
       });
       if (response.ok) {
-        setTags((prevTags) => prevTags.filter((tag) => tag.id !== tagId)); // Remove the tag from state
+        setFetchedTags((prevTags) => prevTags.filter((tag) => tag.id !== tagId)); // Remove the tag from state
       } else {
         console.error('Failed to delete tag');
       }
@@ -298,7 +322,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
               id: payload.new.id,
               name: payload.new.name,
             };
-            setTags((prevTags) => [...prevTags, newTag]);
+            setFetchedTags((prevTags) => [...prevTags, newTag]);
           }
         }
       )
@@ -366,7 +390,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
   const fetchedMessages = activeWorkspaceId ? workspaceMessages[activeWorkspaceId] || [] : [];
 
   return (
-    <LibraryContext.Provider value={{ fetchedImages, fetchedMessages, fetchedTags, fetchImages, fetchMessages, fetchTags, createTag, deleteTag, addImage, addMessage, removeImage }}>
+    <LibraryContext.Provider value={{ fetchedImages, fetchedMessages, fetchedTags, fetchImages, fetchMessages, fetchTags, createTag, updateTag, deleteTag, addImage, addMessage, removeImage }}>
       {children}
     </LibraryContext.Provider>
   );
