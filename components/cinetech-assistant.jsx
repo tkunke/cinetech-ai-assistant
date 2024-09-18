@@ -239,6 +239,20 @@ export default function CinetechAssistant({
         currentThreadId = await initializeThread();
       }
       sessionStorage.setItem('threadId', currentThreadId);
+
+      // Save the thread in the database if it doesn't exist yet
+      if (userId && currentThreadId) {
+        const response = await fetch(`/api/getThreads?userId=${userId}`);
+        const data = await response.json();
+
+        const existingThread = data.threads.find(thread => thread.thread_id === currentThreadId);
+
+        if (!existingThread) {
+          const title = `Started on ${new Date().toLocaleString()}`;
+          await saveThread(userId, currentThreadId, title);
+          console.log('Thread saved:', currentThreadId);
+        }
+      }
   
       // Prepare form data
       const formData = new FormData();
@@ -418,15 +432,8 @@ export default function CinetechAssistant({
 
   useEffect(() => {
     const handleSessionEnd = () => {
-      if (threadId && userId) {
-        const title = `Saved on ${new Date().toLocaleString()}`;
-        // Use the new saveThreadOnClose function
-        saveThreadOnClose(userId, threadId, title);
-  
-        // Use sendBeacon to clean up the assistant
-        if (assistantId) {
-          navigator.sendBeacon('/api/cleanup', JSON.stringify({ assistantId }));
-        }
+      if (assistantId) {
+        navigator.sendBeacon('/api/cleanup', JSON.stringify({ assistantId }));
       }
     };
   
@@ -440,7 +447,7 @@ export default function CinetechAssistant({
         window.removeEventListener('beforeunload', handleSessionEnd);
       };
     }
-  }, [session, threadId, userId, assistantId, saveThreadOnClose]);      
+  }, [session, userId, assistantId]);      
 
   const handleFileChange = useCallback((file) => {
     setSelectedFile(file);
