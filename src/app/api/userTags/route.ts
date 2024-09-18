@@ -125,7 +125,10 @@ export async function DELETE(request: NextRequest) {
 // Handler for PUT requests to tag an image or a message within a workspace
 export async function PUT(request: NextRequest) {
   const client = await pool.connect();
+  
   try {
+    await client.query('BEGIN'); // Start the transaction
+
     const body = await request.json();
     const { userId, workspaceId, imageUrl, messageUrl, tag }: { userId: string; workspaceId: string; imageUrl?: string; messageUrl?: string; tag: { id: string; name: string } } = body;
 
@@ -145,6 +148,7 @@ export async function PUT(request: NextRequest) {
       const image = imageQuery.rows[0];
 
       if (!image) {
+        await client.query('ROLLBACK'); // Roll back the transaction if image not found
         return NextResponse.json({ error: "Image not found" }, { status: 404 });
       }
 
@@ -158,6 +162,7 @@ export async function PUT(request: NextRequest) {
       const existingTag = tagQuery.rows[0];
 
       if (existingTag) {
+        await client.query('ROLLBACK'); // Roll back the transaction if tag already exists
         return NextResponse.json({ message: "Tag already exists for this image" }, { status: 200 });
       }
 
@@ -169,6 +174,7 @@ export async function PUT(request: NextRequest) {
       );
 
       console.log(`Tag ${tagId} added to image ${imageUrl} for user ${userId} and workspace ${workspaceId}`);
+      await client.query('COMMIT'); // Commit the transaction
 
       return NextResponse.json({ message: "Tag added successfully to image" });
 
@@ -181,6 +187,7 @@ export async function PUT(request: NextRequest) {
       const message = messageQuery.rows[0];
 
       if (!message) {
+        await client.query('ROLLBACK'); // Roll back the transaction if message not found
         return NextResponse.json({ error: "Message not found" }, { status: 404 });
       }
 
@@ -194,6 +201,7 @@ export async function PUT(request: NextRequest) {
       const existingTag = tagQuery.rows[0];
 
       if (existingTag) {
+        await client.query('ROLLBACK'); // Roll back the transaction if tag already exists
         return NextResponse.json({ message: "Tag already exists for this message" }, { status: 200 });
       }
 
@@ -205,18 +213,21 @@ export async function PUT(request: NextRequest) {
       );
 
       console.log(`Tag ${tagId} added to message ${messageUrl} for user ${userId} and workspace ${workspaceId}`);
+      await client.query('COMMIT'); // Commit the transaction
 
       return NextResponse.json({ message: "Tag added successfully to message" });
     }
 
     console.error("No valid target for tagging found");
+    await client.query('ROLLBACK'); // Roll back the transaction if no valid target
     return NextResponse.json({ error: "No valid target for tagging found" }, { status: 400 });
 
   } catch (error) {
+    await client.query('ROLLBACK'); // Roll back the transaction in case of any error
     console.error("Error adding tag:", error);
     return NextResponse.json({ error: "Failed to add tag" }, { status: 500 });
   } finally {
-    client.release();
+    client.release(); // Always release the client after completing the request
   }
 }
 

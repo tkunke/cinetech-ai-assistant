@@ -96,6 +96,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
       fetchWorkspaces();
     }
   }, [userId, status]);
+  
 
   const createWorkspace = async (workspaceDetails: { name: string; owner: string }): Promise<string | null> => {
     try {
@@ -246,6 +247,7 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
   };
 
   const switchWorkspace = (id: string) => {
+    console.log('Setting new workspace id:', activeWorkspaceId);
     setActiveWorkspaceId(id);
   };
 

@@ -6,40 +6,19 @@ import { useWorkspace } from '@/context/WorkspaceContext';
 import MessagePopup from '@/components/MessagePopup';
 
 const MessagesLibrary = ({ userId, onTagIconClick }) => {
-  const { fetchedMessages, fetchMessages: libraryFetchMessages } = useLibrary();
-  const { activeWorkspaceId, fetchWorkspaceMembers, userRole } = useWorkspace(); // Get the active workspace ID
+  const { fetchedMessages, fetchMessages, fetchTags, fetchedTags } = useLibrary();
+  const { activeWorkspaceId, fetchWorkspaceMembers, userRole } = useWorkspace();
   const [isTaggingPopupVisible, setIsTaggingPopupVisible] = useState(false);
   const [taggingMessage, setTaggingMessage] = useState(null);
-  const [tags, setTags] = useState([]);
-  const [hasFetchedTags, setHasFetchedTags] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
   const [currentMessageToDelete, setCurrentMessageToDelete] = useState(null);
 
-  // Fetch the tags for the current user and workspace
-  const fetchTags = useCallback(async (userId, workspaceId) => {
-    if (!userId || !workspaceId) return;
-
-    try {
-      const response = await fetch(`/api/userTags?userId=${userId}&workspaceId=${workspaceId}`);
-      const data = await response.json();
-      if (response.ok) {
-        setTags(data.tags);
-        setHasFetchedTags(true);
-      } else {
-        console.error('Failed to fetch tags:', data.error);
-      }
-    } catch (error) {
-      console.error('Error fetching tags:', error);
-    }
-  }, []);
-
-  // Fetch the full message content for the popup
   const fetchMessageContentForPopup = async (messageUrl) => {
     try {
       const response = await fetch(messageUrl);
       const data = await response.json();
-      return data.content; // Return the full message content
+      return data.content; 
     } catch (error) {
       console.error('Error fetching message content for popup:', error);
       return null;
@@ -48,11 +27,8 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
 
   const handleMessageClick = async (message) => {
     try {
-      // Fetch the full content for the selected message
       const fullContent = await fetchMessageContentForPopup(message.url);
-      
       if (fullContent) {
-        // Update the message with the full content
         setSelectedMessage({ ...message, content: fullContent });
       } else {
         console.error('Failed to fetch full content for the message');
@@ -70,16 +46,16 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
   }, [activeWorkspaceId, userId]);
 
   useEffect(() => {
-    if (userId && activeWorkspaceId && !hasFetchedTags) {
+    if (userId && activeWorkspaceId) {
       fetchTags(userId, activeWorkspaceId);
     }
-  }, [userId, activeWorkspaceId, hasFetchedTags, fetchTags]);
+  }, [userId, activeWorkspaceId, fetchTags]);
 
   useEffect(() => {
     if (userId && activeWorkspaceId) { 
-      libraryFetchMessages(activeWorkspaceId);
+      fetchMessages(activeWorkspaceId);
     }
-  }, [userId, activeWorkspaceId, libraryFetchMessages]);
+  }, [userId, activeWorkspaceId, fetchMessages]);
 
   const truncateText = (text, maxLength) => {
     if (!text) {
@@ -95,7 +71,11 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
 
   const handleTagIconClick = (message) => {
     setTaggingMessage(message);
-    setIsTaggingPopupVisible(true);
+    if (fetchedTags.length > 0) {
+      setIsTaggingPopupVisible(true);
+    } else {
+      console.error("No tags available to display.");
+    }
   };
 
   const handleTagSelect = async (tag) => {
@@ -115,14 +95,14 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
           },
           body: JSON.stringify({ 
             userId, 
-            workspaceId: activeWorkspaceId,  // Ensure workspaceId is included
+            workspaceId: activeWorkspaceId,
             messageUrl: taggingMessage.url, 
-            tag: { id: tag.id }  // Pass only the tag id
+            tag: { id: tag.id }
           }),
         });
 
         if (response.ok) {
-          // Update the message with the new tag
+          // Optionally handle tag update
         } else {
           console.error('Error updating tag:', await response.json());
         }
@@ -134,26 +114,26 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
 
   const handleDeleteContent = async (userId, messageId, messageUrl, activeWorkspaceId, type) => {
     try {
-        const checkTagsResponse = await fetch('/api/checkTagsInJoinTables', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ messageId }),  
-        });
+      const checkTagsResponse = await fetch('/api/checkTagsInJoinTables', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ messageId }),
+      });
 
-        const checkTagsResult = await checkTagsResponse.json();
+      const checkTagsResult = await checkTagsResponse.json();
 
-        if (checkTagsResult.messageTags) {
-            setShowConfirmationPopup(true);
-            setCurrentMessageToDelete({ userId, messageId, messageUrl, activeWorkspaceId, type });
-            return;
-        }
-
+      if (checkTagsResult.messageTags) {
+        setShowConfirmationPopup(true);
         setCurrentMessageToDelete({ userId, messageId, messageUrl, activeWorkspaceId, type });
-        await handleConfirmDelete();
+        return;
+      }
+
+      setCurrentMessageToDelete({ userId, messageId, messageUrl, activeWorkspaceId, type });
+      await handleConfirmDelete();
     } catch (error) {
-        console.error('Error checking tags:', error);
+      console.error('Error checking tags:', error);
     }
   };
 
@@ -168,7 +148,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ messageId }), 
+        body: JSON.stringify({ messageId }),
       });
 
       if (!removeTagsResponse.ok) {
@@ -182,7 +162,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId, workspaceId: activeWorkspaceId, contentUrl: messageUrl, type }), 
+        body: JSON.stringify({ userId, workspaceId: activeWorkspaceId, contentUrl: messageUrl, type }),
       });
 
       if (dbResponse.ok) {
@@ -191,7 +171,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
         });
 
         if (blobResponse.ok) {
-          // Remove the message from state
+          // Optionally handle message removal from state
         } else {
           const errorResult = await blobResponse.json();
           console.error('Failed to delete file from blob storage:', errorResult.error);
@@ -279,8 +259,8 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
           <div className={styles.popup}>
             <h3>Select a Tag</h3>
             <ul>
-              {tags.map((tag) => (
-                <li key={tag.id}> 
+              {fetchedTags.map((tag) => (
+                <li key={tag.id}>
                   <button onClick={() => handleTagSelect(tag)}>{tag.name}</button>
                 </li>
               ))}
@@ -291,9 +271,9 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
       )}
 
       {selectedMessage && (
-        <MessagePopup 
-          message={selectedMessage} 
-          onClose={() => setSelectedMessage(null)} 
+        <MessagePopup
+          message={selectedMessage}
+          onClose={() => setSelectedMessage(null)}
         />
       )}
       {showConfirmationPopup && (
@@ -302,12 +282,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
             <h3 className={styles.popupTitle}>Confirm Deletion</h3>
             <p className={styles.popupMessage}>This message is associated with one or more tags. Are you sure you want to delete it?</p>
             <div className={styles.popupButtons}>
-              <button className={styles.confirmButton} onClick={() => handleConfirmDelete(
-                currentMessageToDelete.userId,
-                currentMessageToDelete.contentId,
-                currentMessageToDelete.type,
-                currentMessageToDelete.activeWorkspaceId,
-              )}>
+              <button className={styles.confirmButton} onClick={handleConfirmDelete}>
                 Yes, Delete
               </button>
               <button className={styles.cancelButton} onClick={handleCancelDelete}>Cancel</button>
@@ -316,7 +291,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
         </div>
       )}
     </>
-  );  
+  );
 };
 
 export default MessagesLibrary;

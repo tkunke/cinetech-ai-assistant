@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
+import { useSession } from 'next-auth/react';
 import { AiOutlineSend, AiOutlineFile, AiOutlinePaperClip, AiOutlineClose } from 'react-icons/ai';
 import CinetechSpinner from './message-spinner';
 import styles from '@/styles/input-form.module.css';
 import { useUser } from '@/context/UserContext';
 
 const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputRef, handleFileChange }) => {
+  const { data: session } = useSession();
+  const username = session?.user?.username || 'user';
   const { trialExpired, credits } = useUser();
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
@@ -42,10 +45,18 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
 
   const onFileChange = (e) => {
     const file = e.target.files[0];
-    console.log('File selected:', file);
-    setSelectedFile(file);
-    handleFileChange(file); // Pass the file to the parent component
-  };
+  
+    // Prepend the username to the file name
+    const updatedFileName = `${username}-${file.name}`;
+  
+    // Create a new file with the updated name
+    const updatedFile = new File([file], updatedFileName, {
+      type: file.type,
+    });
+  
+    setSelectedFile(updatedFile);
+    handleFileChange(updatedFile); // Pass the updated file to the parent component
+  };  
 
   const triggerFileInput = () => {
     console.log('Attempting to trigger file input');

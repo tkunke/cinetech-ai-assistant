@@ -6,12 +6,11 @@ import { useLibrary } from '@/context/LibraryContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
 
 const ImageLibrary = ({ userId, onTagIconClick }) => {
-  const { fetchedImages, fetchImages, removeImage } = useLibrary();
+  const { fetchedImages, fetchImages, fetchedTags, removeImage } = useLibrary();
   const { activeWorkspaceId, fetchWorkspaceMembers, userRole } = useWorkspace();
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
   const [currentImageToDelete, setCurrentImageToDelete] = useState(null);
   const [showTagPopup, setShowTagPopup] = useState(false);
-  const [availableTags, setAvailableTags] = useState([]); // Store available tags
   const [currentImageForTagging, setCurrentImageForTagging] = useState(null); // Store the image being tagged
 
   useEffect(() => {
@@ -27,23 +26,16 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
     }
   }, [activeWorkspaceId, userId]);
 
-  const handleTagIconClick = async (image) => {
+  const handleTagIconClick = (image) => {
     setCurrentImageForTagging(image);
-
-    try {
-      const response = await fetch(`/api/userTags?userId=${encodeURIComponent(userId)}&workspaceId=${encodeURIComponent(activeWorkspaceId)}`);
-      const data = await response.json();
-
-      if (response.ok) {
-        setAvailableTags(data.tags); // Set available tags from the response
-        setShowTagPopup(true); // Show the tag popup
-      } else {
-        console.error('Failed to fetch tags:', data.error);
-      }
-    } catch (error) {
-      console.error('Error fetching tags:', error);
+  
+    if (fetchedTags.length > 0) {
+      // If tags are already fetched and available in the context, open the tag popup
+      setShowTagPopup(true);
+    } else {
+      console.error("No tags available to display.");
     }
-  };
+  };  
 
   const handleDeleteImageContent = async (userId, imageId, imageUrl, activeWorkspaceId) => {
     try {
@@ -202,7 +194,7 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
           <div className={styles.popup}>
             <h3>Select a Tag</h3>
             <ul>
-              {availableTags.map((tag) => (
+              {fetchedTags.map((tag) => (
                 <li key={tag.id}>
                   <button onClick={() => handleApplyTag(tag.id)}>{tag.name}</button>
                 </li>

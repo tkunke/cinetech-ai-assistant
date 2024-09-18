@@ -44,7 +44,7 @@ export default function CinetechAssistant({
   const [runId, setRunId] = useState(null);
   const [readerDone, setReaderDone] = useState(false);
 
-  const { saveThread, threads } = useThreads();
+  const { saveThread, threads, saveThreadOnClose } = useThreads();
 
   const assistantName = session?.user?.assistant_name;
   const userName = session?.user?.name || 'User';
@@ -419,28 +419,28 @@ export default function CinetechAssistant({
   useEffect(() => {
     const handleSessionEnd = () => {
       if (threadId && userId) {
-        navigator.sendBeacon('/api/saveToPg', JSON.stringify({
-          userId,
-          threadId,
-          title: `Saved on ${new Date().toLocaleString()}`,
-          type: 'thread'
-        }));
+        const title = `Saved on ${new Date().toLocaleString()}`;
+        // Use the new saveThreadOnClose function
+        saveThreadOnClose(userId, threadId, title);
+  
+        // Use sendBeacon to clean up the assistant
+        if (assistantId) {
+          navigator.sendBeacon('/api/cleanup', JSON.stringify({ assistantId }));
+        }
       }
     };
   
-    // Trigger the save when the session ends
     if (!session) {
       handleSessionEnd();
     }
   
     if (typeof window !== 'undefined') {
-      // Use sendBeacon for synchronous save on session end
       window.addEventListener('beforeunload', handleSessionEnd);
       return () => {
         window.removeEventListener('beforeunload', handleSessionEnd);
       };
     }
-  }, [session, threadId, userId]);    
+  }, [session, threadId, userId, assistantId, saveThreadOnClose]);      
 
   const handleFileChange = useCallback((file) => {
     setSelectedFile(file);
@@ -479,7 +479,11 @@ export default function CinetechAssistant({
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [runId, threadId]);    
+  }, [runId, threadId]);
+
+  useEffect(() => {
+    console.log('showLoadingGif state changed:', showLoadingGif);
+  }, [showLoadingGif]);
 
   return (
     <div className="flex flex-col h-full justify-between">

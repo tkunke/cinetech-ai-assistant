@@ -32,8 +32,12 @@ interface Payload<T> {
 interface LibraryContextType {
   fetchedImages: Image[];
   fetchedMessages: Message[];
+  fetchedTags: Tag[];
   fetchImages: (userId: string, workspaceId: string) => Promise<void>;
   fetchMessages: (userId: string, workspaceId: string) => Promise<Message[]>;
+  fetchTags: (userId: string, workspaceId: string) => Promise<void>;
+  createTag: (userId: string, workspaceId: string, tagName: string) => Promise<void>;
+  deleteTag: (userId: string, workspaceId: string, tagId: string) => Promise<void>;
   addImage: (image: Image) => void;
   addMessage: (message: Message) => void;
   removeImage: (imageUrl: string) => void;
@@ -60,7 +64,9 @@ interface LibraryProviderProps {
 export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) => {
   const [workspaceImages, setWorkspaceImages] = useState<{ [workspaceId: string]: Image[] }>({});
   const [workspaceMessages, setWorkspaceMessages] = useState<{ [workspaceId: string]: Message[] }>({});
-  const { activeWorkspaceId } = useWorkspace();  // Get the active workspace ID from context
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [fetchedTags, setFetchedTags] = useState<Tag[]>([]);
+  const { workspaces, activeWorkspaceId } = useWorkspace();  // Get the active workspace ID from context
 
   const fetchImages = useCallback(async (workspaceId: string) => {
     try {
@@ -125,7 +131,66 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
       console.error('Error fetching messages:', error);
     }
     return [];
-  }, []);  
+  }, []);
+
+  // Fetch tags for the active workspace
+  const fetchTags = useCallback(async (userId: string, workspaceId: string) => {
+    console.log(`Fetching tags for user ${userId} in workspace ${workspaceId}`);
+    if (!userId || !workspaceId) return; // Cache tags once fetched
+    try {
+      const response = await fetch(`/api/userTags?userId=${userId}&workspaceId=${workspaceId}`);
+      const data = await response.json();
+      console.log('Tags fetched:', data);
+      if (response.ok) {
+        setFetchedTags(data.tags);
+      } else {
+        console.error('Failed to fetch tags:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+    }
+  }, []);
+
+  const createTag = async (userId: string, workspaceId: string, tagName: string) => {
+    if (!userId || !workspaceId || !tagName.trim()) return;
+    try {
+      const response = await fetch('/api/userTags', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, workspaceId, tag: { name: tagName.trim() } }),
+      });
+      if (response.ok) {
+        const newTag = await response.json();
+        setTags((prevTags) => [...prevTags, newTag]); // Add the new tag to state
+      } else {
+        console.error('Failed to create tag');
+      }
+    } catch (error) {
+      console.error('Error creating tag:', error);
+    }
+  };
+
+  const deleteTag = async (userId: string, workspaceId: string, tagId: string) => {
+    if (!userId || !workspaceId || !tagId) return;
+    try {
+      const response = await fetch('/api/userTags', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, workspaceId, tagId }),
+      });
+      if (response.ok) {
+        setTags((prevTags) => prevTags.filter((tag) => tag.id !== tagId)); // Remove the tag from state
+      } else {
+        console.error('Failed to delete tag');
+      }
+    } catch (error) {
+      console.error('Error deleting tag:', error);
+    }
+  };
 
   const addImage = (newImage: Image) => {
     setWorkspaceImages((prev) => ({
@@ -161,25 +226,19 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
     });
   };      
   
-
   useEffect(() => {
-    // Ensure there's an active workspace ID before subscribing
-    if (!activeWorkspaceId) {
-      console.warn('No active workspace ID, skipping listener setup');
-      return;
-    }
+    // Initialize real-time listeners once when the user logs in.
+    console.log('Initializing global real-time listeners for images, messages, tags');
   
-    console.log(`Initializing real-time listener for workspace ${activeWorkspaceId}`);
-  
-    // Set up the subscription
-    const workspaceChannel = supabase
-      .channel(`workspace-${activeWorkspaceId}-images`)  // Workspace-specific channel
+    // Set up the subscription for images across all workspaces
+    const imageListener = supabase
+      .channel('all-workspaces-images')  // Global channel for all images
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'user_gen_images' },  // Listen to INSERT events
         (payload) => {
-          // Log the entire payload for visibility
-          console.log('Change received:', payload);
+          // Log the payload for visibility
+          console.log('Change received for images:', payload);
   
           // Make sure the payload and new image data are present
           if (payload && payload.new) {
@@ -191,17 +250,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
               workspaceId: payload.new.workspace_id,
             };
   
-            // Log workspace IDs before comparison
-            console.log('Current workspace ID:', activeWorkspaceId);
-            console.log('Image workspace ID:', newImage.workspaceId);
-  
-            // Ensure both IDs are strings for comparison
-            if (String(newImage.workspaceId) === String(activeWorkspaceId)) {
-              console.log('Adding image to state for active workspace');
-              addImage(newImage);  // Update state
-            } else {
-              console.log(`Image belongs to workspace ${newImage.workspaceId}, not ${activeWorkspaceId}. Ignoring.`);
-            }
+            addImage(newImage);
           } else {
             console.warn('No new image data in event payload.');
           }
@@ -209,44 +258,100 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
       )
       .subscribe();
   
-    // Clean up the subscription when the component unmounts
-    return () => {
-      console.log(`Removing real-time listener for workspace ${activeWorkspaceId}`);
-      supabase.removeChannel(workspaceChannel);
-    };
-  }, [activeWorkspaceId, addImage]);  // Rerun effect if the active workspace ID changes
+    const messageListener = supabase
+      .channel('all-workspaces-messages')  // Global channel for all messages
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'user_gen_messages' },
+        (payload) => {
+          // Log the payload for visibility
+          console.log('Change received for images:', payload);
 
-  useEffect(() => {
-    if (!activeWorkspaceId) return;  // Ensure there's an active workspace
-
-    console.log(`Initializing real-time listener for messages in workspace ${activeWorkspaceId}`);
-    
-    const workspaceMessageChannel = supabase
-      .channel(`workspace-${activeWorkspaceId}-messages`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_gen_messages' }, (payload) => {
-        if (payload && payload.new) {
-          const newMessage = {
-            id: payload.new.id,
-            content: payload.new.content,
-            timestamp: payload.new.timestamp,
-            url: payload.new.message_url,
-            tags: payload.new.tags || [],
-            preview: payload.new.preview,
-            workspaceId: payload.new.workspace_id,
-          };
-
-          console.log('New message from real-time listener:', newMessage);
-          if (newMessage.workspaceId === activeWorkspaceId) {
-            addMessage(newMessage);  // Update state with the new message
+          if (payload && payload.new) {
+            const newMessage = {
+              id: payload.new.id,
+              content: payload.new.content,
+              timestamp: payload.new.timestamp,
+              url: payload.new.message_url,
+              tags: payload.new.tags || [],
+              preview: payload.new.preview,
+              workspaceId: payload.new.workspace_id,
+            };
+  
+            addMessage(newMessage);
+          } else {
+            console.warn('No new message data in event payload.');
           }
         }
-      })
+      )
+      .subscribe();
+  
+    const tagInsertListener = supabase
+      .channel('all-workspaces-tags')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'project_tags' },
+        (payload) => {
+          console.log('INSERT event received for tags:', payload);
+          if (payload.new) {
+            const newTag: Tag = {
+              id: payload.new.id,
+              name: payload.new.name,
+            };
+            setTags((prevTags) => [...prevTags, newTag]);
+          }
+        }
+      )
       .subscribe();
 
+    const tagUpdateListener = supabase
+      .channel('all-workspaces-tags')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'project_tags' },
+        (payload) => {
+          console.log('UPDATE event received for tags:', payload);
+          if (payload.new) {
+            const updatedTag: Tag = {
+              id: payload.new.id,
+              name: payload.new.name,
+            };
+            setTags((prevTags) =>
+              prevTags.map((tag) =>
+                tag.id === updatedTag.id ? updatedTag : tag
+              )
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    const tagDeleteListener = supabase
+      .channel('all-workspaces-tags')
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'project_tags' },
+        (payload) => {
+          console.log('DELETE event received for tags:', payload);
+          if (payload.old) {
+            setTags((prevTags) =>
+              prevTags.filter((tag) => tag.id !== payload.old.id)
+            );
+          }
+        }
+      )
+      .subscribe();
+  
+    // Clean up the subscription when the component unmounts
     return () => {
-      supabase.removeChannel(workspaceMessageChannel);
+      console.log('Removing global real-time listeners');
+      supabase.removeChannel(imageListener);
+      supabase.removeChannel(messageListener);
+      supabase.removeChannel(tagInsertListener);
+      supabase.removeChannel(tagUpdateListener);
+      supabase.removeChannel(tagDeleteListener);
     };
-  }, [activeWorkspaceId, addMessage]);  
+  }, [workspaces]);  
 
   const removeImage = (imageUrl: string) => {
     if (!activeWorkspaceId) return;
@@ -261,7 +366,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
   const fetchedMessages = activeWorkspaceId ? workspaceMessages[activeWorkspaceId] || [] : [];
 
   return (
-    <LibraryContext.Provider value={{ fetchedImages, fetchedMessages, fetchImages, fetchMessages, addImage, addMessage, removeImage }}>
+    <LibraryContext.Provider value={{ fetchedImages, fetchedMessages, fetchedTags, fetchImages, fetchMessages, fetchTags, createTag, deleteTag, addImage, addMessage, removeImage }}>
       {children}
     </LibraryContext.Provider>
   );

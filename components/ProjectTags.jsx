@@ -1,18 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import styles from '@/styles/ProjectTags.module.css';
 import { useWorkspace } from '@/context/WorkspaceContext';
-import { createClient } from '@supabase/supabase-js';
+import { useLibrary } from '@/context/LibraryContext';
 import MessagePopup from '@/components/MessagePopup';
-
-const supabaseUrl = 'https://xeatvqzhnxnxdbxfaduh.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 const ProjectTags = ({ userId }) => {
   const { activeWorkspaceId } = useWorkspace();
-  const [tags, setTags] = useState([]);
-  const [hasFetchedTags, setHasFetchedTags] = useState(false);
+  const { fetchedTags, fetchTags, createTag, deleteTag } = useLibrary(); // Use tag management from LibraryContext
   const [selectedTag, setSelectedTag] = useState(null);
   const [isCreateTagPopupVisible, setIsCreateTagPopupVisible] = useState(false);
   const [isTagDetailsPopupVisible, setIsTagDetailsPopupVisible] = useState(false);
@@ -21,74 +16,21 @@ const ProjectTags = ({ userId }) => {
   const [messagesWithTag, setMessagesWithTag] = useState([]);
   const [selectedMessage, setSelectedMessage] = useState(null);
 
-  const fetchTags = useCallback(async () => {
-    if (!userId || !activeWorkspaceId) return;
-
-    try {
-      const response = await fetch(`/api/userTags?userId=${userId}&workspaceId=${activeWorkspaceId}`);
-      const data = await response.json();
-      if (response.ok) {
-        setTags(data.tags);
-        setHasFetchedTags(true);
-      } else {
-        console.error('Failed to fetch tags:', data.error);
-      }
-    } catch (error) {
-      console.error('Error fetching tags:', error);
-    }
-  }, [userId, activeWorkspaceId]);
-
   useEffect(() => {
-    if (!hasFetchedTags && userId && activeWorkspaceId) {
-      fetchTags();
+    if (userId && activeWorkspaceId) {
+      console.log('Fetching tags for workspace:', activeWorkspaceId);
+      fetchTags(userId, activeWorkspaceId); // Fetch tags using centralized state
     }
-  }, [hasFetchedTags, userId, activeWorkspaceId, fetchTags]);
-
-  // Real-time updates for project tags
-  useEffect(() => {
-    if (!activeWorkspaceId) return;
-
-    const projectTagChannel = supabase
-      .channel(`workspace-${activeWorkspaceId}-tags`)  // Workspace-specific channel
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'project_tags', filter: `workspace_id=eq.${activeWorkspaceId}` },
-        (payload) => {
-          console.log('Real-time tag change received:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            setTags((prevTags) => [...prevTags, payload.new]);
-          } else if (payload.eventType === 'UPDATE') {
-            setTags((prevTags) =>
-              prevTags.map((tag) =>
-                tag.id === payload.new.id ? payload.new : tag
-              )
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setTags((prevTags) =>
-              prevTags.filter((tag) => tag.id !== payload.old.id)
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(projectTagChannel);  // Cleanup the subscription on unmount
-    };
-  }, [activeWorkspaceId]);
+  }, [userId, activeWorkspaceId, fetchTags]);
 
   const fetchObjectsByTag = async (tag) => {
     if (!userId || !activeWorkspaceId) return;
 
     try {
-      console.log(`Fetching objects for tag: ${tag.name}`);
       const response = await fetch(`/api/getObjectsByTag?userId=${userId}&workspaceId=${activeWorkspaceId}&tag=${tag.name}`);
       const data = await response.json();
 
       if (response.ok) {
-        console.log('Fetched objects:', data);
-
         const mappedImages = data.images.map((img) => ({
           imageUrl: img.image_url,
           thumbnailUrl: img.thumbnail_url,
@@ -120,60 +62,20 @@ const ProjectTags = ({ userId }) => {
     }
   };
 
-  const createTag = async () => {
+  const handleCreateTag = async () => {
     if (!userId || !activeWorkspaceId || !newTagName.trim()) return;
 
-    try {
-      const response = await fetch('/api/userTags', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          workspaceId: activeWorkspaceId,
-          tag: { name: newTagName.trim() },
-        }),
-      });
-
-      if (response.ok) {
-        setNewTagName('');
-        setIsCreateTagPopupVisible(false); // Close the create tag popup
-      } else {
-        console.error('Failed to create tag:', await response.json());
-      }
-    } catch (error) {
-      console.error('Error creating tag:', error);
-    }
+    await createTag(userId, activeWorkspaceId, newTagName); // Use the createTag function from context
+    setNewTagName('');
+    setIsCreateTagPopupVisible(false); // Close the create tag popup
   };
 
-  const deleteTag = async (tagId) => {
+  const handleDeleteTag = async (tagId) => {
     if (!userId || !activeWorkspaceId || !tagId) return;
 
-    try {
-      const response = await fetch('/api/userTags', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          workspaceId: activeWorkspaceId,
-          tagId,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setTags(data.tags);
-        setSelectedTag(null);
-        setIsTagDetailsPopupVisible(false); // Close the tag details popup
-      } else {
-        console.error('Failed to delete tag:', await response.json());
-      }
-    } catch (error) {
-      console.error('Error deleting tag:', error);
-    }
+    await deleteTag(userId, activeWorkspaceId, tagId); // Use the deleteTag function from context
+    setSelectedTag(null);
+    setIsTagDetailsPopupVisible(false); // Close the tag details popup
   };
 
   const truncateText = (text, maxLength) => {
@@ -182,6 +84,8 @@ const ProjectTags = ({ userId }) => {
     return text.slice(0, maxLength) + '...';
   };
 
+  console.log("Fetched Tags before rendering: ", fetchedTags);
+
   return (
     <div>
       {/* Add Tag Button */}
@@ -189,11 +93,15 @@ const ProjectTags = ({ userId }) => {
         <FaPlus title="Create New Tag" />
       </button>
       <ul className={styles.nestedList}>
-        {tags.map((tag) => (
-          <li key={tag.id} className={styles.textLine} onClick={() => fetchObjectsByTag(tag)}>
-            {tag.name}
-          </li>
-        ))}
+        {fetchedTags && fetchedTags.length > 0 ? (
+          fetchedTags.map((tag) => (
+            <li key={tag.id} className={styles.textLine} onClick={() => fetchObjectsByTag(tag)}>
+              {tag.name}
+            </li>
+          ))
+        ) : (
+          <li>No tags available</li>
+        )}
       </ul>
 
       {isTagDetailsPopupVisible && selectedTag && (
@@ -241,7 +149,7 @@ const ProjectTags = ({ userId }) => {
                 )}
               </div>
             </div>
-            <button className={styles.deleteTag} onClick={() => deleteTag(tags.id)}>Delete Tag</button>
+            <button className={styles.deleteTag} onClick={() => handleDeleteTag(selectedTag.id)}>Delete Tag</button>
           </div>
         </div>
       )}
@@ -262,7 +170,7 @@ const ProjectTags = ({ userId }) => {
               required
               className={styles.inputField}
             />
-            <button type="button" className={styles.submitButton} onClick={createTag}>
+            <button type="button" className={styles.submitButton} onClick={handleCreateTag}>
               Create
             </button>
           </div>

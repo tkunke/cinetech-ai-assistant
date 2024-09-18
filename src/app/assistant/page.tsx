@@ -170,7 +170,7 @@ export default function Home() {
                 </ul>
               )}
             </div>
-            <button onClick={handleGenerateSynopsisClick} style={{ display: 'none' }}>
+            <button onClick={handleGenerateSynopsisClick} style={{ display: 'block' }}>
               Generate Synopsis
             </button>
           </div>

@@ -25,7 +25,6 @@ async function fetchThreadMessages(threadId: string): Promise<Message[]> {
 }
 
 export async function generateThreadSynopsis(threadId: string): Promise<string | null> {
-  const openai = new OpenAI();
   
   try {
     // Step 1: Fetch all messages from the thread
@@ -56,6 +55,7 @@ export async function generateThreadSynopsis(threadId: string): Promise<string |
     `;
 
     // Step 4: Send the prompt to the OpenAI chat completions endpoint
+    const openai = new OpenAI();
     const completionResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
