@@ -7,7 +7,7 @@ import MessagePopup from '@/components/MessagePopup';
 
 const ProjectTags = ({ userId }) => {
   const { activeWorkspaceId } = useWorkspace();
-  const { fetchedTags, fetchTags, createTag, deleteTag, updateTag } = useLibrary(); // Use tag management from LibraryContext
+  const { fetchedTags, fetchTags, createTag, deleteTag, updateTag, untagContent } = useLibrary(); // Use tag management from LibraryContext
   const [selectedTag, setSelectedTag] = useState(null);
   const [isCreateTagPopupVisible, setIsCreateTagPopupVisible] = useState(false);
   const [isTagDetailsPopupVisible, setIsTagDetailsPopupVisible] = useState(false);
@@ -33,6 +33,7 @@ const ProjectTags = ({ userId }) => {
 
       if (response.ok) {
         const mappedImages = data.images.map((img) => ({
+          id: img.id,
           imageUrl: img.image_url,
           thumbnailUrl: img.thumbnail_url,
           tags: [],
@@ -43,6 +44,7 @@ const ProjectTags = ({ userId }) => {
             const messageContentResponse = await fetch(msg.message_url);
             const messageContentData = await messageContentResponse.json();
             return {
+              id: msg.id,
               url: msg.message_url,
               timestamp: msg.timestamp,
               content: messageContentData.content || '',
@@ -92,6 +94,45 @@ const ProjectTags = ({ userId }) => {
     setIsEditingTagName(false); // Exit edit mode
   };
 
+  const handleUntag = async (contentId, contentType) => {
+    try {
+      console.log('Attempting to untag content:', {
+        contentId,
+        contentType,
+        tagId: selectedTag.id
+      });
+
+      // Send the untag request to the server
+      const response = await untagContent(contentId, selectedTag.id, contentType);
+      
+      if (response.ok) {
+        console.log('Untagging successful, updating UI');
+        
+        // After untagging, update the UI by removing the item from the list
+        if (contentType === 'image') {
+          console.log('Previous images state:', objectsWithTag);
+          setObjectsWithTag(prevObjects => {
+            const updatedObjects = prevObjects.filter(image => image.id !== contentId);
+            console.log('Updated images state:', updatedObjects); // Log updated state
+            return updatedObjects;
+          });
+        } else if (contentType === 'message') {
+          console.log('Previous messages state:', messagesWithTag);
+          setMessagesWithTag(prevMessages => {
+            const updatedMessages = prevMessages.filter(message => message.id !== contentId);
+            console.log('Updated messages state:', updatedMessages); // Log updated state
+            return updatedMessages;
+          });
+        }
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to untag content:', errorData);
+      }
+    } catch (error) {
+      console.error('Failed to untag content (exception caught):', error);
+    }
+  }; 
+
   const truncateText = (text, maxLength) => {
     if (!text) return '';
     if (text.length <= maxLength) return text;
@@ -122,7 +163,7 @@ const ProjectTags = ({ userId }) => {
             <button className={styles.closeButton} onClick={() => setIsTagDetailsPopupVisible(false)}>
               &times;
             </button>
-            
+
             <div className={styles.tagHeader}>
               {isEditingTagName ? (
                 <>
@@ -146,14 +187,22 @@ const ProjectTags = ({ userId }) => {
                 </div>
               )}
             </div>
-
+            
+            {/* Messages Section */}
             <div className={styles.messagesSection}>
               <h4>Messages</h4>
               {messagesWithTag.length > 0 ? (
                 <ul className={styles.messagesList}>
                   {messagesWithTag.map((message, index) => (
-                    <li key={index} className={styles.popupTextLine} onClick={() => setSelectedMessage(message)}>
-                      {truncateText(message.content, 35)}
+                    <li key={index} className={styles.popupTextLine}>
+                      <span onClick={() => setSelectedMessage(message)}>
+                        {truncateText(message.content, 35)}
+                      </span>
+                      {console.log('Message ID:', message.id)}
+                      {/* 'X' to untag message */}
+                      <button className={styles.untagButton} onClick={() => handleUntag(message.id, 'message')}>
+                        &times;
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -161,7 +210,8 @@ const ProjectTags = ({ userId }) => {
                 <p>Tagged messages will show here</p>
               )}
             </div>
-
+            
+            {/* Images Section */}
             <div className={styles.thumbnailGridContainer}>
               <h4 className={styles.thumbnailTitle}>Images</h4>
               <div className={styles.thumbnailGrid}>
@@ -177,6 +227,10 @@ const ProjectTags = ({ userId }) => {
                           className={styles.thumbnail}
                         />
                       </a>
+                      {/* 'X' to untag image */}
+                      <button className={styles.untagButton} onClick={() => handleUntag(image.id, 'image')}>
+                        &times;
+                      </button>
                     </div>
                   ))
                 ) : (
@@ -184,6 +238,7 @@ const ProjectTags = ({ userId }) => {
                 )}
               </div>
             </div>
+              
             <button className={styles.deleteTag} onClick={() => handleDeleteTag(selectedTag.id)}>Delete Tag</button>
           </div>
         </div>

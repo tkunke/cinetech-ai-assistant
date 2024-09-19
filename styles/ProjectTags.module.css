@@ -92,6 +92,31 @@
   .addTagButton:hover {
     color: #007bff;
   }
+
+  .untagButton {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    display: none;
+    padding: 5px;
+  }
+  
+  .popupTextLine:hover .untagButton, .thumbnailContainer:hover .untagButton {
+    display: block; /* Show the untag button on hover */
+  }
+
+  .untagButton {
+    top: 5px;
+    right: 5px;
+  }
+
+  .popupTextLine, .thumbnailContainer {
+    position: relative;
+  }
   
   /* Close button styles */
   .closeButton {

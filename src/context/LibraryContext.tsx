@@ -42,6 +42,7 @@ interface LibraryContextType {
   addImage: (image: Image) => void;
   addMessage: (message: Message) => void;
   removeImage: (imageUrl: string) => void;
+  untagContent: (contentId: string, tagId: string, contentType: 'image' | 'message') => Promise<Response | undefined>;
 }
 
 const LibraryContext = createContext<LibraryContextType | undefined>(undefined);
@@ -65,7 +66,6 @@ interface LibraryProviderProps {
 export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) => {
   const [workspaceImages, setWorkspaceImages] = useState<{ [workspaceId: string]: Image[] }>({});
   const [workspaceMessages, setWorkspaceMessages] = useState<{ [workspaceId: string]: Message[] }>({});
-  const [tags, setTags] = useState<Tag[]>([]);
   const [fetchedTags, setFetchedTags] = useState<Tag[]>([]);
   const { workspaces, activeWorkspaceId } = useWorkspace();  // Get the active workspace ID from context
 
@@ -195,7 +195,6 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
     }
   };  
   
-
   const deleteTag = async (userId: string, workspaceId: string, tagId: string) => {
     if (!userId || !workspaceId || !tagId) return;
     try {
@@ -215,6 +214,32 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
       console.error('Error deleting tag:', error);
     }
   };
+
+  const untagContent = async (contentId: string, tagId: string, contentType: 'image' | 'message') => {
+    if (!contentId || !tagId) return;
+  
+    try {
+      const response = await fetch('/api/untagContent', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ contentId, tagId, contentType }),
+      });
+  
+      if (response.ok) {
+        console.log('Content untagged successfully');
+        return response;
+      } else {
+        const errorData = await response.json();
+        console.error('Failed to untag content on server:', errorData);
+        return response;
+      }
+    } catch (error) {
+      console.error('Error during untag request:', error);
+    }
+  };
+  
 
   const addImage = (newImage: Image) => {
     setWorkspaceImages((prev) => ({
@@ -340,7 +365,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
               id: payload.new.id,
               name: payload.new.name,
             };
-            setTags((prevTags) =>
+            setFetchedTags((prevTags) =>
               prevTags.map((tag) =>
                 tag.id === updatedTag.id ? updatedTag : tag
               )
@@ -358,7 +383,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
         (payload) => {
           console.log('DELETE event received for tags:', payload);
           if (payload.old) {
-            setTags((prevTags) =>
+            setFetchedTags((prevTags) =>
               prevTags.filter((tag) => tag.id !== payload.old.id)
             );
           }
@@ -390,7 +415,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
   const fetchedMessages = activeWorkspaceId ? workspaceMessages[activeWorkspaceId] || [] : [];
 
   return (
-    <LibraryContext.Provider value={{ fetchedImages, fetchedMessages, fetchedTags, fetchImages, fetchMessages, fetchTags, createTag, updateTag, deleteTag, addImage, addMessage, removeImage }}>
+    <LibraryContext.Provider value={{ fetchedImages, fetchedMessages, fetchedTags, fetchImages, fetchMessages, fetchTags, createTag, updateTag, deleteTag, untagContent, addImage, addMessage, removeImage }}>
       {children}
     </LibraryContext.Provider>
   );

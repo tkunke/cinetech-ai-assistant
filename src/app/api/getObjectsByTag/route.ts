@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     // Fetch images associated with the tag and workspace
     const imagesQuery = await client.query(`
-      SELECT img.image_url, img.thumbnail_url
+      SELECT img.id, img.image_url, img.thumbnail_url
       FROM user_gen_images img
       INNER JOIN project_tag_images pti ON img.id = pti.image_id
       WHERE pti.tag_id IN (
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     
     // Fetch messages associated with the tag and workspace
     const messagesQuery = await client.query(`
-      SELECT msg.message_url
+      SELECT msg.id, msg.message_url
       FROM user_gen_messages msg
       INNER JOIN project_tag_messages ptm ON msg.id = ptm.message_id
       WHERE ptm.tag_id IN (

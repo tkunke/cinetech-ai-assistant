@@ -90,19 +90,27 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "User ID, Workspace ID, and Tag ID are required" }, { status: 400 });
     }
 
-    // Perform batch delete for images and messages associated with the tag
+    // Begin a transaction
+    await client.query('BEGIN');
+
+    // Perform delete for images associated with the tag
     await client.query(`
       DELETE FROM project_tag_images
-      WHERE tag_id = $1;
+      WHERE tag_id = $1`, [tagId]);
+
+    // Perform delete for messages associated with the tag
+    await client.query(`
       DELETE FROM project_tag_messages
-      WHERE tag_id = $1;
-    `, [tagId]);
+      WHERE tag_id = $1`, [tagId]);
 
     // Delete the tag from project_tags
     await client.query(`
       DELETE FROM project_tags WHERE id = $1 AND workspace_id = $2`,
       [tagId, workspaceId]
     );
+
+    // Commit the transaction
+    await client.query('COMMIT');
 
     // Fetch updated list of tags for the workspace
     const tagsQuery = await client.query(`
@@ -115,6 +123,8 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ tags });
   } catch (error) {
+    // Rollback in case of error
+    await client.query('ROLLBACK');
     console.error("Error deleting tag:", error);
     return NextResponse.json({ error: "Failed to delete tag" }, { status: 500 });
   } finally {
