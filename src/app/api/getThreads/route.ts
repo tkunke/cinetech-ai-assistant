@@ -17,9 +17,14 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
   try {
     const threadsResponse = await client.query(`
-      SELECT thread_id, title
-      FROM user_threads
-      WHERE user_id = $1`,
+      SELECT ut.thread_id, ut.title, 
+             COALESCE(ta.keywords, '[]') AS keywords, 
+             COALESCE(ta.topics, '[]') AS topics, 
+             COALESCE(ta.summary, '') AS summary,
+             ut.last_active
+      FROM user_threads ut
+      LEFT JOIN thread_analysis ta ON ut.thread_id = ta.thread_id
+      WHERE ut.user_id = $1`,
       [userId]
     );
 
@@ -33,6 +38,31 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   } catch (error) {
     console.error('Error: Failed to fetch threads:', error);
     return NextResponse.json({ error: 'Failed to fetch threads' }, { status: 500 });
+  } finally {
+    client.release();
+  }
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const client = await pool.connect();
+  const { threadId } = await request.json();
+
+  if (!threadId) {
+    return NextResponse.json({ error: 'Thread ID is required' }, { status: 400 });
+  }
+
+  try {
+    await client.query(`
+      UPDATE user_threads
+      SET last_active = NOW()
+      WHERE thread_id = $1`,
+      [threadId]
+    );
+
+    return NextResponse.json({ message: 'Thread last_active updated successfully' });
+  } catch (error) {
+    console.error('Error updating thread:', error);
+    return NextResponse.json({ error: 'Failed to update thread' }, { status: 500 });
   } finally {
     client.release();
   }

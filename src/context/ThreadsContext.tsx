@@ -2,10 +2,15 @@
 
 import React, { createContext, useState, useContext, useCallback, ReactNode } from 'react';
 
-interface Thread {
+export interface Thread {
   id: string;
   title: string;
+  last_active: string; // This comes from the database as a string
+  keywords: { keyword: string; weight: string }[]; // Parsed from JSON
+  topics: { topic: string; weight: string }[];     // Parsed from JSON
+  summary?: string; // Optional, since it can be null or empty
 }
+
 
 interface ThreadsContextType {
   threads: Thread[];
@@ -13,6 +18,7 @@ interface ThreadsContextType {
   saveThread: (userId: string, threadId: string, title: string) => Promise<void>;
   saveThreadOnClose: (userId: string, threadId: string, title: string) => void;
   addThread: (thread: Thread) => void;
+  updateThread: (userId: string, threadId: string) => Promise<void>;
 }
 
 const ThreadsContext = createContext<ThreadsContextType | undefined>(undefined);
@@ -31,6 +37,10 @@ export const ThreadsProvider: React.FC<ThreadsProviderProps> = ({ children }) =>
       const mappedThreads = data.threads.map((thread: any) => ({
         id: thread.thread_id,
         title: thread.title,
+        keywords: thread.keywords,
+        topics: thread.topics,
+        summary: thread.summary,
+        last_active: thread.last_active,
       }));
       setThreads(mappedThreads || []);
       console.log('Threads set in state:', mappedThreads);
@@ -47,7 +57,17 @@ export const ThreadsProvider: React.FC<ThreadsProviderProps> = ({ children }) =>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newThread),
       });
-      setThreads((prevThreads) => [...prevThreads, { id: threadId, title }]);
+      setThreads((prevThreads) => [
+        ...prevThreads,
+        {
+          id: threadId,
+          title,
+          last_active: new Date().toISOString(), // Or any default value
+          keywords: [], // Default empty array
+          topics: [],   // Default empty array
+          summary: '',  // Default empty string
+        },
+      ]);
     } catch (error) {
       console.error('Failed to save thread:', error);
     }
@@ -94,8 +114,21 @@ export const ThreadsProvider: React.FC<ThreadsProviderProps> = ({ children }) =>
     setThreads((prevThreads) => [...prevThreads, thread]);
   }, []);
 
+  const updateThread = useCallback(async (threadId: string) => {
+    try {
+      await fetch(`/api/getThreads`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ threadId }),
+      });
+      console.log('Thread last_active updated for:', threadId);
+    } catch (error) {
+      console.error('Failed to update thread last_active:', error);
+    }
+  }, []);
+
   return (
-    <ThreadsContext.Provider value={{ threads, fetchThreads, saveThread, saveThreadOnClose, addThread }}>
+    <ThreadsContext.Provider value={{ threads, fetchThreads, saveThread, saveThreadOnClose, addThread, updateThread }}>
       {children}
     </ThreadsContext.Provider>
   );

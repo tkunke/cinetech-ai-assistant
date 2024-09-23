@@ -130,22 +130,48 @@
 }
 
 .threadListItem {
-  margin-bottom: 2px;
-  font-size: 0.8125rem;
+  margin-bottom: 10px;
+}
+
+.threadTimestamp {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: white;
+  text-align: left;
 }
 
 .textLine {
-  padding: 4px;
-  background-color: transparent;
-  color: white;
-  border: none;
-  cursor: pointer;
+  display: block; /* Ensures both lines are clickable */
   text-align: left;
+  font-size: 0.875rem;
+  padding: 10px; /* Add padding for readability */
+  line-height: 1.5; /* Adjust line spacing */
   width: 100%;
-  display: flex;
-  align-items: center;
+  cursor: pointer;
 }
 
 .textLine:hover {
   background-color: rgba(255, 255, 255, 0.1);
 }
+
+.popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.popupContent {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  max-width: 500px;
+  text-align: center;
+}
+

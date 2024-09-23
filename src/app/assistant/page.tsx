@@ -3,11 +3,11 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import CinetechAssistant from '@/components/cinetech-assistant';
+import { useThreads } from '@/context/ThreadsContext';
 import styles from '@/styles/assistant.module.css';
 import { jsPDF } from 'jspdf';
 import { FaUserCircle, FaRocketchat } from 'react-icons/fa';
 import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
-import { generateThreadSynopsis } from '@/utils/generateThreadSynopsis';
 
 
 interface Message {
@@ -31,6 +31,7 @@ export default function Home() {
   const [isCreativeToolsExpanded, setIsCreativeToolsExpanded] = useState(false);
   const [isUserMenuExpanded, setIsUserMenuExpanded] = useState(false);
   const resetMessagesRef = useRef<(() => void) | null>(null);
+  const { updateThread } = useThreads();
 
   const userId = session?.user?.id ? String(session.user.id) : ''; // Ensure userId is available
   let threadId = '';
@@ -95,56 +96,88 @@ export default function Home() {
 
   const handleGenerateSynopsisClick = async () => {
     const savedThreadId = sessionStorage.getItem('threadId');
-    const assistantId = 'asst_fmjzsttDthGzzJud4Vv2bDGq';
-    
-    if (savedThreadId && assistantId) {
-        const synopsis = await generateThreadSynopsis(savedThreadId);
-        console.log('Generated Synopsis:', synopsis);
 
-        if (synopsis) {
-            // Create a new jsPDF instance
-            const pdf = new jsPDF();
-
-            // Set title for the document
-            pdf.setFontSize(18);
-            pdf.text('Conversation Synopsis', 10, 10);
-
-            // Add the synopsis text, split into lines
-            pdf.setFontSize(12);
-            const lines = pdf.splitTextToSize(synopsis, 180); // Wrap the text to fit the page width
-            let y = 30; // Start the text 30 units down the page to leave room for the title
-            const pageHeight = pdf.internal.pageSize.height;
-
-            lines.forEach((line: string) => {
-                if (y + 10 > pageHeight) { // Check if adding the next line would overflow the page
-                    pdf.addPage(); // Add a new page if we're close to the bottom
-                    y = 10; // Reset y position for the new page
-                }
-                pdf.text(line, 10, y);
-                y += 10; // Move down the line height
+    if (savedThreadId) {
+        try {
+            // Call the API to generate the synopsis
+            const response = await fetch(`/api/generateThreadSynopsis?threadId=${savedThreadId}`, {
+                method: 'GET',
             });
 
-            // Save the PDF with a relevant filename
-            pdf.save('Conversation_Synopsis.pdf');
-        } else {
-            alert("Failed to generate synopsis.");
+            if (!response.ok) {
+                throw new Error('Failed to generate synopsis');
+            }
+
+            const data = await response.json();
+            const synopsis = data.synopsis;
+
+            console.log('Generated Synopsis:', synopsis);
+
+            if (synopsis) {
+                // No need to parse the synopsis as it's already an object
+                const parsedSynopsis = synopsis;
+
+                // Extract topics, keywords, and summary
+                const topics = parsedSynopsis.topics || {};
+                const keywords = parsedSynopsis.keywords || {};
+                const summary = parsedSynopsis.summary || {};
+
+                console.log('Topics:', topics);
+                console.log('Keywords:', keywords);
+                console.log('Summary:', summary);
+
+                // Post the topics, keywords, and summary to the database
+                const saveResponse = await fetch('/api/saveAnalysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        threadId: savedThreadId,
+                        topics,
+                        keywords,
+                        summary,
+                    }),
+                });
+
+                if (saveResponse.ok) {
+                    console.log('Analysis saved successfully');
+                } else {
+                    throw new Error('Failed to save analysis');
+                }
+
+            } else {
+                alert("Failed to generate synopsis.");
+            }
+        } catch (error: any) {
+            console.error("Error:", error);
+            alert(error.message || "An error occurred.");
         }
     } else {
         alert("No active thread found.");
     }
-  };
+};
 
   const handleStartNewThreadClick = () => {
+    const messagesAdded = sessionStorage.getItem('messagesAdded') === 'true';
+    const existingThreadId = sessionStorage.getItem('threadId');
+    
+    if (messagesAdded && existingThreadId) {
+      // Call updateThread with the existing threadId
+      updateThread(existingThreadId, userId);
+      sessionStorage.removeItem('messagesAdded'); // Reset the flag
+    }
+  
     // Clear session storage
     sessionStorage.clear();
-
+  
     // Call the reset function directly from the ref
     if (resetMessagesRef.current) {
       resetMessagesRef.current(); // Call the reset function stored in the ref
     }
-
+  
     console.log('Cleared state and storage for starting a new thread');
-  };
+  };  
 
   return (
     <div className="flex h-screen">

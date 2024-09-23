@@ -144,7 +144,7 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
           <div className={`${styles['textarea-container']}`}>
             <textarea
               disabled={isLoading || trialExpired || credits <= 0}
-              className={`${styles.textarea} border rounded py-2 px-3 text-gray-700 mb-2 resize-none`}
+              className={`${styles.textarea}`}
               onChange={handlePromptChange}
               value={prompt}
               placeholder={

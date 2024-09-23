@@ -5,6 +5,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import CinetechAssistantMessage from './assistant-message';
 import InputForm from './input-form';
 import Sidebar from './sidebar';
+import EphemeralGreeting from './EphemeralGreeting';
 import styles from '@/styles/cinetech-assistant.module.css';
 import SpinningReels from './spinning-reels';
 import { useThreads } from '@/context/ThreadsContext';
@@ -50,38 +51,6 @@ export default function CinetechAssistant({
   const userName = session?.user?.name || 'User';
   const userFirstName = session?.user?.first_name || userName;
 
-  const handleInteraction = useCallback(() => {
-    setShowGreeting(false);
-  }, []);
-
-  useEffect(() => {
-    // Check if the greeting has already been shown in this session
-    const greetingShown = sessionStorage.getItem('greetingShown');
-
-    if (!greetingShown) {
-      // Show the greeting if it hasn't been shown yet
-      setShowGreeting(true);
-
-      // Set the flag in sessionStorage to prevent showing it again
-      sessionStorage.setItem('greetingShown', 'true');
-    }
-  }, []);
-
-  useEffect(() => {
-    // Attach event listeners to hide greeting on interaction
-    const hideGreetingOnInteraction = () => {
-      setShowGreeting(false);
-    };
-
-    window.addEventListener('click', hideGreetingOnInteraction);
-    window.addEventListener('keydown', hideGreetingOnInteraction);
-
-    return () => {
-      window.removeEventListener('click', hideGreetingOnInteraction);
-      window.removeEventListener('keydown', hideGreetingOnInteraction);
-    };
-  }, []);
-
   const saveCurrentThreadIfNeeded = useCallback(async () => {
     if (threadId && userId) {
       // Fetch the current threads from the database
@@ -97,47 +66,11 @@ export default function CinetechAssistant({
         await saveThread(userId, threadId, title);
       }
     }
-  }, [threadId, userId, saveThread]);  
-
-  useEffect(() => {
-    const getSalutation = () => {
-      const currentHour = new Date().getHours();
-
-      if (currentHour < 12) {
-        return 'Good morning';
-      } else if (currentHour < 18) {
-        return 'Good afternoon';
-      } else {
-        return 'Good evening';
-      }
-    };
-
-    setSalutation(getSalutation());
-  }, [userName]);
-
-  useEffect(() => {
-    const loadGreetings = async () => {
-      try {
-        const response = await fetch('/greetingMessages.json');
-        const greetings = await response.json();
-        const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-        setDynamicGreeting(`${salutation}, ${userFirstName}! ${randomGreeting}`);
-      } catch (error) {
-        console.error('Error loading greetings:', error);
-      }
-    };
-
-    if (salutation) {
-      loadGreetings();
-    }
-  }, [salutation, userFirstName]);
+  }, [threadId, userId, saveThread]);
 
   const handlePromptChange = useCallback((e) => {
     setPrompt(e.target.value);
-    if (showGreeting) {
-      setShowGreeting(false); // Hide the greeting when the user starts typing
-    }
-  }, [showGreeting]);
+  }, []);
 
   const clearMessages = () => {
     setMessages([]);
@@ -208,6 +141,11 @@ export default function CinetechAssistant({
   async function handleSubmit(event) {
     if (event && event.preventDefault) {
       event.preventDefault();
+    }
+
+    const messagesAdded = sessionStorage.getItem('messagesAdded') === 'true';
+    if (!messagesAdded) {
+      sessionStorage.setItem('messagesAdded', 'true');
     }
   
     setStreamingMessage({
@@ -494,11 +432,7 @@ export default function CinetechAssistant({
 
   return (
     <div className="flex flex-col h-full justify-between">
-      {showGreeting && (
-        <div className={styles.greetingOverlay}>
-          <p className={styles.greetingMessage}>{dynamicGreeting}</p>
-        </div>
-      )}
+      <EphemeralGreeting onSelectThread={handleThreadSelect}/>
       <div className="flex flex-col mb-10 items-center justify-center">
         {messages.map((message) => (
           <CinetechAssistantMessage

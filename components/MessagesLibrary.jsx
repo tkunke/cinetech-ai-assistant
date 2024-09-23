@@ -272,7 +272,9 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
 
       {selectedMessage && (
         <MessagePopup
-          message={selectedMessage}
+          title={selectedMessage.title}
+          content={selectedMessage.content}
+          timestamp={selectedMessage.timestamp}
           onClose={() => setSelectedMessage(null)}
         />
       )}

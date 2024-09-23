@@ -207,6 +207,7 @@
   .timestamp {
     font-size: 14px;
     color: #999;
+    font-weight: 600;
     margin-bottom: 10px;
   }  
   
@@ -262,6 +263,10 @@
     top: 10px;
     right: 10px;
     cursor: pointer;
+  }
+
+  .loadThreadButton {
+    font-weight: bold;
   }
   
   .tagList {

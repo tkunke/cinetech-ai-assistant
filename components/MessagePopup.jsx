@@ -5,54 +5,56 @@ import { FaEnvelope, FaFilePdf } from 'react-icons/fa';
 import styles from '@/styles/MessagePopup.module.css';
 import { generatePdfFromMarkdown } from '@/utils/pdfUtils';
 
-const MessagePopup = ({ message, onClose }) => {
-  const handleDownloadMessagePDF = (messageContent) => {
-    console.log("Message Content:", messageContent);
-    generatePdfFromMarkdown(messageContent);
+const MessagePopup = ({ title, content, timestamp, onClose, threadId, onLoadThread }) => {
+  const handleDownloadPDF = (content) => {
+    generatePdfFromMarkdown(content);
   };
 
-  const formattedTimestamp = new Date(message.timestamp).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'long', // Full month name
-    day: 'numeric',
-  });
+  console.log("Popup content:", content);
+  console.log("Popup timestamp:", timestamp);
 
   return ReactDOM.createPortal(
     <div className={styles.messagePopupOverlay}>
       <div className={styles.messagePopup}>
         <div className={styles.messagePopupHeader}>
-          <div className={styles.timestamp}>{formattedTimestamp}</div>
-          {/* Left-aligned buttons */}
+          <div className={styles.timestamp}>{timestamp}</div>
           <div className={styles.leftButtons}>
             <button
               className={styles.emailButton}
               onClick={() => {
                 const subject = encodeURIComponent('Message Content');
-                const body = encodeURIComponent(message.content);
+                const body = encodeURIComponent(content);
                 window.location.href = `mailto:?subject=${subject}&body=${body}`;
               }}
             >
               <FaEnvelope />
             </button>
-            <button
-              className={styles.pdfButton}
-              onClick={() => handleDownloadMessagePDF(message.content)}
-            >
+            <button className={styles.pdfButton} onClick={() => handleDownloadPDF(content)}>
               <FaFilePdf />
             </button>
           </div>
-              
-          {/* Right-aligned close button */}
-          <button
-            className={styles.closeButton}
-            onClick={onClose}
-          >
+          <button className={styles.closeButton} onClick={onClose}>
             &times;
           </button>
         </div>
+        {title && <h3>{title}</h3>}
         <div className={styles.messageContent}>
-          <ReactMarkdown>{message.content}</ReactMarkdown>
+          <ReactMarkdown>{content}</ReactMarkdown>
         </div>
+
+        {/* Conditionally render "Load Thread" button if threadId is provided */}
+        {threadId && (
+          <button
+            className={styles.loadThreadButton}
+            onClick={() => {
+              onLoadThread(threadId);  // Call the function to load the thread
+              onClose();  // Close the popup
+            }}
+          >
+            Load Conversation
+          </button>
+        )}
+        
       </div>
     </div>,
     document.body
