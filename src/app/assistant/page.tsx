@@ -1,14 +1,14 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+
+import { useEffect, useState, useRef } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import CinetechAssistant from '@/components/cinetech-assistant';
 import { useThreads } from '@/context/ThreadsContext';
 import styles from '@/styles/assistant.module.css';
-import { jsPDF } from 'jspdf';
-import { FaUserCircle, FaRocketchat } from 'react-icons/fa';
 import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
-
+import { FaUserCircle, FaRocketchat } from 'react-icons/fa';
 
 interface Message {
   id: string;
@@ -16,7 +16,7 @@ interface Message {
   content: string;
 }
 
-export default function Home() {
+function Home() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
@@ -35,49 +35,55 @@ export default function Home() {
 
   const userId = session?.user?.id ? String(session.user.id) : ''; // Ensure userId is available
 
+  let threadId = '';
+
+  if (typeof window !== 'undefined') {
+    threadId = sessionStorage.getItem('threadId') || '';
+  }
+
   // Load assistantId from session storage or URL parameters
   useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
-    const assistantIdFromUrl = queryParams.get('assistantId');
-    const assistantIdFromSession = sessionStorage.getItem('assistantId');
-
-    if (assistantIdFromUrl) {
-      setAssistantId(assistantIdFromUrl);
-    } else if (assistantIdFromSession) {
-      setAssistantId(assistantIdFromSession);
-    } else {
-      console.error('No assistant ID found');
+    if (typeof window !== 'undefined') {
+      const queryParams = new URLSearchParams(window.location.search);
+      const assistantIdFromUrl = queryParams.get('assistantId');
+      const assistantIdFromSession = sessionStorage.getItem('assistantId');
+  
+      if (assistantIdFromUrl) {
+        setAssistantId(assistantIdFromUrl);
+      } else if (assistantIdFromSession) {
+        setAssistantId(assistantIdFromSession);
+      } else {
+        console.error('No assistant ID found');
+      }
     }
-  }, []);
+  }, [session]);
 
   const toggleCreativeToolsExpand = () => {
     setIsCreativeToolsExpanded(!isCreativeToolsExpanded);
   };
 
   const toggleUserMenuExpand = () => {
-    console.log("User menu expanded:", !isUserMenuExpanded);
     setIsUserMenuExpanded(!isUserMenuExpanded);
   };
 
   const handleGeneratePdfClick = async () => {
-    console.log('Selected Messages:', selectedMessages);
     if (selectedMessages.length >= 2) {
       await generatePdfWithSelectedMessages(selectedMessages);
     } else {
       alert("Please select one breakdown message and at least one image message.");
     }
     setSelectedMessages([]); // Clear the selected messages
-  };  
+  };
 
   const handleLogout = () => {
-    sessionStorage.clear();
-    signOut({
-      callbackUrl: '/logout',
-    });
+    if (typeof window !== 'undefined') {
+      sessionStorage.clear();
+    }
+    signOut({ callbackUrl: '/logout' });
   };
 
   const handleProfileClick = () => {
-    router.push('/profile'); // Adjust this path as needed
+    router.push('/profile');
   };
 
   const handleCreditAdd = () => {
@@ -89,90 +95,21 @@ export default function Home() {
     setIsUserMenuExpanded(false);
   };
 
-  const handleGenerateSynopsisClick = async () => {
-    const savedThreadId = sessionStorage.getItem('threadId');
-
-    if (savedThreadId) {
-        try {
-            // Call the API to generate the synopsis
-            const response = await fetch(`/api/generateThreadSynopsis?threadId=${savedThreadId}`, {
-                method: 'GET',
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to generate synopsis');
-            }
-
-            const data = await response.json();
-            const synopsis = data.synopsis;
-
-            console.log('Generated Synopsis:', synopsis);
-
-            if (synopsis) {
-                // No need to parse the synopsis as it's already an object
-                const parsedSynopsis = synopsis;
-
-                // Extract topics, keywords, and summary
-                const topics = parsedSynopsis.topics || {};
-                const keywords = parsedSynopsis.keywords || {};
-                const summary = parsedSynopsis.summary || {};
-
-                console.log('Topics:', topics);
-                console.log('Keywords:', keywords);
-                console.log('Summary:', summary);
-
-                // Post the topics, keywords, and summary to the database
-                const saveResponse = await fetch('/api/saveAnalysis', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        threadId: savedThreadId,
-                        topics,
-                        keywords,
-                        summary,
-                    }),
-                });
-
-                if (saveResponse.ok) {
-                    console.log('Analysis saved successfully');
-                } else {
-                    throw new Error('Failed to save analysis');
-                }
-
-            } else {
-                alert("Failed to generate synopsis.");
-            }
-        } catch (error: any) {
-            console.error("Error:", error);
-            alert(error.message || "An error occurred.");
-        }
-    } else {
-        alert("No active thread found.");
-    }
-};
-
   const handleStartNewThreadClick = () => {
     const messagesAdded = sessionStorage.getItem('messagesAdded') === 'true';
     const existingThreadId = sessionStorage.getItem('threadId');
     
     if (messagesAdded && existingThreadId) {
-      // Call updateThread with the existing threadId
       updateThread(existingThreadId, userId);
       sessionStorage.removeItem('messagesAdded'); // Reset the flag
     }
   
-    // Clear session storage
     sessionStorage.clear();
   
-    // Call the reset function directly from the ref
     if (resetMessagesRef.current) {
       resetMessagesRef.current(); // Call the reset function stored in the ref
     }
-  
-    console.log('Cleared state and storage for starting a new thread');
-  };  
+  };
 
   return (
     <div className="flex h-screen">
@@ -180,9 +117,7 @@ export default function Home() {
         <header className={styles.header}>
           <div className={styles.leftSection}>
             <button className={styles.chatButton} onClick={handleStartNewThreadClick}>
-              <FaRocketchat
-                title='Start New Conversation'
-              />
+              <FaRocketchat title="Start New Conversation" />
             </button>
             <div
               className={`${styles.creativeToolsContainer} ${isCreativeToolsExpanded ? 'active' : ''}`}
@@ -193,17 +128,14 @@ export default function Home() {
               </button>
               {isCreativeToolsExpanded && (
                 <ul className={`${styles.creativeToolsDropdown} creativeToolsDropdown`}>
-                  <li onClick={handleGeneratePdfClick} className={styles.creativeToolsButton}>Generate Shot Sheet</li>
-                  {/* Add more buttons or links here as needed */}
+                  <li onClick={handleGeneratePdfClick} className={styles.creativeToolsButton}>
+                    Generate Shot Sheet
+                  </li>
                 </ul>
               )}
             </div>
-            <button onClick={handleGenerateSynopsisClick} style={{ display: 'block' }}>
-              Generate Synopsis
-            </button>
           </div>
-          <div className={styles.middleSection}>
-          </div>
+          <div className={styles.middleSection}></div>
           <div
             className={`${styles.userIconContainer} ${isUserMenuExpanded ? 'active' : ''}`}
             onMouseLeave={handleMouseLeave}
@@ -230,3 +162,6 @@ export default function Home() {
     </div>
   );
 }
+
+// Wrapping the Home component with dynamic import
+export default dynamic(() => Promise.resolve(Home), { ssr: false });
