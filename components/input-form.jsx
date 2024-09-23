@@ -7,7 +7,7 @@ import { useUser } from '@/context/UserContext';
 
 const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputRef, handleFileChange }) => {
   const { data: session } = useSession();
-  const username = session?.user?.username || 'user';
+  const username = session?.user?.name || 'user';
   const { trialExpired, credits } = useUser();
   const [selectedFile, setSelectedFile] = useState(null);
   const [filePreview, setFilePreview] = useState(null);
