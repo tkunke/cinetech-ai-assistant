@@ -34,11 +34,6 @@ export default function Home() {
   const { updateThread } = useThreads();
 
   const userId = session?.user?.id ? String(session.user.id) : ''; // Ensure userId is available
-  let threadId = '';
-
-  if (typeof window !== 'undefined') {
-    threadId = sessionStorage.getItem('threadId') || '';
-  }
 
   // Load assistantId from session storage or URL parameters
   useEffect(() => {
