@@ -14,6 +14,9 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get('userId');
   const details = searchParams.get('details') === 'true'; // Check for details param
 
+  console.log('Email:', email); // Log the email received
+  console.log('Username:', username);
+
   if (!email && !username && !userId) {
     return NextResponse.json({ message: 'Email, Username, or User ID is required' }, { status: 400 });
   }
@@ -22,7 +25,12 @@ export async function GET(request: NextRequest) {
     let userQuery;
 
     // Query by email, username, or userId if provided
-    if (email) {
+    if (userId && email) {
+      userQuery = await client.query(
+        `SELECT id, username FROM users WHERE email = $1 OR username = $2`,
+        [email, username]
+      );
+    } else if (email) {
       userQuery = await client.query(
         `SELECT id, username
         FROM users
@@ -69,7 +77,7 @@ export async function GET(request: NextRequest) {
         exists: true,
         username: user.username,
         credits: user.credits,
-        trialExpired: checkIfTrialExpired(user.trial_start_date), // Add your own logic here
+        trialExpired: checkIfTrialExpired(user.trial_start_date),
         status: user.status,
       });
     }
