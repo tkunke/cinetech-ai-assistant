@@ -193,6 +193,32 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
     setCurrentMessageToDelete(null);
   };
 
+  const formatTimestamp = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+
+    if (isNaN(date.getTime())) {
+      return 'Invalid date';
+    }
+
+    const diffInTime = now.getTime() - date.getTime();
+    const diffInDays = Math.ceil(diffInTime / (1000 * 60 * 60 * 24));
+
+    if (diffInDays === 0) {
+      return 'Today';
+    } else if (diffInDays === 1) {
+      return 'Yesterday';
+    } else if (diffInDays <= 5) {
+      return `${diffInDays} days ago`;
+    } else {
+      return date.toLocaleDateString('en-US', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+      });
+    }
+  };
+
   const groupMessagesByMonth = (messages) => {
     return messages.reduce((groups, message) => {
       const date = new Date(message.timestamp);
@@ -274,7 +300,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
         <MessagePopup
           title={selectedMessage.title}
           content={selectedMessage.content}
-          timestamp={selectedMessage.timestamp}
+          timestamp={formatTimestamp(selectedMessage.timestamp)}
           onClose={() => setSelectedMessage(null)}
         />
       )}
