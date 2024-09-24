@@ -111,6 +111,70 @@ function Home() {
     }
   };
 
+  const handleGenerateSynopsisClick = async () => {
+    const savedThreadId = sessionStorage.getItem('threadId');
+
+    if (savedThreadId) {
+        try {
+            // Call the API to generate the synopsis
+            const response = await fetch('/api/generateThreadSynopsis?threadId=${savedThreadId}', {
+                method: 'GET',
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to generate synopsis');
+            }
+
+            const data = await response.json();
+            const synopsis = data.synopsis;
+
+            console.log('Generated Synopsis:', synopsis);
+
+            if (synopsis) {
+                // No need to parse the synopsis as it's already an object
+                const parsedSynopsis = synopsis;
+
+                // Extract topics, keywords, and summary
+                const topics = parsedSynopsis.topics || {};
+                const keywords = parsedSynopsis.keywords || {};
+                const summary = parsedSynopsis.summary || {};
+
+                console.log('Topics:', topics);
+                console.log('Keywords:', keywords);
+                console.log('Summary:', summary);
+
+                // Post the topics, keywords, and summary to the database
+                const saveResponse = await fetch('/api/saveAnalysis', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        threadId: savedThreadId,
+                        topics,
+                        keywords,
+                        summary,
+                    }),
+                });
+
+                if (saveResponse.ok) {
+                    console.log('Analysis saved successfully');
+                } else {
+                    throw new Error('Failed to save analysis');
+                }
+
+            } else {
+                alert("Failed to generate synopsis.");
+            }
+        } catch (error: any) {
+            console.error("Error:", error);
+            alert(error.message || "An error occurred.");
+        }
+    } else {
+        alert("No active thread found.");
+    }
+  };
+
   return (
     <div className="flex h-screen">
       <div className="flex-1 flex flex-col ml-0 md:ml-80">
@@ -134,6 +198,9 @@ function Home() {
                 </ul>
               )}
             </div>
+            <button onClick={handleGenerateSynopsisClick} style={{ display: 'block' }}>
+              Generate Synopsis
+            </button>
           </div>
           <div className={styles.middleSection}></div>
           <div

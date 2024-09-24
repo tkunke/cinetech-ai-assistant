@@ -13,6 +13,7 @@ interface LocalUser {
   password: string;
   assistant_name: string;
   first_name: string;
+  subscription_type: string;
 }
 
 // Extend the User type to include custom properties
@@ -22,6 +23,7 @@ declare module "next-auth" {
     email: string;
     assistant_name: string;
     first_name: string;
+    subscription_type: string;
   }
 
   interface Session {
@@ -31,6 +33,7 @@ declare module "next-auth" {
       name: string;
       assistant_name: string;
       first_name: string;
+      subscription_type: string;
     }
   }
 }
@@ -42,6 +45,7 @@ declare module "next-auth/jwt" {
     email: string;
     assistant_name: string;
     first_name: string;
+    subscription_type: string;
   }
 }
 
@@ -81,6 +85,7 @@ const authOptions: NextAuthOptions = {
               email: user.email,
               first_name: user.first_name,
               assistant_name: user.assistant_name,
+              subscription_type: user.subscription_type
             };
           }
         } finally {
@@ -106,6 +111,7 @@ const authOptions: NextAuthOptions = {
         token.email = user.email;
         token.first_name = user.first_name;
         token.assistant_name = user.assistant_name;
+        token.subscription_type = user.subscription_type;
       }
       return token;
     },
@@ -116,6 +122,7 @@ const authOptions: NextAuthOptions = {
         session.user.email = token.email as string;
         session.user.first_name = token.first_name as string;
         session.user.assistant_name = token.assistant_name as string;
+        session.user.subscription_type = token.subscription_type as string;
       }
       return session;
     },

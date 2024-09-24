@@ -35,6 +35,7 @@ interface WorkspaceManagerProps {
 const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibrary, toggleLibrary }) => {
   const { data: session } = useSession();
   const firstName = session?.user?.first_name;
+  const accountType = session?.user?.subscription_type || 'standard';
   const userName = session?.user?.name;
   const { workspaces, switchWorkspace, activeWorkspaceId, createWorkspace, addMember, fetchWorkspaces, fetchAllWorkspaceMembers, fetchWorkspaceMembers, setMembers, members, setUserRole, userRole } = useWorkspace();
   const { invitations, fetchInvitations } = useUser();
@@ -53,9 +54,23 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
   const [showWorkspaceMenuId, setShowWorkspaceMenuId] = useState<string | null>(null);
   const [expandedWorkspaceId, setExpandedWorkspaceId] = useState<string | null>(null);
+  const [showLimitPopup, setShowLimitPopup] = useState(false);
+
+  const MAX_SHARED_WORKSPACES_STANDARD = 1;
+  const MAX_SHARED_WORKSPACES_PRO = 5;
+  const maxWorkspacesAllowed =
+    accountType === 'premium' ? MAX_SHARED_WORKSPACES_PRO : MAX_SHARED_WORKSPACES_STANDARD;
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const ellipsisRef = useRef<HTMLDivElement | null>(null);
+
+  const userOwnedWorkspaces = session?.user?.id
+  ? workspaces.filter(
+      ws => ws.type === 'public' && ws.owner.role === 'owner'
+    )
+  : [];
+  
+  const userOwnedWorkspaceCount = userOwnedWorkspaces.length;
   
 
   useEffect(() => {
@@ -102,6 +117,14 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
   };
 
   const handleNewWorkspaceClick = () => {
+    if (userOwnedWorkspaceCount >= maxWorkspacesAllowed) {
+      setErrorMessage(
+        `You have reached the maximum number of shared workspaces for your account (${maxWorkspacesAllowed}).`
+      );
+      setShowLimitPopup(true);
+      console.log('popup limit:', showLimitPopup);
+      return;
+    }
     setIsPopupVisible(true);
   };
 
@@ -318,6 +341,18 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
               </div>
             )}
             <button className={styles.closeButton} onClick={() => setShowInvitationPopup(false)}>x</button>
+          </div>
+        </div>
+      )}
+
+      {showLimitPopup && (
+        <div className={styles.popupOverlay}>
+          <div className={styles.popup}>
+            <h3>Workspace Limit Reached</h3>
+            <p>You have reached the maximum number of shared workspaces for your account ({maxWorkspacesAllowed}).</p>
+            <button onClick={() => setShowLimitPopup(false)} className={styles.closeButton}>
+              x
+            </button>
           </div>
         </div>
       )}
