@@ -2,13 +2,18 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useUser } from '@/context/UserContext';
+import { useSession } from 'next-auth/react';
 import styles from '@/styles/profile.module.css';
 
 const UserProfileSettings = () => {
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
   const [username, setUsername] = useState('currentUsername'); // Replace with actual data
   const [password, setPassword] = useState('');
   const [assistantName, setAssistantName] = useState('currentAssistantName'); // Replace with actual data
   const [defaultGreeting, setDefaultGreeting] = useState('currentDefaultGreeting'); // Replace with actual data
+  const { cancelMembership } = useUser();
 
   const router = useRouter();
 
@@ -38,6 +43,19 @@ const UserProfileSettings = () => {
   const handleBackToAssistant = () => {
     router.push('/assistant'); // Adjust this path as needed
   };
+
+  const handleCancelMembership = async () => {
+    if (userId) {
+      try {
+        await cancelMembership(userId);
+        alert('Membership canceled successfully');
+        // You may want to redirect the user or update the UI after the membership is canceled
+      } catch (error) {
+        console.error('Error canceling membership:', error);
+        alert('There was a problem canceling your membership.');
+      }
+    }
+  };  
 
   return (
     <div className={styles.pageContainer}>
@@ -202,6 +220,13 @@ const UserProfileSettings = () => {
                 className={styles.submitButton}
               >
                 Save Changes
+              </button>
+              <button
+                type="submit"
+                onClick={handleCancelMembership}
+                className={styles.cancelMembershipButton}
+              >
+                Cancel Membership
               </button>
             </div>
           </form>

@@ -12,6 +12,7 @@ interface UserContextType {
   invitations: Invitation[];
   fetchInvitations: () => void;
   fetchUserStatus: (userId: string) => Promise<void>;
+  cancelMembership: (userId: string) => Promise<void>;
   trialExpired: boolean;
   credits: number | undefined;
   // other user-related state and functions
@@ -60,6 +61,26 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     } catch (error) {
       console.error('Error fetching user status:', error);
     }
+  };
+
+  const cancelMembership = async (userId: string) => {
+    try {
+      const response = await fetch('/api/cancelMembership', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId })
+      });
+  
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error('Error canceling membership:', error);
+      throw error; // Let the caller handle the error
+    }
   };  
 
   useEffect(() => {
@@ -77,6 +98,7 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       }
     },
     fetchUserStatus,
+    cancelMembership,
     trialExpired,
     credits,
   };
