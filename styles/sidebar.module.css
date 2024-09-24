@@ -48,12 +48,12 @@
 
 /* Top section styles */
 .topSection {
-  height: 3rem; /* Adjusted height for logo */
+  height: 7.25rem; /* Adjusted height for logo */
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0;
-  margin-bottom: 1rem;
+  justify-content: center;
+  padding-bottom: 0.5rem;
   flex-shrink: 0;
 }
 
@@ -62,6 +62,19 @@
   margin: 0;
   max-width: 100%;
   padding: 0;
+}
+
+.activeWorkspaceDisplay {
+  padding: 0 0.25rem;
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: white; /* White for better contrast against the background */
+  background-color: rgb(30, 150, 230); /* A vibrant blue to draw attention */
+  border-radius: 4px;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  box-shadow: 0 0 8px rgba(30, 150, 230, 0.7); /* Subtle glow effect */
 }
 
 /* Middle section styles */
@@ -119,6 +132,7 @@
 }
 
 .threadListSection {
+  margin-top: 1.5rem;
   flex-grow: 1;
   flex-shrink: 1;
 }

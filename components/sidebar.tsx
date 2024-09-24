@@ -3,6 +3,7 @@ import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from '@/styles/sidebar.module.css';
+import { useWorkspace, WorkspaceDetails } from '@/context/WorkspaceContext';
 import WorkspaceManager from '@/components/WorkspaceManager';
 import TokenCounter from '@/components/token-counter';
 import MessagePopup from '@/components/MessagePopup';
@@ -30,6 +31,7 @@ type TopicType = {
 const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messagesUpdated, onSelectThread }) => {
   const { data: session } = useSession();
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(window.innerWidth > 768);
+  const { workspaces, activeWorkspaceId } = useWorkspace();
   const [isWorkspaceExpanded, setIsWorkspaceExpanded] = useState(false);
   const [activeLibrary, setActiveLibrary] = useState<string | null>(null);
   const [showPopup, setShowPopup] = useState(false);
@@ -142,7 +144,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
         ☰
       </button>
       <div className={`${styles.sidebar} ${isSidebarVisible ? styles.visible : ''}`}>
-        {/* Top Section: Logo */}
+        {/* Top Section: Logo & Active Workspace */}
         <div className={styles.topSection}>
           <Link href="/">
             <Image
@@ -153,6 +155,13 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
               className={styles.cinetechArtImage}
             />
           </Link>
+          {activeWorkspaceId && (
+            <div className={styles.activeWorkspaceDisplay}>
+              {workspaces.find((ws) => ws.id === activeWorkspaceId)?.name === 'My Workspace'
+                ? `Active: ${session?.user?.first_name || 'My'}'s Workspace`
+                : `Active: ${workspaces.find((ws) => ws.id === activeWorkspaceId)?.name}`}
+            </div>
+          )}
         </div>
   
         {/* Middle Section: Workspaces and Content Libraries */}

@@ -4,18 +4,16 @@
   flex-direction: column;
   align-items: flex-start;
   width: 100%;
-  margin-top: 1rem;
 }
 
 /* Styles for the Workspace Heading (Workspaces and Libraries) */
 .workspaceSectionTitle {
   position: relative;
   font-weight: bold;
-  margin: 10px 0;
+  margin-top: 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 5px;
   border-radius: 8px;
   font-size: 1.2rem;
   cursor: pointer;
@@ -140,23 +138,6 @@
 .memberIcon {
   margin-right: 8px;
   font-size: 1rem;
-}
-
-/* Active Workspace Display */
-.activeWorkspaceDisplay {
-  padding: 0 0.25rem;
-  font-size: 0.9rem;
-  font-weight: bold;
-  color: white; /* White for better contrast against the background */
-  background-color: rgb(30, 150, 230); /* A vibrant blue to draw attention */
-  border-radius: 4px;
-  margin-top: 0.25rem;
-  margin-bottom: 1rem;
-  align-items: center;
-  justify-content: center;
-  width: auto;
-  margin-left: 3rem;
-  box-shadow: 0 0 8px rgba(30, 150, 230, 0.7); /* Subtle glow effect */
 }
 
 /* Invitation Popup */

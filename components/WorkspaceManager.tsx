@@ -297,23 +297,17 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        menuRef.current &&
-        ellipsisRef.current &&
-        !menuRef.current.contains(event.target as Node) &&
-        !ellipsisRef.current.contains(event.target as Node)
-      ) {
-        setShowWorkspaceMenuId(null); // Close the menu if clicked outside
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowWorkspaceMenuId(null); // Close the menu if clicking outside
       }
     };
-
+  
     document.addEventListener('mousedown', handleClickOutside);
-    
-    // Cleanup the event listener
+  
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, []);  
 
   useEffect(() => {
     return () => {
@@ -337,7 +331,7 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
               ))
             ) : (
               <div className={styles.invitationMessage}>
-                <p>You don&apost have any invitations at the moment.</p>
+                <p>You don&apos;t have any invitations at the moment.</p>
               </div>
             )}
             <button className={styles.closeButton} onClick={() => setShowInvitationPopup(false)}>x</button>
@@ -354,15 +348,6 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
               x
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Active Workspace Display */}
-      {activeWorkspaceId && (
-        <div className={styles.activeWorkspaceDisplay}>
-          {workspaces.find((ws) => ws.id === activeWorkspaceId)?.name === 'My Workspace'
-            ? `Active: ${firstName || 'My'}'s Workspace`
-            : `Active: ${workspaces.find((ws) => ws.id === activeWorkspaceId)?.name}`}
         </div>
       )}
 
@@ -420,10 +405,11 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
                       )}
                     </div>
                   )}
-      
+                  {showWorkspaceMenuId !== ws.id && (
                   <div ref={ellipsisRef} onClick={() => currentUser && toggleWorkspaceMenu(ws.id, currentUser.role)}>
                     <FaEllipsisH className={styles.menuIcon} />
                   </div>
+                  )}
                 </div>
                 
                 {/* Only render the members list for public workspaces */}
@@ -457,8 +443,8 @@ const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ userId, activeLibra
 
       {/* Content Libraries Section */}
       <div>
-        <h2 className={styles.workspaceSectionTitle} onClick={toggleLibrarySection}>
-          Content Libraries {showLibraries}
+        <h2 className={styles.workspaceSectionTitle}>
+          <span onClick={toggleLibrarySection}>Content Libraries {showLibraries}</span>
         </h2>
         {showLibraries && activeWorkspaceId && (
           <div className={styles.librarySection}>
