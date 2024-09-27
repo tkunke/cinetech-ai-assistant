@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 
 interface Invitation {
@@ -15,7 +15,8 @@ interface UserContextType {
   cancelMembership: (userId: string) => Promise<void>;
   trialExpired: boolean;
   credits: number | undefined;
-  // other user-related state and functions
+  handleStartUsingApp: () => void;
+  appUsed: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -38,6 +39,13 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [trialExpired, setTrialExpired] = useState<boolean>(false);
   const [credits, setCredits] = useState<number | undefined>(undefined);
+  const [appUsed, setAppUsed] = useState<boolean>(false);
+
+  const handleStartUsingApp = useCallback(() => {
+    console.log("User started interacting with the app");
+    setAppUsed(true);
+    // Add any other logic you need here
+  }, []);
 
   const fetchInvitations = async (userId: string) => {
     try {
@@ -101,6 +109,8 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     cancelMembership,
     trialExpired,
     credits,
+    handleStartUsingApp,
+    appUsed,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

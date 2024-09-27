@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import styles from '@/styles/sidebar.module.css';
 import { useWorkspace, WorkspaceDetails } from '@/context/WorkspaceContext';
+import { useUser } from '@/context/UserContext';
 import WorkspaceManager from '@/components/WorkspaceManager';
 import TokenCounter from '@/components/token-counter';
 import MessagePopup from '@/components/MessagePopup';
@@ -37,6 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
   const [showPopup, setShowPopup] = useState(false);
   const [currentThread, setCurrentThread] = useState<Thread | null>(null);
   const { threads, fetchThreads, updateThread } = useThreads();
+  const { handleStartUsingApp } = useUser();
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -47,6 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
   };
 
   const toggleLibrary = (library: string) => {
+    handleStartUsingApp();
     setActiveLibrary(activeLibrary === library ? null : library);
   };
 
@@ -67,6 +70,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
   };
 
   const handleThreadClick = (thread: Thread) => {
+    handleStartUsingApp();
     try {
       const description = thread.summary || 'No synopsis available';
       const topics = thread.topics || [];

@@ -1,15 +1,18 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import styles from '@/styles/EphemeralGreeting.module.css';
-import { useThreads } from '@/context/ThreadsContext'; 
+import { useThreads } from '@/context/ThreadsContext';
+import { useUser } from '@/context/UserContext';
 
-export default function EphemeralGreeting({ onSelectThread }) {
+export default function EphemeralGreeting({ onSelectThread, onStartUsingApp }) {
   const [showGreeting, setShowGreeting] = useState(false);
   const [dynamicGreeting, setDynamicGreeting] = useState('');
+  const [showThreads, setShowThreads] = useState(true);
   const [recentThreads, setRecentThreads] = useState([]);
   const [analysisData, setAnalysisData] = useState({});
   const { data: session } = useSession();
-  const { threads, fetchThreads } = useThreads(); 
+  const { threads, fetchThreads } = useThreads();
+  const { appUsed, handleStartUsingApp } = useUser();
 
   const userFirstName = session?.user?.first_name || 'User';
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
@@ -18,6 +21,11 @@ export default function EphemeralGreeting({ onSelectThread }) {
   const handleInteraction = useCallback(() => {
     setShowGreeting(false);
   }, []);
+
+  const handleAppInteraction = useCallback(() => {
+    setShowThreads(false);  // Hide thread boxes
+    handleStartUsingApp();   // Mark app as used in the context
+  }, [handleStartUsingApp]);
 
   const getSalutation = () => {
     const currentHour = new Date().getHours();
@@ -32,11 +40,13 @@ export default function EphemeralGreeting({ onSelectThread }) {
 
   useEffect(() => {
     const greetingShown = sessionStorage.getItem('greetingShown');
-    if (!greetingShown) {
+    if (!greetingShown && !appUsed) {
       setShowGreeting(true);
       sessionStorage.setItem('greetingShown', 'true');
     }
-  }, []);
+    if (appUsed)
+      setShowThreads(false);
+  }, [appUsed]);
 
   useEffect(() => {
     const loadGreetings = async () => {
@@ -95,7 +105,7 @@ export default function EphemeralGreeting({ onSelectThread }) {
   const handleThreadClick = (threadId) => {
     onSelectThread(threadId);
     sessionStorage.setItem('threadId', threadId);
-    setShowGreeting(false); // Hide the ephemeral greeting after loading the thread
+    handleAppInteraction();
   };
 
   const formatTimestamp = (timestamp) => {
@@ -143,13 +153,13 @@ export default function EphemeralGreeting({ onSelectThread }) {
   const filteredThreads = screenWidth <= 1020 ? recentThreads.slice(-1) : recentThreads;
   const shouldRenderThreadsContainer = screenWidth >= 1530 && screenHeight >= 750;
 
-  if (!showGreeting || !dynamicGreeting) return null;
+  if (!showGreeting && !showThreads) return null;
 
-  function fitWordsIntoBox(topics, keywords, boxWidth, boxHeight) {
+  function fitWordsIntoBox(topics = [], keywords = [], boxWidth, boxHeight) {
     // Combine both topics and keywords into one array
     const allWords = [
-      ...topics.map(({ topic, weight }) => ({ word: topic, weight })),
-      ...keywords.map(({ keyword, weight }) => ({ word: keyword, weight })),
+      ...(Array.isArray(topics) ? topics.map(({ topic, weight }) => ({ word: topic, weight })) : []),
+      ...(Array.isArray(keywords) ? keywords.map(({ keyword, weight }) => ({ word: keyword, weight })) : []),
     ];
   
     // Calculate total weight of all words
@@ -167,8 +177,10 @@ export default function EphemeralGreeting({ onSelectThread }) {
 
   return (
     <div className={styles.greetingOverlay}>
+      {showGreeting && (
       <p className={styles.greetingMessage}>{dynamicGreeting}</p>
-      {shouldRenderThreadsContainer && recentThreads.length > 0 && (
+      )}
+      {showThreads && shouldRenderThreadsContainer && recentThreads.length > 0 && (
         <>
           <div className={styles.outerThreadsContainer}>
             <p className={styles.pickupText}>Would you like to pick up where you left off?</p>

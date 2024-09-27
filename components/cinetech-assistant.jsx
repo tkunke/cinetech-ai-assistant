@@ -9,6 +9,7 @@ import EphemeralGreeting from './EphemeralGreeting';
 import styles from '@/styles/cinetech-assistant.module.css';
 import SpinningReels from './spinning-reels';
 import { useThreads } from '@/context/ThreadsContext';
+import { useUser } from '@/context/UserContext';
 
 function containsMarkdown(content) {
   return /(\*\*|__|`|#|\*|-|\||\n[\-=\*]{3,}\s*$)/.test(content.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, ''));
@@ -24,6 +25,7 @@ export default function CinetechAssistant({
   const userId = session?.user?.id ? String(session.user.id) : '';
   const [isLoading, setIsLoading] = useState(false);
   const [threadId, setThreadId] = useState(null);
+  const { appUsed, handleStartUsingApp } = useUser();
   const [prompt, setPrompt] = useState(''); 
   const [messages, setMessages] = useState([]);
   const [messagesLibrary, setMessagesLibrary] = useState([]);
@@ -160,6 +162,10 @@ export default function CinetechAssistant({
   async function handleSubmit(event) {
     if (event && event.preventDefault) {
       event.preventDefault();
+    }
+
+    if (!appUsed) {
+      handleStartUsingApp();
     }
 
     // Ensure that we don't allow submission if the previous user message was not responded to
