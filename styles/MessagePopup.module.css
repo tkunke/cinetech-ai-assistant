@@ -1,3 +1,41 @@
+.relativeContainer {
+  position: relative;
+}
+
+.downloadButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  cursor: pointer;
+  background: #f0f0f0;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.imageMessageContainer {
+  position: relative;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.image {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid #ddd;
+  border-radius: 0.25rem;
+}
+
+.imageDownloadButton {
+  margin-top: 0.5rem;
+  cursor: pointer;
+  display: inline-block;
+  background: #007bff;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.9rem;
+}
+
 /* Container for all messages */
 .messagesContainer {
     display: flex;

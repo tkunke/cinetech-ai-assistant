@@ -52,6 +52,7 @@
 
 /* Paragraphs */
 .messageContainer p {
+  margin-top: 0.5rem;
   margin-bottom: 1rem; /* Add space between paragraphs */
 }
 
@@ -208,7 +209,7 @@
 
 .download-button {
   font-size: 2.5rem; /* Adjust the size of the icon */
-  padding: 0.25rem;
+  padding: 0.5rem;
   position: absolute;
   bottom: 0.5rem;
   right: 0.5rem;
