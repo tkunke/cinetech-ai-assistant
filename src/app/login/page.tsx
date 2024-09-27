@@ -10,21 +10,6 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    if (session) {
-      // After successful login, create the assistant
-      createAssistant()
-        .then((assistantId) => {
-          // Store assistantId and redirect
-          sessionStorage.setItem('assistantId', assistantId);
-          router.push(`/assistant?assistantId=${assistantId}`); // Pass assistantId to assistant page
-        })
-        .catch((error) => {
-          console.error('Error creating assistant:', error);
-        });
-    }
-  }, [session, router]);
-
   // Function to generate a timestamp string
   const generateTimestamp = () => {
     const now = new Date();
@@ -37,19 +22,35 @@ const LoginPage = () => {
     return `${year}${month}${day}_${hours}${minutes}${seconds}`;
   };
 
-  // Function to create the assistant with a unique name
-  const createAssistant = async () => {
-    const timestamp = generateTimestamp(); // Generate the timestamp
-    const assistantName = `${username}_assistant_${timestamp}`; // Create a unique assistant name
+  useEffect(() => {
+    if (session) {
+      // Fetch the assistant ID after successful login
+      fetchAssistantId()
+        .then((assistantId) => {
+          if (assistantId) {
+            // Store assistantId and redirect
+            sessionStorage.setItem('assistantId', assistantId);
+            router.push(`/assistant?assistantId=${assistantId}`); // Pass assistantId to assistant page
+          } else {
+            console.error('No assistant found for the user.');
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching assistant:', error);
+        });
+    }
+  }, [session, router]);
 
+  // Function to fetch the assistant ID from the database
+  const fetchAssistantId = async () => {
     try {
-      const response = await fetch('/api/createAssistant', {
+      const response = await fetch('/api/getAssistantId', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          assistantName, // Use the unique assistant name
+          userId: session?.user?.id, // Assuming the session contains user ID
         }),
       });
       const data = await response.json();
@@ -58,9 +59,9 @@ const LoginPage = () => {
         throw new Error(data.error);
       }
 
-      return data.assistant.id; // Return the newly created assistant ID
+      return data.assistantId; // Return the assistant ID
     } catch (error) {
-      console.error('Error creating assistant:', error);
+      console.error('Error fetching assistant ID:', error);
       throw error;
     }
   };

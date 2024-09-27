@@ -43,7 +43,7 @@ export const ThreadsProvider: React.FC<ThreadsProviderProps> = ({ children }) =>
         last_active: thread.last_active,
       }));
       setThreads(mappedThreads || []);
-      console.log('Threads set in state:', mappedThreads);
+      //console.log('Threads set in state:', mappedThreads);
     } catch (error) {
       console.error('Failed to fetch threads:', error);
     }

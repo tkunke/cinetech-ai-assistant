@@ -95,19 +95,19 @@ function Home() {
     setIsUserMenuExpanded(false);
   };
 
-  const handleStartNewThreadClick = () => {
+  const handleStartNewThreadClick = async () => {
     const messagesAdded = sessionStorage.getItem('messagesAdded') === 'true';
     const existingThreadId = sessionStorage.getItem('threadId');
-    
+
     if (messagesAdded && existingThreadId) {
-      updateThread(existingThreadId, userId);
-      sessionStorage.removeItem('messagesAdded'); // Reset the flag
+        updateThread(existingThreadId, userId);
+        sessionStorage.removeItem('messagesAdded'); // Reset the flag
     }
-  
+
     sessionStorage.clear();
-  
+
     if (resetMessagesRef.current) {
-      resetMessagesRef.current(); // Call the reset function stored in the ref
+        resetMessagesRef.current(); // Call the reset function stored in the ref
     }
   };
 
@@ -117,7 +117,7 @@ function Home() {
     if (savedThreadId) {
         try {
             // Call the API to generate the synopsis
-            const response = await fetch('/api/generateThreadSynopsis?threadId=${savedThreadId}', {
+            const response = await fetch(`/api/generateThreadSynopsis?threadId=${savedThreadId}`, {
                 method: 'GET',
             });
 
@@ -198,9 +198,9 @@ function Home() {
                 </ul>
               )}
             </div>
-            <button onClick={handleGenerateSynopsisClick} style={{ display: 'block' }}>
+            {/*<button onClick={handleGenerateSynopsisClick} style={{ display: 'block' }}>
               Generate Synopsis
-            </button>
+            </button>*/}
           </div>
           <div className={styles.middleSection}></div>
           <div

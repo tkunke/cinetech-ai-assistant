@@ -7,7 +7,7 @@ export default function Logout() {
     <div className={styles.container}>
       <Link href="/">
         <Image 
-          src="/cinetech_art.png"
+          src="/bw_logo.png"
           alt="Cinetech Logo"
           width={500}
           height={500}

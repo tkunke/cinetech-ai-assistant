@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
   const userId = searchParams.get('userId');
   const details = searchParams.get('details') === 'true'; // Check for details param
 
-  console.log('Email:', email); // Log the email received
-  console.log('Username:', username);
+  //console.log('Email:', email); // Log the email received
+  //console.log('Username:', username);
 
   if (!email && !username && !userId) {
     return NextResponse.json({ message: 'Email, Username, or User ID is required' }, { status: 400 });
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = userQuery.rows[0];
-    console.log('User found:', user);
+    //console.log('User found:', user);
 
     // Return more detailed user information if requested
     if (details) {

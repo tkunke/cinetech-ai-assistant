@@ -32,7 +32,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const threads = threadsResponse.rows;
 
     // Log the extracted rows
-    console.log('Extracted threads:', threads);
+    //console.log('Extracted threads:', threads);
 
     return NextResponse.json({ threads });
   } catch (error) {

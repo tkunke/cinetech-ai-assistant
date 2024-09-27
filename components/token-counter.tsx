@@ -27,7 +27,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
     try {
       const response = await fetch(`/api/fetchAndUpdateCredits?userId=${userId}`);
       const data = await response.json();
-      console.log('Fetched current credits:', data); // <-- Add this for debugging
+      //console.log('Fetched current credits:', data); // <-- Add this for debugging
       if (!response.ok) throw new Error('Failed to fetch current credits');
       setCredits(data.tokenCount);
       console.log('Credits set to:', data.tokenCount);
@@ -48,7 +48,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
       try {
         const response = await fetch(`/api/tokenCalc?runId=${localRunId}`);
         const data = await response.json();
-        console.log('TokenCalc API response:', data); // <-- Add this for debugging
+        //console.log('TokenCalc API response:', data); // <-- Add this for debugging
         if (response.ok) {
           const creditsSpent = data.credits;
           if (credits !== null && creditsSpent !== null) {

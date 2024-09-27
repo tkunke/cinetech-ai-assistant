@@ -7,6 +7,35 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL, // Use the Supabase connection string here
 });
 
+const isServerSide = typeof window === 'undefined';
+const baseUrl = isServerSide ? process.env.NEXT_PUBLIC_BASE_URL : '';
+
+// Function to create an assistant via OpenAI
+async function createAssistant(username: string) {
+  const assistantName = `${username}_cinetech_openai`;
+  try {
+    const response = await fetch(`${baseUrl}/api/createAssistant`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        assistantName,
+      })
+    });
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.error);
+    }
+
+    return data.assistant.id;
+  } catch (error) {
+    console.error('Error creating assistant:', error);
+    throw error;
+  }
+}
+
 export async function POST(request: NextRequest) {
   const { firstName, lastName, email, username, password, assistantName, accountType } = await request.json();
 
@@ -32,11 +61,14 @@ export async function POST(request: NextRequest) {
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Create assistant at OpenAI
+    const openaiAssistantId = await createAssistant(username);
+
     // Save the new user
     const newUser = await client.query(
-      `INSERT INTO users (first_name, last_name, email, username, password, assistant_name)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [firstName, lastName, email, username, hashedPassword, finalAssistantName]
+      `INSERT INTO users (first_name, last_name, email, username, password, assistant_name, openai_assistant)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [firstName, lastName, email, username, hashedPassword, finalAssistantName, openaiAssistantId]
     );
 
     const userId = newUser.rows[0].id; // Get the new user's ID

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Limelight&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&display=swap');
+
 .container {
     display: flex;
     flex-direction: column;
@@ -5,12 +7,14 @@
     justify-content: center;
     height: 100vh;
     text-align: center;
+    background: linear-gradient(to bottom, rgb(70, 90, 110), rgb(50, 70, 90));
   }
   
   .message {
     margin-top: 20px;
     font-size: 24px;
-    color: #333;
+    color: white;
+    font-family: 'Lato', sans-serif;
   }
   
   .signInLink {

@@ -8,7 +8,7 @@ const ProductOrderPage: React.FC = () => {
       <div className={styles.cardContainer}>
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>CineTech Standard</h2>
-          <p className={styles.price}>$8/month</p>
+          <p className={styles.price}>$12/month</p>
           <ul className={styles.featureList}>
             <li className={styles.featureItem}>✔ 250 Credits renewed monthly*</li>
             <li className={styles.featureItem}>✔ Basic Support</li>
@@ -19,7 +19,6 @@ const ProductOrderPage: React.FC = () => {
 
         <div className={styles.card}>
           <h2 className={styles.cardTitle}>CineTech Pro</h2>
-          <p className={styles.price}>$12/month</p>
           <ul className={styles.featureList}>
             <li className={styles.featureItem}>✔ 500 Credits renewed monthly*</li>
             <li className={styles.featureItem}>✔ Shared Workspaces</li>

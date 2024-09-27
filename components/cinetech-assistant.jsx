@@ -33,9 +33,6 @@ export default function CinetechAssistant({
     role: 'assistant',
     content: 'Thinking...',
   });
-  const [showGreeting, setShowGreeting] = useState(false);
-  const [salutation, setSalutation] = useState('');
-  const [dynamicGreeting, setDynamicGreeting] = useState('');
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const [chunkCounter, setChunkCounter] = useState(0);
@@ -45,12 +42,34 @@ export default function CinetechAssistant({
   const [runId, setRunId] = useState(null);
   const [readerDone, setReaderDone] = useState(false);
 
-  const { saveThread, threads, saveThreadOnClose } = useThreads();
+  const { saveThread } = useThreads();
 
-  const assistantName = session?.user?.assistant_name;
   const userName = session?.user?.name || 'User';
-  const userFirstName = session?.user?.first_name || userName;
 
+  useEffect(() => {
+    const generateSynopsis = async () => {
+      try {
+        const response = await fetch(`/api/generateThreadSynopsis?threadId=${threadId}`, {
+          method: 'GET',
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to generate synopsis');
+        }
+
+        const data = await response.json();
+        console.log('Generated Synopsis:', data.synopsis);
+      } catch (error) {
+        console.error('Error generating synopsis:', error);
+      }
+    };
+
+    if (messages.length > 0 && messages.length % 10 === 0) {
+      console.log('Messages array length is divisible by 10. Generating synopsis...');
+      generateSynopsis();
+    }
+  }, [messages.length, threadId]);
+  
   const saveCurrentThreadIfNeeded = useCallback(async () => {
     if (threadId && userId) {
       // Fetch the current threads from the database
@@ -108,7 +127,7 @@ export default function CinetechAssistant({
 
   const handleThreadSelect = (threadId) => {
     setThreadId(threadId);
-    fetchMessages(threadId);
+    fetchMessages(threadId, false);
   };
 
   const addToMessagesLibrary = useCallback((message) => {
@@ -141,6 +160,13 @@ export default function CinetechAssistant({
   async function handleSubmit(event) {
     if (event && event.preventDefault) {
       event.preventDefault();
+    }
+
+    // Ensure that we don't allow submission if the previous user message was not responded to
+    if (messages.length % 2 !== 0) {
+      console.log('Last user message did not receive a response, retrying...');
+      await retryLastUserMessage();  // Retry if there is an unpaired message
+      return;
     }
 
     const messagesAdded = sessionStorage.getItem('messagesAdded') === 'true';
@@ -205,6 +231,10 @@ export default function CinetechAssistant({
         method: 'POST',
         body: formData,
       });
+
+      if (!response.ok) {
+        throw new Error('There was a problem sending your message. Please try again later.');
+      }
   
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -272,22 +302,93 @@ export default function CinetechAssistant({
         }
       }
   
-      await fetchMessages(currentThreadId);
+      await fetchMessages(currentThreadId, true);
   
     } catch (error) {
-      console.error(`Error during request with thread ID: ${threadId}`, error);
+      console.error('Error during message submission:', error);
       setStreamingMessage({
         role: 'assistant',
-        content: 'Sorry, there seems to be an issue processing your request. Please try again later.',
+        content: error.message || 'Sorry, something went wrong. Please try again later.',
       });
+
+      // Retry logic if there is an error
+      const success = await retryLastUserMessage();
+      if (!success) {
+        console.log('All retries failed, deleting the last user message.');
+        // Call server to delete the message from the thread
+        await deleteMessageFromThread(threadId, messageId);
+
+        // Remove the last unpaired user message from local state
+        setMessages((prevMessages) => prevMessages.slice(0, -1));
+      }
     } finally {
       setIsLoading(false);
     }
   }  
   
-  async function fetchMessages(threadId) {
-    if (!threadId) {
-      console.error('Cannot fetch messages: threadId is null or undefined');
+  // Helper function to retry the last user message
+  async function retryLastUserMessage() {
+    const lastMessage = messages[messages.length - 1];
+
+    if (lastMessage.role === 'user') {
+      console.log('Retrying message:', lastMessage.content);
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        console.log(`Attempt ${attempt} to retry message...`);
+
+        // Retry sending the last user message
+        const formData = new FormData();
+        formData.append('assistantId', assistantId);
+        formData.append('threadId', threadId);
+        formData.append('content', lastMessage.content);
+
+        try {
+          const response = await fetch('/api/cinetech-assistant', {
+            method: 'POST',
+            body: formData,
+          });
+
+          if (response.ok) {
+            console.log('Retry successful for last message.');
+            return true;  // Success, exit the retry loop
+          }
+
+        } catch (retryError) {
+          console.error('Retry failed:', retryError);
+        }
+
+        // Wait before the next retry
+        await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL));
+      }
+    }
+
+    return false;  // Return false if all retries fail
+  }
+
+  // Helper function to delete the message from the thread
+  async function deleteMessageFromThread(threadId, messageId) {
+    try {
+      const response = await fetch(`/api/deleteMessage`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ threadId, messageId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete the message from the thread');
+      }
+
+      console.log(`Message with ID ${messageId} deleted from thread ${threadId}`);
+    } catch (error) {
+      console.error('Error deleting message from thread:', error);
+    }
+  }
+
+  async function fetchMessages(threadId, requireRunId = false) {
+    if (!threadId || (requireRunId && !runId)) {
+      console.error('Cannot fetch messages: threadId or runId is null or undefined');
       return;
     }
   
@@ -316,7 +417,7 @@ export default function CinetechAssistant({
   }  
 
   useEffect(() => {
-    if (readerDone) {
+    if (readerDone && runId) {
         const pollInterval = setInterval(async () => {
             try {
               //console.log('Polling with threadId:', threadId, 'and runId:', runId);
@@ -329,7 +430,7 @@ export default function CinetechAssistant({
                 setMessagesUpdated(false);
 
                 //console.log('Full server response:', response);
-                console.log('Polling run status:', response.runStatus);
+                //console.log('Polling run status:', response.runStatus);
 
                 if (response.runStatus.status === 'completed') {
                     clearInterval(pollInterval);
@@ -337,7 +438,7 @@ export default function CinetechAssistant({
                     setRunCompleted(true);
                     setShowLoadingGif(false);
                     setMessagesUpdated(true);
-                    await fetchMessages(threadId);
+                    await fetchMessages(threadId, true);
 
                     setRunId(null);
                     setReaderDone(false);
@@ -367,25 +468,6 @@ export default function CinetechAssistant({
       inputRef.current.focus();
     }
   }, [isLoading, messages]);
-
-  useEffect(() => {
-    const handleSessionEnd = () => {
-      if (assistantId) {
-        navigator.sendBeacon('/api/cleanup', JSON.stringify({ assistantId }));
-      }
-    };
-  
-    if (!session) {
-      handleSessionEnd();
-    }
-  
-    if (typeof window !== 'undefined') {
-      window.addEventListener('beforeunload', handleSessionEnd);
-      return () => {
-        window.removeEventListener('beforeunload', handleSessionEnd);
-      };
-    }
-  }, [session, userId, assistantId]);      
 
   const handleFileChange = useCallback((file) => {
     setSelectedFile(file);
@@ -429,6 +511,10 @@ export default function CinetechAssistant({
   useEffect(() => {
     console.log('showLoadingGif state changed:', showLoadingGif);
   }, [showLoadingGif]);
+
+  useEffect(() => {
+    console.log('Messages:', messages);
+  }, [messages]);
 
   return (
     <div className="flex flex-col h-full justify-between">

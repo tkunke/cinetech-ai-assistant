@@ -87,7 +87,7 @@ const HomePage: React.FC = () => {
         <section className={styles.bottomSection}>
           <div className={styles.bottomImageTextContainer}>
             <Image
-              src="/cinetech_art.png"
+              src="/bw_logo.png"
               alt="Cinetech Logo"
               width={500}
               height={500}

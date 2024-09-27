@@ -82,6 +82,7 @@ interface MessageCreateParams {
   role: 'user' | 'assistant';
   content: string;
   attachments?: Attachment[];
+  metadata?: Record<string, string>;
 }
 
 // In-memory store for run statuses
@@ -334,11 +335,24 @@ export async function POST(request: NextRequest) {
   let threadId = formData.get('threadId') as string | null;
   const file = formData.get('file') as File | null;
 
+  // Extract metadata from formData
+  const metadataString = formData.get('metadata') as string | null;
+  let metadata = {};
+  if (metadataString) {
+    try {
+      metadata = JSON.parse(metadataString); // Parse the metadata if it exists
+      console.log('Metadata received:', metadata);
+    } catch (error) {
+      console.error('Error parsing metadata:', error);
+    }
+  }
+
   // Define newMessage with proper typing
   let newMessage: MessageCreateParams = {
     role: 'user',
     content,
     attachments: [],
+    metadata,
   };
 
   console.log('Creating message with content:', newMessage.content);
@@ -501,6 +515,7 @@ export async function GET(request: NextRequest) {
     const threadMessages = await openai.beta.threads.messages.list(threadId, {
       limit: 100,
     });
+
     const cleanMessages = threadMessages.data.map((m) => {
       let content = '';
       if (m.content && Array.isArray(m.content) && m.content.length > 0) {
@@ -511,11 +526,13 @@ export async function GET(request: NextRequest) {
           content = messageContent.image.url;
         }
       }
+
       return {
         id: m.id,
         role: m.role,
         content: content,
         createdAt: m.created_at,
+        metadata: m.metadata || {},
       };
     });
 

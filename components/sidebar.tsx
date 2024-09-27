@@ -50,16 +50,16 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
     setActiveLibrary(activeLibrary === library ? null : library);
   };
 
-  const loadSavedThread = (newThreadId: string) => {
+  const loadSavedThread = async (newThreadId: string) => {
     const messagesAdded = sessionStorage.getItem('messagesAdded') === 'true';
     const existingThreadId = sessionStorage.getItem('threadId');
-  
+
     if (messagesAdded && existingThreadId) {
-      // Call updateThread with the existing threadId before switching to a new one
-      updateThread(existingThreadId, userId);
-      sessionStorage.removeItem('messagesAdded'); // Reset the flag
+        // Call updateThread with the existing threadId before switching to a new one
+        updateThread(existingThreadId, userId);
+        sessionStorage.removeItem('messagesAdded'); // Reset the flag
     }
-  
+
     // Proceed with the thread switch
     console.log('Clicked thread ID:', newThreadId);
     onSelectThread(newThreadId);
@@ -186,6 +186,21 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
                 .sort((a: TopicType, b: TopicType) => parseFloat(b.weight) - parseFloat(a.weight))
                 .slice(0, 3) // Top 3 topics
                 .map((topicObj: TopicType) => topicObj.topic); // Extract the topic field
+
+              const hasSynopsis = thread.summary && thread.keywords && thread.topics;
+
+              const displayText = hasSynopsis ? (
+                <>
+                  <div>
+                    <strong>Topics covered:</strong> {sortedTopics.join(', ')}
+                  </div>
+                  <div>
+                    <strong>Keywords:</strong> {sortedKeywords.join(', ')}
+                  </div>
+                </>
+              ) : (
+                <div>{thread.title || 'No synopsis available yet'}</div>
+              );
                         
               return (
                 <li key={thread.id} className={styles.threadListItem}>
@@ -193,12 +208,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
                     {formatTimestamp(thread.last_active)} {/* This renders the formatted date */}
                   </div>
                   <button className={styles.textLine} onClick={() => handleThreadClick(thread)}>
-                    <div>
-                      <strong>Topics covered:</strong> {sortedTopics.join(', ')}
-                    </div>
-                    <div>
-                      <strong>Keywords:</strong> {sortedKeywords.join(', ')}
-                    </div>
+                    {displayText}
                   </button>
                 </li>
               );

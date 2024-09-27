@@ -98,11 +98,6 @@ export default function EphemeralGreeting({ onSelectThread }) {
     setShowGreeting(false); // Hide the ephemeral greeting after loading the thread
   };
 
-  const getFontSize = (percentage) => {
-    const size = parseInt(percentage, 10);
-    return `${Math.max(12, size * 0.5)}px`; // Adjust font size multiplier as needed
-  };
-
   const formatTimestamp = (timestamp) => {
     const now = new Date();
     const date = new Date(timestamp);
