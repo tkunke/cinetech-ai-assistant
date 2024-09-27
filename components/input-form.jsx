@@ -4,6 +4,7 @@ import { AiOutlineSend, AiOutlineFile, AiOutlinePaperClip, AiOutlineClose } from
 import CinetechSpinner from './message-spinner';
 import styles from '@/styles/input-form.module.css';
 import { useUser } from '@/context/UserContext';
+import { FaFilePdf, FaFileWord, FaFileAlt } from 'react-icons/fa';
 
 const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputRef, handleFileChange }) => {
   const { data: session } = useSession();
@@ -96,40 +97,49 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
 
   const renderFilePreview = () => {
     if (filePreview) {
+      // Render the image preview for image files
       return (
-        <div className="relative">
-          <img src={filePreview} alt="File preview" className={`${styles.thumbnail}`} />
+        <div className={styles.filePreviewInside}>
+          <img src={filePreview} alt="File preview" className={styles.thumbnail} />
           <AiOutlineClose
-            size={16}  // Smaller size for the close icon
-            className="absolute top-1 right-1 cursor-pointer"
+            size={16}
+            className={styles.closeIconInside}
             onClick={removeFile}
-            style={{ color: 'red', backgroundColor: 'white', borderRadius: '50%', cursor: 'pointer' }}
           />
         </div>
       );
     } else if (selectedFile) {
+      let FileIcon;
+
+      // Set the appropriate icon based on the file type
+      if (selectedFile.type === 'application/pdf') {
+        FileIcon = <FaFilePdf size={70} color="gray" />;
+      } else if (selectedFile.type === 'application/msword' || selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+        FileIcon = <FaFileWord size={70} color="gray" />;
+      } else {
+        FileIcon = <FaFileAlt size={70} color="gray" />;
+      }
       return (
-        <div className="relative flex items-center">
-          <AiOutlineFile size={40} title={selectedFile.name} />
+        <div className={styles.filePreviewInside}>
+          {FileIcon}
           <AiOutlineClose
-            size={16}  // Smaller size for the close icon
-            className="absolute top-1 right-1 cursor-pointer"
+            size={16}
+            className={styles.closeIconInside}
             onClick={removeFile}
-            style={{ color: 'red', backgroundColor: 'white', borderRadius: '50%', cursor: 'pointer' }}
           />
         </div>
       );
     }
     return null;
-  };
+  };  
 
   return (
-    <div className="flex justify-center w-full">
-      <form onSubmit={onSubmit} className={`${styles['input-container']} flex items-center w-full`}>
-        <div className="flex items-center w-full justify-center">
+    <div className={styles.flexContainer}>
+      <form onSubmit={onSubmit} className={styles.inputContainer}>
+        <div className={styles.flexItems}>
           <AiOutlinePaperClip 
             size={30} 
-            className={`${styles['file-attach-button']} mr-2`}
+            className={styles.fileAttachButton}
             onClick={triggerFileInput}
             disabled={trialExpired || credits <= 0}
           />
@@ -138,58 +148,44 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
             id="fileInput" 
             ref={fileInputRef}
             onChange={onFileChange} 
-            style={{ display: 'none' }} // Hide the input element
+            className={styles.hiddenInput}
             disabled={trialExpired || credits <= 0}
           />
-          <div className={`${styles['textarea-container']}`}>
-            <textarea
-              disabled={isLoading || trialExpired || credits <= 0}
-              className={`${styles.textarea}`}
-              onChange={handlePromptChange}
-              value={prompt}
-              placeholder={
-                trialExpired 
-                  ? "Your trial has expired."
-                  : credits <= 0 
-                    ? "You've exhausted your available credits."
-                    : "Start typing here..."
-              }              
-              ref={inputRef}
-              rows="1"
-              onInput={(e) => {
-                e.target.style.height = 'auto';
-                e.target.style.height = `${e.target.scrollHeight}px`;
-              }}
-              onKeyDown={handleKeyDown}
-            />
-          </div>
-          {isLoading || trialExpired || credits <= 0 ? (
-            <button
-              disabled
-              className={`${styles.button} focus:outline-none focus:shadow-outline mb-2`}
-            >
-              {isLoading ? <CinetechSpinner /> : <AiOutlineSend />}
-            </button>
-          ) : (
-            <button
-              disabled={prompt.length === 0 && !selectedFile}
-              className={`${styles.button} focus:outline-none focus:shadow-outline mb-2`}
-            >
-              <AiOutlineSend />
-            </button>
-          )}
-        </div>
-        {showWarning && (
-          <div style={{ color: 'red', marginTop: '10px' }}>
-            Oops! You forgot to add a message.
-          </div>
-        )}
-        {selectedFile && (
-          <div className={`${styles['file-preview']} ml-2`}>
-            <div className={styles['file-preview-text']}>Files to upload</div>
+          
+          <div className={styles.textAreaContainer}>
+            <div className={styles.textAreaWrapper}>
             {renderFilePreview()}
+              <textarea
+                disabled={isLoading || trialExpired || credits <= 0}
+                className={`${styles.textArea} ${selectedFile ? `${styles.withFile} ${styles.expandedTextArea}` : ''}`}
+                onChange={handlePromptChange}
+                value={prompt}
+                placeholder={
+                  trialExpired 
+                    ? "Your trial has expired."
+                    : credits <= 0 
+                      ? "You've exhausted your available credits."
+                      : "Start typing here..."
+                }              
+                ref={inputRef}
+                rows="1"
+                onInput={(e) => {
+                  e.target.style.height = 'auto';
+                  const minHeight = selectedFile ? '5.5rem' : '3rem';
+                  e.target.style.height = `${Math.max(e.target.scrollHeight, parseInt(minHeight))}px`;
+                }}
+                onKeyDown={handleKeyDown}
+              />
+            </div>
           </div>
-        )}
+          
+          <button
+            disabled={prompt.length === 0 && !selectedFile}
+            className={styles.button}
+          >
+            {isLoading ? <CinetechSpinner /> : <AiOutlineSend />}
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -7,8 +7,8 @@
     left: 20rem; /* Offset by sidebar width */
     width: calc(100% - 20rem); /* Full width minus sidebar width */
     background-color: #ffffff;
-    padding: 0.5rem 1rem;
-    height: 4.5rem; /* Set a fixed height for the footer */
+    min-height: 4.5rem;
+    height: auto;
 }
 
 @media (max-width: 360px) {

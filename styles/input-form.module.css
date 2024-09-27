@@ -1,36 +1,87 @@
-.input-container {
+.flexContainer {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.flexItems {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: center;
+}
+
+.inputContainer {
   width: 100%;
   display: flex;
   align-items: center;
-  flex-direction: column-reverse; /* Ensure input box is at the bottom */
+  flex-direction: column-reverse;
 }
 
-.textarea-container {
-  width: 50%; /* Center the textarea-container and set it to 50% width */
+.textAreaContainer {
+  width: 50%;
   display: flex;
   justify-content: center;
-  align-items: center; /* Ensure items are centered vertically */
-  flex-direction: row; /* Ensure horizontal stacking of elements */
-  position: relative; /* Ensure relative positioning */
+  align-items: center;
+  flex-direction: row;
+  position: relative;
 }
 
-.textarea {
+.textAreaWrapper {
+  position: relative;
   width: 100%;
-  flex-grow: 1;
+  padding: 0.5rem;
+}
+
+.textArea {
+  width: 100%;
   resize: none;
   box-sizing: border-box;
-  border: 2px solid rgba(50, 70, 90, 0.8) !important;
+  padding: 0.5rem 0.5rem; /* Add left padding to avoid overlap with thumbnail */
+  border: 2px solid rgba(50, 70, 90, 0.8);
   border-radius: 1rem;
-  margin-right: 0.5rem;
-  padding: 0.5rem;
-  padding-left: 0.5rem;
-  padding-right: 3rem;
+  overflow-y: hidden; /* Prevent vertical scroll */
+  min-height: 3rem;
+  transition: height 0.2s ease, padding-top 0.2s ease;
+}
+
+.textArea:focus {
+  height: auto;
+  max-height: 100%; /* Allow it to grow beyond the minimum height */
+}
+
+.expandedTextArea {
+  min-height: 5.5rem; /* Expand height when file is attached */
+}
+
+.withFile {
+  padding: 0.5rem 0.5rem 1rem 5.5rem; /* Add extra padding when a file is attached */
+}
+
+.filePreviewInside {
+  position: absolute;
+  top: 1rem; /* Position at the top-left corner of the textarea */
+  left: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.closeIconInside {
+  position: absolute;
+  top: 0;
+  right: 0;
+  margin-top: 0.25rem;
+  margin-right: 0.25rem;
+  cursor: pointer;
+  color: red;
+  background-color: white;
+  border-radius: 50%;
 }
 
 .button {
-  border: 2px solid rgba(50, 70, 90, 0.8); /* Custom border color */
-  background-color: rgba(70, 90, 110, 0.8); /* Background color */
-  color: #ffffff; /* Text color */
+  border: 2px solid rgba(50, 70, 90, 0.8);
+  background-color: rgba(70, 90, 110, 0.8);
+  color: #ffffff;
   font-weight: bold;
   padding: 0.5rem 1rem;
   border-radius: 1rem;
@@ -39,69 +90,68 @@
 }
 
 .button:hover {
-  background-color: rgba(112, 162, 177, 1); /* Darker shade on hover */
+  background-color: rgba(112, 162, 177, 1);
 }
 
-.button:disabled {
-  background-color: rgba(112, 162, 177, 0.5); /* Lighter shade when disabled */
+.disabledButton {
+  background-color: rgba(112, 162, 177, 0.5);
 }
 
-.hidden-input {
-  display: none !important; /* Hide the file input */
+.hiddenInput {  
+  display: none;
 }
 
-.file-attach-button:hover {
+.fileAttachButton:hover {
   cursor: pointer;
 }
 
-.file-preview {
+.warningText {
+  color: red;
+  margin-top: 10px;
+}
+
+.filePreview {
   background-color: white;
   border: 1px double dodgerblue;
   border-radius: 0.25rem;
   display: flex;
-  justify-content: space-between; /* Space out elements inside the preview */
-  padding: 0.5rem; /* Add padding for spacing */
-  position: absolute; /* Absolute positioning */
-  bottom: 10px; /* Adjust positioning to provide some space from the bottom */
-  right: 10px; /* Adjust positioning to provide some space from the right */
-  margin-left: 0.5rem; /* Add space between the preview and the text area */
+  justify-content: space-between;
+  padding: 0.5rem;
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
 }
 
 .thumbnail {
-  max-width: 50px;
-  max-height: 50px;
+  max-width: 70px;
+  max-height: 70px;
   border: 1px solid #ccc;
   border-radius: 0.25rem;
 }
 
-.file-preview {
-  display: inline-block;
-}
-
-.file-preview-container {
+.filePreviewContainer {
   position: relative;
   display: inline-block;
-  text-align: center; /* Center-align the text and thumbnail */
+  text-align: center;
 }
 
-.file-preview-text {
+.closeIcon {
   position: absolute;
-  top: -20px; /* Adjust based on the desired space above the image */
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 12px;
-  color: #555;
-  white-space: nowrap; /* Prevent text from wrapping */
+  top: 1px;
+  right: 1px;
+  cursor: pointer;
+  color: red;
+  background-color: white;
+  border-radius: 50%;
 }
-
 
 @media (max-width: 768px) {
-  .textarea-container {
-    width: 90%; /* Make the textarea-container wider on small screens */
+  .textAreaContainer {
+    width: 90%;
   }
 
-  .textarea {
-    width: 100%; /* Ensure the textarea takes the full width of the container */
-    padding-right: 3rem; /* Ensure padding on the right to accommodate the thumbnail */
+  .textArea {
+    width: 100%;
+    padding-right: 3rem;
   }
 }
