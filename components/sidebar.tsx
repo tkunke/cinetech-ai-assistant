@@ -49,13 +49,14 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
   };
 
   const toggleLibrary = (library: string) => {
-    handleStartUsingApp();
+    //handleStartUsingApp();
     setActiveLibrary(activeLibrary === library ? null : library);
   };
 
   const loadSavedThread = async (newThreadId: string) => {
     const messagesAdded = sessionStorage.getItem('messagesAdded') === 'true';
     const existingThreadId = sessionStorage.getItem('threadId');
+    handleStartUsingApp();
 
     if (messagesAdded && existingThreadId) {
         // Call updateThread with the existing threadId before switching to a new one
@@ -70,7 +71,6 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
   };
 
   const handleThreadClick = (thread: Thread) => {
-    handleStartUsingApp();
     try {
       const description = thread.summary || 'No synopsis available';
       const topics = thread.topics || [];
