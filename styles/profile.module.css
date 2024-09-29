@@ -65,6 +65,17 @@
   border-radius: 0.375rem;
   font-size: 1rem;
   box-sizing: border-box;
+  background-color: transparent;
+}
+
+.displayField {
+  width: auto; /* Input field should take the remaining space */
+  padding: 8px;
+  border: 1px solid rgb(70, 90, 110);
+  color: white;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  box-sizing: border-box;
 }
 
 .submitSection {
@@ -121,6 +132,7 @@
 }
 
 .slider {
+  appearance: none;
   -webkit-appearance: none; /* Remove default styling */
   width: 100%; /* Full width */
   height: 8px; /* Adjust slider thickness */
@@ -157,6 +169,38 @@
 .sliderLabels span {
   font-size: 0.875rem;
   color: white;
+}
+
+.resetButton {
+  margin-left: 10px;
+  background-color: transparent;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.resetButton:hover {
+  background-color: #0056b3;
+}
+
+.passwordContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordInput {
+  padding-right: 2rem; /* Add padding to make space for the eye icon */
+}
+
+.eyeIcon {
+  position: absolute;
+  right: 10rem; /* Adjust as necessary */
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
 }
 
 

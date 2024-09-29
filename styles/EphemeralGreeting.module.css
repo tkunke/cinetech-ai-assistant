@@ -3,9 +3,9 @@
 
 .greetingOverlay {
   position: absolute;
-  top: 3rem;
+  top: 6rem;
   bottom: 4.5rem;
-  right: 0;
+  right: 5rem;
   left: 20rem;
   display: flex;
   flex-direction: column;
