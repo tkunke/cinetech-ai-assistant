@@ -11,7 +11,7 @@ import { upload } from '@vercel/blob/client';
 import { useLibrary } from '@/context/LibraryContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
 
-function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedMessages, assistantName }) {
+function CinetechAssistantMessage({ message, status, handleRetry, selectedMessages = [], setSelectedMessages, assistantName }) {
   const tableRef = useRef(null);
   const buttonRef = useRef(null);
   const [showTips, setShowTips] = useState(false);
@@ -339,27 +339,22 @@ function CinetechAssistantMessage({ message, selectedMessages = [], setSelectedM
             )}
           </div>
         )}
-        {message.content.includes('difficulty completing') && (
-          <button
-            className="helpfulTipsButton"
-            onMouseEnter={() => setShowTips(true)}
-            onMouseLeave={() => setShowTips(false)}
-          >
-            Helpful Tips
-            {showTips && (
-              <div className="helpfultips">
-                <p className>Tip #1:</p>
-                <ul>
-                  <li>If you are asking the assistant to perform image recognition and image generation in a single request, try breaking those into two separate requests.</li>
-                </ul>
-              </div>
-            )}
-          </button>
-        )}
+
       </div>
       <ReactMarkdown components={renderers} remarkPlugins={[remarkGfm]}>
         {message.content}
       </ReactMarkdown>
+      {/* Conditionally render based on status */}
+      {status === 'failed' && (
+          <div>
+            <p className={styles.failedMessage}>I had trouble generating a response for this. Please try again.
+              <button
+                onClick={() => handleRetry(message.id)} className={styles.retryButton}>
+                Retry
+              </button>
+            </p>
+          </div>
+        )}
     </div>
   );
 }

@@ -115,7 +115,8 @@ export default function CinetechAssistant({
       if (savedThreadId) {
         setThreadId(savedThreadId);
         if (savedMessages) {
-          setMessages(JSON.parse(savedMessages));
+          const filteredMessages = JSON.parse(savedMessages).filter((msg) => msg.status !== 'failed');
+          setMessages(filteredMessages); // Only set non-failed messages
         }
       }
     }
@@ -123,9 +124,10 @@ export default function CinetechAssistant({
 
   useEffect(() => {
     if (messages.length > 0 && typeof window !== 'undefined') {
-      sessionStorage.setItem('chatMessages', JSON.stringify(messages));
+      const validMessages = messages.filter((msg) => msg.status !== 'failed');
+      sessionStorage.setItem('chatMessages', JSON.stringify(validMessages));
     }
-  }, [messages]);
+  }, [messages]);  
 
   const handleThreadSelect = (threadId) => {
     setThreadId(threadId);
@@ -159,22 +161,20 @@ export default function CinetechAssistant({
     }
   }
 
+  useEffect(() => {
+    console.log('Messages with status:', messages);
+    messages.forEach((msg, idx) => console.log(`Message ${idx}:`, msg));
+  }, [messages]);
+
   async function handleSubmit(event) {
     if (event && event.preventDefault) {
       event.preventDefault();
     }
-
+  
     if (!appUsed) {
       handleStartUsingApp();
     }
-
-    // Ensure that we don't allow submission if the previous user message was not responded to
-    if (messages.length % 2 !== 0) {
-      console.log('Last user message did not receive a response, retrying...');
-      await retryLastUserMessage();  // Retry if there is an unpaired message
-      return;
-    }
-
+  
     const messagesAdded = sessionStorage.getItem('messagesAdded') === 'true';
     if (!messagesAdded) {
       sessionStorage.setItem('messagesAdded', 'true');
@@ -186,17 +186,17 @@ export default function CinetechAssistant({
     });
   
     setIsLoading(true);
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      {
-        id: `temp_user_${Date.now()}`,  // Ensure a unique key for the message
-        role: 'user',
-        content: prompt,
-      },
-    ]);
-
+    
+    const newMessage = {
+      id: `temp_user_${Date.now()}`,  // Unique key
+      role: 'user',
+      content: prompt,
+      status: 'pending',  // Initial status
+    };
+  
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
     setPrompt('');
-    setSelectedFile(null); // Clear the file input after submission
+    setSelectedFile(null); // Clear file input after submission
   
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
@@ -209,14 +209,14 @@ export default function CinetechAssistant({
         currentThreadId = await initializeThread();
       }
       sessionStorage.setItem('threadId', currentThreadId);
-
+  
       // Save the thread in the database if it doesn't exist yet
       if (userId && currentThreadId) {
         const response = await fetch(`/api/getThreads?userId=${userId}`);
         const data = await response.json();
-
+  
         const existingThread = data.threads.find(thread => thread.thread_id === currentThreadId);
-
+  
         if (!existingThread) {
           const title = `Started on ${new Date().toLocaleString()}`;
           await saveThread(userId, currentThreadId, title);
@@ -233,11 +233,18 @@ export default function CinetechAssistant({
         formData.append('file', selectedFile);
       }
   
+      // Set up AbortController for timeout handling
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 seconds timeout
+  
       const response = await fetch('/api/cinetech-assistant', {
         method: 'POST',
         body: formData,
+        signal: controller.signal,  // Attach signal for aborting
       });
-
+  
+      clearTimeout(timeoutId);  // Clear the timeout if the request succeeds
+  
       if (!response.ok) {
         throw new Error('There was a problem sending your message. Please try again later.');
       }
@@ -256,8 +263,6 @@ export default function CinetechAssistant({
         }
   
         const strChunk = decoder.decode(value, { stream: true }).trim();
-        
-        // Split on newline to handle individual JSON chunks
         const strServerEvents = strChunk.split('\n\n');
   
         for (const strServerEvent of strServerEvents) {
@@ -285,7 +290,6 @@ export default function CinetechAssistant({
   
                   if (serverEvent.data.delta.content[0].image && serverEvent.data.delta.content[0].image.url) {
                     const imageUrl = serverEvent.data.delta.content[0].image.url;
-                    const engine = imageEngineMap[imageUrl];
                     const newImageMessage = {
                       id: `image_${Date.now()}`,
                       role: 'assistant',
@@ -299,6 +303,14 @@ export default function CinetechAssistant({
                   break;
                 case 'thread.run.completed':
                   setRunCompleted(true);
+  
+                  setMessages((prevMessages) =>
+                    prevMessages.map((msg) =>
+                      msg.role === 'user' && msg.status === 'pending' ? { ...msg, status: 'replied' } : msg
+                    )
+                  );
+  
+                  setStreamingMessage(null);  // Clear the streaming message when complete
                   break;
               }
             } catch (error) {
@@ -312,64 +324,73 @@ export default function CinetechAssistant({
   
     } catch (error) {
       console.error('Error during message submission:', error);
+  
+      // Handle errors or timeouts by marking the message as 'failed'
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+          msg.id === newMessage.id ? { ...msg, status: 'failed' } : msg
+        )
+      );
+  
       setStreamingMessage({
         role: 'assistant',
         content: error.message || 'Sorry, something went wrong. Please try again later.',
       });
-
+  
       // Retry logic if there is an error
-      const success = await retryLastUserMessage();
+      const success = await handleRetry(newMessage.id);
       if (!success) {
-        console.log('All retries failed, deleting the last user message.');
-        // Call server to delete the message from the thread
-        await deleteMessageFromThread(threadId, messageId);
-
-        // Remove the last unpaired user message from local state
-        setMessages((prevMessages) => prevMessages.slice(0, -1));
+        // Instead of deleting the message, just leave it in the state with 'failed' status
+        console.log('Message retry failed. Leaving message in state as "failed".');
+        
+        // No need to remove the message, the user will see the failed message and retry option
+        // Comment out or remove this:
+        // await deleteMessageFromThread(threadId, newMessage.id);
       }
     } finally {
       setIsLoading(false);
     }
-  }  
+  }    
   
-  // Helper function to retry the last user message
-  async function retryLastUserMessage() {
-    const lastMessage = messages[messages.length - 1];
-
-    if (lastMessage.role === 'user') {
-      console.log('Retrying message:', lastMessage.content);
-
-      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-        console.log(`Attempt ${attempt} to retry message...`);
-
-        // Retry sending the last user message
-        const formData = new FormData();
-        formData.append('assistantId', assistantId);
-        formData.append('threadId', threadId);
-        formData.append('content', lastMessage.content);
-
-        try {
-          const response = await fetch('/api/cinetech-assistant', {
-            method: 'POST',
-            body: formData,
-          });
-
-          if (response.ok) {
-            console.log('Retry successful for last message.');
-            return true;  // Success, exit the retry loop
-          }
-
-        } catch (retryError) {
-          console.error('Retry failed:', retryError);
-        }
-
-        // Wait before the next retry
-        await new Promise((resolve) => setTimeout(resolve, RETRY_INTERVAL));
+  const handleRetry = async (messageId) => {
+    const messageToRetry = messages.find((msg) => msg.id === messageId);
+    if (!messageToRetry) return;
+  
+    try {
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+          msg.id === messageId ? { ...msg, status: 'pending' } : msg
+        )
+      );
+  
+      const formData = new FormData();
+      formData.append('assistantId', assistantId);
+      formData.append('threadId', threadId);
+      formData.append('content', messageToRetry.content);
+  
+      const response = await fetch('/api/cinetech-assistant', {
+        method: 'POST',
+        body: formData,
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to retry the message.');
       }
+  
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+          msg.id === messageId ? { ...msg, status: 'replied' } : msg
+        )
+      );
+    } catch (error) {
+      console.error('Retry failed:', error);
+      setMessages((prevMessages) =>
+        prevMessages.map((msg) =>
+          msg.id === messageId ? { ...msg, status: 'failed' } : msg
+        )
+      );
     }
-
-    return false;  // Return false if all retries fail
-  }
+  };  
 
   // Helper function to delete the message from the thread
   async function deleteMessageFromThread(threadId, messageId) {
@@ -505,6 +526,11 @@ export default function CinetechAssistant({
           console.error('Failed to cancel the run:', error);
         }
       }
+      setMessages((prevMessages) => {
+        const nonFailedMessages = prevMessages.filter((msg) => msg.status !== 'failed');
+        sessionStorage.setItem('chatMessages', JSON.stringify(nonFailedMessages)); // Sync the session storage
+        return nonFailedMessages;
+      });
     };
   
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -518,10 +544,6 @@ export default function CinetechAssistant({
     console.log('showLoadingGif state changed:', showLoadingGif);
   }, [showLoadingGif]);
 
-  useEffect(() => {
-    console.log('Messages:', messages);
-  }, [messages]);
-
   return (
     <div className="flex flex-col h-full justify-between">
       <EphemeralGreeting onSelectThread={handleThreadSelect}/>
@@ -530,6 +552,8 @@ export default function CinetechAssistant({
           <CinetechAssistantMessage
             key={message.id}
             message={message}
+            status={message.status}
+            handleRetry={handleRetry}
             selectedMessages={selectedMessages}
             setSelectedMessages={setSelectedMessages}
             addToImageLibrary={addToImageLibrary}
