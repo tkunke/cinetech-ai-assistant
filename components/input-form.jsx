@@ -141,7 +141,7 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
             size={30} 
             className={styles.fileAttachButton}
             onClick={triggerFileInput}
-            disabled={trialExpired || credits <= 0}
+            disabled={credits <= 0}
           />
           <input 
             type="file" 
@@ -149,24 +149,18 @@ const InputForm = ({ handleSubmit, handlePromptChange, prompt, isLoading, inputR
             ref={fileInputRef}
             onChange={onFileChange} 
             className={styles.hiddenInput}
-            disabled={trialExpired || credits <= 0}
+            disabled={credits <= 0}
           />
           
           <div className={styles.textAreaContainer}>
             <div className={styles.textAreaWrapper}>
             {renderFilePreview()}
               <textarea
-                disabled={isLoading || trialExpired || credits <= 0}
+                disabled={isLoading || credits <= 0}
                 className={`${styles.textArea} ${selectedFile ? `${styles.withFile} ${styles.expandedTextArea}` : ''}`}
                 onChange={handlePromptChange}
                 value={prompt}
-                placeholder={
-                  trialExpired 
-                    ? "Your trial has expired."
-                    : credits <= 0 
-                      ? "You've exhausted your available credits."
-                      : "Start typing here..."
-                }              
+                placeholder={credits <= 0 ? "You've exhausted your available credits." : "Start typing here..."}              
                 ref={inputRef}
                 rows="1"
                 onInput={(e) => {

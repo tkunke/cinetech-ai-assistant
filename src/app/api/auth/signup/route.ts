@@ -121,8 +121,7 @@ async function initializeUserCredits(client: PoolClient, userId: string, account
     // For trial users, set trial_start_date and initialize credits without setting subscription details
     await client.query(
       `UPDATE users
-       SET credits = $1,
-           trial_start_date = NOW()
+       SET credits = $1
        WHERE id = $2`,
       [initialCredits, userId]
     );

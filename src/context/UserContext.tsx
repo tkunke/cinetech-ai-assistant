@@ -63,7 +63,6 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
       const response = await fetch(`/api/checkUser?userId=${userId}&details=true`);
       const data = await response.json();
       //console.log('User Status:', data);
-      setTrialExpired(data.trialExpired);
       //console.log('Credits fetched:', data.credits);
       setCredits(data.credits);
     } catch (error) {

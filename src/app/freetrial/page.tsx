@@ -29,7 +29,7 @@ const TrialAccount = () => {
         password,
         assistantName,
         defaultGreeting,
-        accountType: 'trial'  // Specify that this is a trial account
+        accountType: 'trial'
       }),
     });
 

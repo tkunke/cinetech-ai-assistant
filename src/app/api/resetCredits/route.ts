@@ -6,18 +6,22 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL, // Use the Supabase connection string here
 });
 
+// Updated SQL query in the resetCredits API to exclude users with canceled status
+
 export async function GET(request: NextRequest) {
   const client = await pool.connect();
   try {
     // Start a transaction
     await client.query('BEGIN');
 
-    // Fetch users whose next billing date is today or earlier and are on a subscription
+    // Fetch users whose next billing date is today or earlier, are on a subscription, and have not canceled
     const usersToReset = await client.query(`
       SELECT id, credits, subscription_type, next_billing_date, annual_credit_total
       FROM users
-      WHERE next_billing_date <= CURRENT_DATE AND subscription_type IS NOT NULL;`
-    );
+      WHERE next_billing_date <= CURRENT_DATE 
+        AND subscription_type IS NOT NULL
+        AND status != 'canceled';
+    `);
 
     for (const user of usersToReset.rows) {
       let monthlyCredits = 0;
