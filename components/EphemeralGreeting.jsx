@@ -140,11 +140,20 @@ export default function EphemeralGreeting({ onSelectThread, onStartUsingApp }) {
 
   useEffect(() => {
     if (threads.length > 2) {
-      const sortedThreads = threads.sort((a, b) => new Date(b.last_active) - new Date(a.last_active));
-      const recent = sortedThreads.slice(0, 2); // Take two most recent threads
+      // Filter threads that have both keywords and topics
+      const filteredThreads = threads.filter(thread => 
+        thread.keywords.length > 0 && thread.topics.length > 0
+      );
+  
+      // Sort filtered threads by the 'last_active' timestamp (most recent first)
+      const sortedThreads = filteredThreads.sort((a, b) => new Date(b.last_active) - new Date(a.last_active));
+  
+      // Take two most recent threads
+      const recent = sortedThreads.slice(0, 2);
+      
       setRecentThreads(recent);
     }
-  }, [threads]);
+  }, [threads]);      
 
   useEffect(() => {
     const fetchAnalysisData = async (threadId) => {
@@ -157,7 +166,7 @@ export default function EphemeralGreeting({ onSelectThread, onStartUsingApp }) {
         return {};
       }
     };
-
+  
     if (recentThreads.length > 0) {
       recentThreads.forEach(async (thread) => {
         const data = await fetchAnalysisData(thread.id);
@@ -167,7 +176,7 @@ export default function EphemeralGreeting({ onSelectThread, onStartUsingApp }) {
         }));
       });
     }
-  }, [recentThreads]);    
+  }, [recentThreads]);      
 
   useEffect(() => {
     window.addEventListener('click', handleInteraction);
@@ -190,7 +199,15 @@ export default function EphemeralGreeting({ onSelectThread, onStartUsingApp }) {
     console.log('recentThreads:', recentThreads);
     console.log('threadsShown in sessionStorage:', sessionStorage.getItem('threadsShown'));
     console.log('Is app used:', appUsed);
-  }, [showThreads, recentThreads]);  
+  }, [showThreads, recentThreads]);
+
+  useEffect(() => {
+    console.log('Threads:', threads);
+  }, [threads]);
+  
+  useEffect(() => {
+    console.log('Analysis Data:', analysisData);
+  }, [analysisData]);  
 
   return (
     <>

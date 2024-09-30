@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
 import { useSession } from 'next-auth/react';
-import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import styles from '@/styles/profile.module.css';
 
 const UserProfileSettings = () => {
@@ -12,8 +11,8 @@ const UserProfileSettings = () => {
   const userId = session?.user?.id;
   const [username, setUsername] = useState('currentUsername');
   const [email, setEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [isResetSuccess, setIsResetSuccess] = useState(false);
   const [preferredName, setPreferredName] = useState('');
   const [assistantName, setAssistantName] = useState('currentAssistantName');
   const [status, setStatus] = useState('');
@@ -67,6 +66,33 @@ const UserProfileSettings = () => {
     }
   };
 
+  const handlePasswordReset = async () => {
+    setIsResettingPassword(true); // Show that the process has started
+
+    try {
+      const response = await fetch('/api/resetPassword', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (response.ok) {
+        setIsResetSuccess(true); // Mark success
+        alert('Password reset email has been sent.');
+      } else {
+        const data = await response.json();
+        alert(data.message || 'Failed to send reset email.');
+      }
+    } catch (error) {
+      console.error('Error sending reset email:', error);
+      alert('An error occurred while sending the reset email.');
+    } finally {
+      setIsResettingPassword(false); // End the reset process
+    }
+  };
+
   const handleBackToAssistant = () => {
     router.push('/assistant');
   };
@@ -81,10 +107,6 @@ const UserProfileSettings = () => {
         alert('There was a problem canceling your membership.');
       }
     }
-  };
-
-  const handlePasswordReset = () => {
-    setIsResettingPassword(true);  // Show the password reset input
   };
 
   const verbosityMap = {
@@ -165,8 +187,9 @@ const UserProfileSettings = () => {
                   type="button" 
                   onClick={handlePasswordReset} 
                   className={styles.resetButton}
+                  disabled={isResettingPassword}
                 >
-                  Reset Password
+                  {isResettingPassword ? 'Sending Reset Email...' : 'Reset Password'}
                 </button>
               </div>
               {/* Add more input fields as needed */}
