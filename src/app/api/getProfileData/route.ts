@@ -5,6 +5,7 @@ import { Pool } from 'pg';
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     const client = await pool.connect();

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import dynamic from 'next/dynamic';
 
 const ResetPasswordPage = () => {
   const router = useRouter();
@@ -50,4 +51,5 @@ const ResetPasswordPage = () => {
   );
 };
 
-export default ResetPasswordPage;
+// Wrapping the component with dynamic import to disable SSR
+export default dynamic(() => Promise.resolve(ResetPasswordPage), { ssr: false });
