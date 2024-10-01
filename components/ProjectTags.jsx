@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 import { FaPlus, FaTrash, FaSave, FaEdit } from 'react-icons/fa';
 import styles from '@/styles/ProjectTags.module.css';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useUser } from '@/context/UserContext';
 import { useLibrary } from '@/context/LibraryContext';
 import MessagePopup from '@/components/MessagePopup';
 
@@ -16,6 +18,7 @@ const ProjectTags = ({ userId }) => {
   const [objectsWithTag, setObjectsWithTag] = useState([]);
   const [messagesWithTag, setMessagesWithTag] = useState([]);
   const [selectedMessage, setSelectedMessage] = useState(null);
+  const { handleStartUsingApp } = useUser();
 
   useEffect(() => {
     if (userId && activeWorkspaceId) {
@@ -25,6 +28,7 @@ const ProjectTags = ({ userId }) => {
   }, [userId, activeWorkspaceId, fetchTags]);
 
   const fetchObjectsByTag = async (tag) => {
+    handleStartUsingApp();
     if (!userId || !activeWorkspaceId) return;
 
     try {
@@ -66,6 +70,7 @@ const ProjectTags = ({ userId }) => {
   };
 
   const handleCreateTag = async () => {
+    handleStartUsingApp();
     if (!userId || !activeWorkspaceId || !newTagName.trim()) return;
 
     await createTag(userId, activeWorkspaceId, newTagName); // Use the createTag function from context
@@ -81,18 +86,28 @@ const ProjectTags = ({ userId }) => {
     setIsTagDetailsPopupVisible(false); // Close the tag details popup
   };
 
-  const handleRenameTag = () => {
-    setIsEditingTagName(true);
-    setNewTagName(selectedTag.name);
-  };
+  const handleRenameTag = (e, tagId) => {
+    const newTagName = e.target.value;
+  
+    // Call updateTag function to update the tag in the context
+    updateTag(userId, activeWorkspaceId, tagId, newTagName);
+  };    
 
-  const handleSaveTagName = async () => {
-    if (!newTagName.trim() || !selectedTag) return;
-
-    await updateTag(userId, activeWorkspaceId, selectedTag.id, newTagName); // Call updateTag function
-    setSelectedTag({ ...selectedTag, name: newTagName }); // Update the selected tag locally
-    setIsEditingTagName(false); // Exit edit mode
+  const handleSaveTagName = async (tagId) => {
+    const tagToSave = fetchedTags.find(tag => tag.id === tagId);
+    
+    if (!newTagName.trim() || !tagToSave) return;
+  
+    await updateTag(userId, activeWorkspaceId, tagId, newTagName); // Call updateTag function
+    setIsEditingTagName(null); // Exit edit mode
   };
+  
+  const handleKeyDown = (e, tagId) => {
+    if (e.key === 'Enter') {
+      e.preventDefault(); // Prevents default behavior (e.g., submitting a form)
+      handleSaveTagName(tagId); // Save the tag when Enter is pressed
+    }
+  };  
 
   const handleUntag = async (contentId, contentType) => {
     try {
@@ -157,35 +172,32 @@ const ProjectTags = ({ userId }) => {
         )}
       </ul>
 
-      {isTagDetailsPopupVisible && selectedTag && (
+      {isTagDetailsPopupVisible && selectedTag && ReactDOM.createPortal(
         <div className={styles.popupOverlay}>
           <div className={styles.popup}>
-            <button className={styles.closeButton} onClick={() => setIsTagDetailsPopupVisible(false)}>
+            <button className={styles.closeButton} onClick={() => [setIsTagDetailsPopupVisible(false), setIsEditingTagName(false)]}>
               &times;
             </button>
 
             <div className={styles.tagHeader}>
-              {isEditingTagName ? (
-                <>
+            {fetchedTags.map((tag, index) => (
+              <div key={index}>
+                {isEditingTagName === tag.id ? (
                   <input
                     type="text"
-                    value={newTagName}
-                    onChange={(e) => setNewTagName(e.target.value)}
-                    placeholder="Rename Tag"
-                    className={styles.inputField}
+                    value={newTagName}  // Use newTagName state here
+                    onChange={(e) => setNewTagName(e.target.value)}  // Update the new tag name when typing
+                    onKeyDown={(e) => handleKeyDown(e, tag.id)}  // Handle Enter key to save
+                    onBlur={() => setIsEditingTagName(null)}  // Reset to non-edit mode on blur
+                    autoFocus
                   />
-                  <button className={styles.saveButton} onClick={handleSaveTagName}>
-                    <FaSave />
-                  </button>
-                </>
-              ) : (
-                <div className={styles.tagNameWrapper}>
-                  <h3 className={styles.tagName}>{selectedTag.name}</h3>
-                  <button className={styles.editButton} onClick={handleRenameTag}>
-                    <FaEdit />
-                  </button>
-                </div>
-              )}
+                ) : (
+                  <span onClick={() => setIsEditingTagName(tag.id)}>
+                    {tag.name || 'Click to edit'}
+                  </span>
+                )}
+              </div>
+            ))}
             </div>
             
             {/* Messages Section */}
@@ -196,13 +208,11 @@ const ProjectTags = ({ userId }) => {
                   {messagesWithTag.map((message, index) => (
                     <li key={index} className={styles.popupTextLine}>
                       <span onClick={() => setSelectedMessage(message)}>
-                        {truncateText(message.content, 35)}
+                        {truncateText(message.content, 90)}
                       </span>
                       {console.log('Message ID:', message.id)}
                       {/* 'X' to untag message */}
-                      <button className={styles.untagButton} onClick={() => handleUntag(message.id, 'message')}>
-                        &times;
-                      </button>
+                      <button title="Untag item" className={styles.untagButton} onClick={() => handleUntag(message.id, 'message')}></button>
                     </li>
                   ))}
                 </ul>
@@ -228,9 +238,7 @@ const ProjectTags = ({ userId }) => {
                         />
                       </a>
                       {/* 'X' to untag image */}
-                      <button className={styles.untagButton} onClick={() => handleUntag(image.id, 'image')}>
-                        &times;
-                      </button>
+                      <button title="Untag item" className={styles.untagButton} onClick={() => handleUntag(image.id, 'image')}></button>
                     </div>
                   ))
                 ) : (
@@ -241,7 +249,8 @@ const ProjectTags = ({ userId }) => {
               
             <button className={styles.deleteTag} onClick={() => handleDeleteTag(selectedTag.id)}>Delete Tag</button>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Create Tag Popup */}
@@ -268,7 +277,7 @@ const ProjectTags = ({ userId }) => {
       )}
       {selectedMessage && (
         <MessagePopup 
-          message={selectedMessage} 
+          content={selectedMessage.content}
           onClose={() => setSelectedMessage(null)} 
         />
       )}
