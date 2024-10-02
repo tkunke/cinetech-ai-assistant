@@ -11,7 +11,20 @@ import { AiOutlineDownload } from 'react-icons/ai';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-const MessagePopup = ({ title, content, messageUrl, isImagePopup, imageUrl, contentId, timestamp, onClose, threadId, onLoadThread, workspaceId, type }) => {
+const MessagePopup = ({
+  title,
+  content,
+  timestamp,
+  onClose,
+  threadId,
+  onLoadThread,
+  messageUrl = null,    // Default to null when not passed
+  isImagePopup = false, // Default to false when not passed
+  imageUrl = null,      // Default to null when not passed
+  contentId = null,     // Default to null when not passed
+  workspaceId = null,   // Default to null when not passed
+  type = 'message',     // Default to 'message'
+}) => {
   const { data: session } = useSession();
   const userId = session?.user?.id;
   const { removeImage, removeMessage } = useLibrary();
@@ -213,7 +226,7 @@ const MessagePopup = ({ title, content, messageUrl, isImagePopup, imageUrl, cont
           )
         )}
         {/* Conditionally render "Load Thread" button if threadId is provided */}
-        {threadId && (
+        {threadId && onLoadThread && (
           <button
             className={styles.loadThreadButton}
             onClick={() => {
