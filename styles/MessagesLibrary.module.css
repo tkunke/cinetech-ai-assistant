@@ -32,7 +32,6 @@
 .nestedList li {
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Space between message text and icons */
   padding-left: 0;
   padding-right: 10px; /* Adjust padding as needed */
   width: 100%;
@@ -40,27 +39,41 @@
 
 /* Text content of each message */
 .textLine {
+  position: relative; /* Make the textLine container a positioned element */
+  padding: 5px;
+  background-color: transparent;
   font-size: 0.8125rem;
-  color: white;
-  padding: 2px 0;
+  border: none;
+  cursor: pointer;
   text-align: left;
-  flex-grow: 1; /* Ensures the text takes up available space */
+  width: 100%;
+  display: flex; /* Use flex to handle the text layout without wrapping */
+  align-items: center; /* Vertically center the text */
 }
 
-/* Tag icon styles */
 .tagIcon {
-  position: relative;
-  top: 50%;
-  right: 5px;
-  transform: translateY(-50%);
-  display: none;
+  width: 0;
+  height: 0;
+  border-left: 30px solid transparent;
+  border-top: 30px solid blue;
+  border-right: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
   cursor: pointer;
-  color: white;
-  background-color: rgba(0, 0, 0, 0.8);
-  padding: 5px;
-  border-radius: 50%;
-  font-size: 1.5rem;
-  z-index: 10;
+  display: none;
+}
+  
+.tagIcon::after {
+  content: '✓';
+  position: absolute;
+  top: -2.25rem;
+  right: 0.25rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: white !important;
+  cursor: pointer;
+  z-index: 1;
 }
 
 /* Delete button styles for messages */
@@ -79,8 +92,7 @@
 }
 
 /* Show the icons when hovering over a message */
-.nestedList li:hover .tagIcon,
-.nestedList li:hover .messageDelete {
+.nestedList li:hover .tagIcon {
   display: block;
 }
 

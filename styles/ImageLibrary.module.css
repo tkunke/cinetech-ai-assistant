@@ -10,8 +10,7 @@
     background-repeat: no-repeat;
   }
   
-  .thumbnailContainer:hover .tagIcon,
-  .thumbnailContainer:hover .imageDelete {
+  .thumbnailContainer:hover .tagIcon {
     display: block;
   }
   
@@ -36,20 +35,31 @@
     width: 75px;
     height: 75px;
   }
+
+.tagIcon {
+  width: 0;
+  height: 0;
+  border-left: 30px solid transparent;
+  border-top: 30px solid blue;
+  border-right: 0;
+  position: absolute;
+  top: 0;
+  right: 0;
+  cursor: pointer;
+  display: none;
+}
   
-  /* Tag icon styles */
-  .tagIcon {
-    position: absolute;
-    top: 5px;
-    right: 5px;
-    display: none;
-    cursor: pointer;
-    color: white;
-    background-color: rgba(0, 0, 0, 0.8);
-    padding: 5px;
-    border-radius: 50%;
-    font-size: 1.5rem;
-  }
+.tagIcon::after {
+  content: '✓';
+  position: absolute;
+  top: -2rem;
+  right: 0.25rem;
+  font-size: 1rem;
+  font-weight: bold;
+  color: white !important;
+  cursor: pointer;
+  z-index: 1;
+}
   
   /* Image tag styles */
   .imageTag {

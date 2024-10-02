@@ -1,15 +1,21 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import ReactDOM from 'react-dom';
-import { FaEnvelope, FaFilePdf } from 'react-icons/fa';
+import { FaEnvelope, FaFilePdf, FaFileImage } from 'react-icons/fa';
+import { useLibrary } from '@/context/LibraryContext';
+import { useSession } from 'next-auth/react';
 import styles from '@/styles/MessagePopup.module.css';
 import { generatePdfFromMarkdown } from '@/utils/pdfUtils';
 import { AiOutlineDownload } from 'react-icons/ai';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-const MessagePopup = ({ title, content, timestamp, onClose, threadId, onLoadThread }) => {
+const MessagePopup = ({ title, content, messageUrl, isImagePopup, imageUrl, contentId, timestamp, onClose, threadId, onLoadThread, workspaceId, type }) => {
+  const { data: session } = useSession();
+  const userId = session?.user?.id;
+  const { removeImage, removeMessage } = useLibrary();
+  const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
   
   // Custom renderers for tables, images, etc.
   const renderers = {
@@ -25,14 +31,6 @@ const MessagePopup = ({ title, content, timestamp, onClose, threadId, onLoadThre
           title='Download as pdf'
         >
           <AiOutlineDownload />
-        </div>
-      </div>
-    ),
-    img: ({ src, alt }) => (
-      <div className={styles.imageMessageContainer}>
-        <img src={src} alt={alt} className={styles.image} />
-        <div className={styles.imageDownloadButton} onClick={() => handleDownloadImage(src)}>
-          <AiOutlineDownload /> Download Image
         </div>
       </div>
     ),
@@ -76,11 +74,99 @@ const MessagePopup = ({ title, content, timestamp, onClose, threadId, onLoadThre
       .catch(() => alert('Could not download image'));
   };
 
+  const checkTagsBeforeDelete = async () => {
+    try {
+      // Check if the content is tagged (message or image)
+      const checkTagsResponse = await fetch('/api/checkTagsInJoinTables', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...(type === 'image' ? { imageId: contentId } : { messageId: contentId }),
+        }),
+      });
+
+      const checkTagsResult = await checkTagsResponse.json();
+      console.log('Check tags result:', checkTagsResult);
+
+      if (checkTagsResult[`${type}Tags`]) {
+        setShowConfirmationPopup(true); // Show confirmation if there are tags
+      } else {
+        proceedWithDelete(); // No tags, proceed with delete
+      }
+    } catch (error) {
+      console.error('Error checking tags:', error);
+    }
+  };
+
+  const proceedWithDelete = async () => {
+    try {
+      // Remove tags associated with the content
+      const removeTagsResponse = await fetch('/api/removeTagsFromJoinTables', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...(type === 'image' ? { imageId: contentId } : { messageId: contentId }),
+        }),
+      });
+
+      if (!removeTagsResponse.ok) {
+        const errorResult = await removeTagsResponse.json();
+        console.error('Failed to remove tag associations:', errorResult.error);
+        return;
+      }
+
+      console.log('Tags removed successfully');
+
+      // Delete from the database
+      const dbResponse = await fetch('/api/saveToPg', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId, workspaceId, contentUrl: isImagePopup ? imageUrl : messageUrl, type }),
+      });
+
+      if (dbResponse.ok) {
+        if (isImagePopup) {
+          removeImage(imageUrl);
+        } else {
+          removeMessage(contentId);
+        }
+        console.log(`${type === 'image' ? 'Image' : 'Message'} deleted successfully`);
+      } else {
+        const result = await dbResponse.json();
+        console.error('Failed to delete metadata:', result.error);
+      }
+
+      onClose();
+    } catch (error) {
+      console.error('Error deleting content:', error);
+    }
+  };
+
+  const handleDelete = () => {
+    checkTagsBeforeDelete();
+  };
+
+  useEffect(() => {
+    console.log('UserId:', userId);
+    console.log('WorkspaceId:', workspaceId);
+  }, [userId, workspaceId]);
+
   return ReactDOM.createPortal(
-    <div className={styles.messagePopupOverlay}>
-      <div className={styles.messagePopup}>
+    <div className={isImagePopup ? styles.imagePopupOverlay : styles.messagePopupOverlay}>
+      <div className={isImagePopup ? styles.imagePopup : styles.messagePopup}>
+        <button className={styles.closeButton} onClick={onClose}>
+          &times;
+        </button>
         <div className={styles.messagePopupHeader}>
-          <div className={styles.timestamp}>{timestamp}</div>
+          {!isImagePopup && (
+            <div className={styles.timestamp}>{timestamp}</div>
+          )}
           <div className={styles.leftButtons}>
             <button
               className={styles.emailButton}
@@ -92,22 +178,40 @@ const MessagePopup = ({ title, content, timestamp, onClose, threadId, onLoadThre
             >
               <FaEnvelope />
             </button>
-            <button className={styles.pdfButton} onClick={() => handleDownloadPDF(content)}>
-              <FaFilePdf />
-            </button>
+            {isImagePopup ? (
+              <button className={styles.pdfButton} onClick={() => handleDownloadImage(content)}>
+                <FaFileImage />
+              </button>
+            ) : (
+              <button className={styles.pdfButton} onClick={() => handleDownloadPDF(content)}>
+                <FaFilePdf />
+              </button>
+            )}
           </div>
-          <button className={styles.closeButton} onClick={onClose}>
-            &times;
-          </button>
         </div>
         {title && <h3>{title}</h3>}
-        <div className={styles.messageContent}>
-          {/* Use ReactMarkdown with custom renderers */}
-          <ReactMarkdown components={renderers} remarkPlugins={[remarkGfm]}>
-            {content}
-          </ReactMarkdown>
-        </div>
 
+        {isImagePopup ? (
+          <div className={styles.imageMessageContainer}>
+            <a href={imageUrl} target="_blank" rel="noopener noreferrer">
+              <img src={imageUrl} alt="Popup Image" className={styles.image} />
+            </a>
+          </div>
+        ) : (
+          <div className={styles.messageContent}>
+            {/* Use ReactMarkdown with custom renderers */}
+            <ReactMarkdown components={renderers} remarkPlugins={[remarkGfm]}>
+              {content}
+            </ReactMarkdown>
+          </div>
+        )}
+        {!threadId && ( // Only render delete button if threadId is not present
+          isImagePopup ? (
+            <button onClick={() => handleDelete(userId, contentId, imageUrl, workspaceId, type)}>Delete Image</button>
+          ) : (
+            <button onClick={() => handleDelete(userId, contentId, messageUrl, workspaceId, type)}>Delete Message</button>
+          )
+        )}
         {/* Conditionally render "Load Thread" button if threadId is provided */}
         {threadId && (
           <button
@@ -121,6 +225,15 @@ const MessagePopup = ({ title, content, timestamp, onClose, threadId, onLoadThre
           </button>
         )}
         
+        {showConfirmationPopup && (
+          <div className={styles.confirmationOverlay}>
+            <div className={styles.confirmationPopup}>
+              <h3>This content is associated with tags. Are you sure you want to delete it?</h3>
+              <button onClick={proceedWithDelete}>Yes, Delete</button>
+              <button onClick={() => setShowConfirmationPopup(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>,
     document.body

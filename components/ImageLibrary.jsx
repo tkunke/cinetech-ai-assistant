@@ -4,6 +4,7 @@ import Image from 'next/image';
 import styles from '@/styles/ImageLibrary.module.css';
 import { useLibrary } from '@/context/LibraryContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import MessagePopup from '@/components/MessagePopup';
 
 const ImageLibrary = ({ userId, onTagIconClick }) => {
   const { fetchedImages, fetchImages, fetchedTags, removeImage } = useLibrary();
@@ -11,7 +12,9 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
   const [currentImageToDelete, setCurrentImageToDelete] = useState(null);
   const [showTagPopup, setShowTagPopup] = useState(false);
-  const [currentImageForTagging, setCurrentImageForTagging] = useState(null); // Store the image being tagged
+  const [currentImageForTagging, setCurrentImageForTagging] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [popupData, setPopupData] = useState(null);
 
   useEffect(() => {
     if (userId && activeWorkspaceId) {
@@ -152,12 +155,22 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
     setCurrentImageForTagging(null);
   };
 
+  const handleImageClick = (image) => {
+    setPopupData({
+      isImagePopup: true, // Set this to true for image popup
+      imageUrl: image.thumbnailUrl,
+      imageId: image.id,
+      onClose: () => setPopupData(null) // Close the popup when done
+    });
+    console.log('Popup Data:', popupData);
+  };
+
   return (
     <>
       <div className={styles.thumbnailGrid}>
         {fetchedImages.map((image, index) => (
           <div key={index} className={styles.thumbnailContainer}>
-            <a href={image.imageUrl} target="_blank" rel="noopener noreferrer">
+            <a onClick={() => handleImageClick(image)} href="#" className={styles.thumbnailLink}>
               <Image
                 src={image.thumbnailUrl}
                 alt={`Image ${index + 1}`}
@@ -167,18 +180,7 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
               />
             </a>
             {userRole !== 'viewer' && (
-              <>
-                <FaAsterisk
-                  className={styles.tagIcon}
-                  onClick={() => handleTagIconClick(image)} // Call handleTagIconClick on tag icon click
-                  title="Tag Image"
-                />
-                <FaTrash
-                  className={styles.imageDelete}
-                  onClick={() => handleDeleteImageContent(userId, image.id, image.imageUrl, activeWorkspaceId)}
-                  title="Delete Image"
-                />
-              </>
+              <button title="Tag Image" className={styles.tagIcon} onClick={() => handleTagIconClick(image)}></button>
             )}
             {image.tags?.map((tag) => (
               <span key={tag.id} className={styles.imageTag}>
@@ -188,6 +190,18 @@ const ImageLibrary = ({ userId, onTagIconClick }) => {
           </div>
         ))}
       </div>
+
+      {/* Show image popup when an image is clicked */}
+      {popupData && (
+        <MessagePopup
+          isImagePopup={popupData.isImagePopup}
+          imageUrl={popupData.imageUrl}
+          contentId={popupData.imageId}
+          onClose={popupData.onClose}
+          workspaceId={activeWorkspaceId}
+          type="image"
+        />
+      )}
 
       {showTagPopup && (
         <div className={styles.popupOverlay}>

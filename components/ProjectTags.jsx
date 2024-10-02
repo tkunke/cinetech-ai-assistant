@@ -180,24 +180,20 @@ const ProjectTags = ({ userId }) => {
             </button>
 
             <div className={styles.tagHeader}>
-            {fetchedTags.map((tag, index) => (
-              <div key={index}>
-                {isEditingTagName === tag.id ? (
-                  <input
-                    type="text"
-                    value={newTagName}  // Use newTagName state here
-                    onChange={(e) => setNewTagName(e.target.value)}  // Update the new tag name when typing
-                    onKeyDown={(e) => handleKeyDown(e, tag.id)}  // Handle Enter key to save
-                    onBlur={() => setIsEditingTagName(null)}  // Reset to non-edit mode on blur
-                    autoFocus
-                  />
-                ) : (
-                  <span onClick={() => setIsEditingTagName(tag.id)}>
-                    {tag.name || 'Click to edit'}
-                  </span>
-                )}
-              </div>
-            ))}
+            {isEditingTagName === selectedTag.id ? (
+              <input
+                type="text"
+                value={newTagName}  // Use newTagName state here
+                onChange={(e) => setNewTagName(e.target.value)}  // Update the new tag name when typing
+                onKeyDown={(e) => handleKeyDown(e, selectedTag.id)}  // Handle Enter key to save
+                onBlur={() => setIsEditingTagName(null)}  // Reset to non-edit mode on blur
+                autoFocus
+              />
+            ) : (
+              <span onClick={() => setIsEditingTagName(selectedTag.id)}>
+                {selectedTag.name || 'Click to edit'}
+              </span>
+            )}
             </div>
             
             {/* Messages Section */}
@@ -217,7 +213,7 @@ const ProjectTags = ({ userId }) => {
                   ))}
                 </ul>
               ) : (
-                <p>Tagged messages will show here</p>
+                <p>No tagged messages</p>
               )}
             </div>
             
@@ -242,7 +238,7 @@ const ProjectTags = ({ userId }) => {
                     </div>
                   ))
                 ) : (
-                  <p>Tagged images will show here</p>
+                  <p>No tagged images</p>
                 )}
               </div>
             </div>

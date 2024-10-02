@@ -12,19 +12,6 @@
   border-radius: 0.25rem;
 }
 
-.imageMessageContainer {
-  position: relative;
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.image {
-  max-width: 100%;
-  height: auto;
-  border: 1px solid #ddd;
-  border-radius: 0.25rem;
-}
-
 .imageDownloadButton {
   margin-top: 0.5rem;
   cursor: pointer;
@@ -297,9 +284,9 @@
     background-color: transparent;
     border: none;
     font-size: 1.5rem;
-    position: absolute;
-    top: 10px;
-    right: 10px;
+    position: relative;
+    top: 0;
+    right: 0;
     cursor: pointer;
   }
 
@@ -338,12 +325,20 @@
     background: white;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Darker shadow for popup */
     z-index: 1020;
-    max-width: 800px; /* Set a max-width for the landscape orientation */
+    max-width: 50rem; /* Set a max-width for the landscape orientation */
     width: 80%; /* Responsive width */
     max-height: 60vh; /* Constrain height to 60% of viewport height */
     overflow-y: auto; /* Make the content scrollable if it exceeds the max-height */
     display: flex;
     flex-direction: column;
+  }
+
+  .messagePopup img {
+    max-width: 100%; /* Make the image fit within the popup's width */
+    max-height: 100%; /* Make the image fit within the popup's height */
+    object-fit: contain; /* Maintain the aspect ratio and fit the image within bounds */
+    display: block; /* Remove inline spacing */
+    margin: 0 auto; /* Center the image */
   }
   
   .messagePopupHeader {
@@ -440,6 +435,46 @@
     justify-content: space-between;
   }
   
+  .confirmationOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1010;
+  }
+  
+  .confirmationPopup {
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+  }
+  
+  .confirmationPopup h3 {
+    margin-bottom: 20px;
+  }
+  
+  .confirmationPopup button {
+    margin: 0 10px; /* Adds space between buttons */
+    padding: 10px 20px;
+    border-radius: 4px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  
+  .confirmationPopup button:hover {
+    background-color: #0056b3;
+  }  
+
   .confirmButton, .cancelButton {
     background-color: gray;
     color: white;
@@ -461,3 +496,73 @@
   .cancelButton:hover {
     background-color: #5a6268;
   }
+
+.imagePopupOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1010;
+}
+
+.imagePopup {
+  display: flex;
+  flex-direction: column;  /* Stack elements in a column: buttons, then image */
+  justify-content: center;
+  align-items: center;
+  max-width: 30vw;  /* Limit the width of the popup */
+  /*max-height: 60vh;  /* Limit the height of the popup */
+  background: white;
+  padding: 0.25rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.imageMessageContainer {
+  display: flex;
+  flex-direction: column;  /* Buttons above, image below */
+  align-items: center;
+  justify-content: center;
+  width: 100%;  /* Make sure the image container takes full width */
+  height: auto;
+  padding: 10px;  /* Padding around the image */
+}
+
+.imageMessageContainer img {
+  max-width: 100%;  /* Keep the image within the popup width */
+  height: auto;     /* Maintain the image's aspect ratio */
+  object-fit: contain;  /* Make sure the image doesn't stretch */
+  display: block;
+}
+  
+
+.image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain; /* Ensure the image maintains aspect ratio */
+}
+
+.imagePopup .closeButton {
+  background-color: transparent;
+  color: gray !important;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imagePopup .closeButton:hover {
+  background-color: darkgray; /* Darker background on hover */
+  color: white;
+}

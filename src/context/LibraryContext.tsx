@@ -16,6 +16,7 @@ interface Image {
 }
 
 interface Message {
+  id: string;
   content: string;
   preview: string;
   url: string;
@@ -42,6 +43,7 @@ interface LibraryContextType {
   addImage: (image: Image) => void;
   addMessage: (message: Message) => void;
   removeImage: (imageUrl: string) => void;
+  removeMessage: (messageId: string) => void;
   untagContent: (contentId: string, tagId: string, contentType: 'image' | 'message') => Promise<Response | undefined>;
 }
 
@@ -411,11 +413,20 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
     }));
   };
 
+  const removeMessage = (messageId: string) => {
+    if (!activeWorkspaceId) return; // Ensure there is an active workspace
+
+    setWorkspaceMessages((prev) => ({
+      ...prev,
+      [activeWorkspaceId]: prev[activeWorkspaceId].filter(message => message.id !== messageId),
+    }));
+  };
+
   const fetchedImages = activeWorkspaceId ? workspaceImages[activeWorkspaceId] || [] : [];
   const fetchedMessages = activeWorkspaceId ? workspaceMessages[activeWorkspaceId] || [] : [];
 
   return (
-    <LibraryContext.Provider value={{ fetchedImages, fetchedMessages, fetchedTags, fetchImages, fetchMessages, fetchTags, createTag, updateTag, deleteTag, untagContent, addImage, addMessage, removeImage }}>
+    <LibraryContext.Provider value={{ fetchedImages, fetchedMessages, fetchedTags, fetchImages, fetchMessages, fetchTags, createTag, updateTag, deleteTag, untagContent, addImage, addMessage, removeImage, removeMessage }}>
       {children}
     </LibraryContext.Provider>
   );

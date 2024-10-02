@@ -250,23 +250,7 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
                 <li key={messageIndex} className={styles.textLine} onClick={() => handleMessageClick(message)}>
                   {truncateText(message.preview, 42)}
                   {userRole !== 'viewer' && (
-                    <>
-                      <FaAsterisk
-                        className={styles.tagIcon}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleTagIconClick(message);
-                        }}
-                      />
-                      <FaTrash
-                        className={styles.messageDelete}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteContent(userId, message.id, message.url, activeWorkspaceId, 'message');
-                        }}
-                        title="Delete Message"
-                      />
-                    </>
+                    <button title="Tag Message" className={styles.tagIcon} onClick={(e) => {e.stopPropagation(); handleTagIconClick(message);}}></button>
                   )}
                   {message.tags &&
                     message.tags.map((tag) => (
@@ -300,8 +284,12 @@ const MessagesLibrary = ({ userId, onTagIconClick }) => {
         <MessagePopup
           title={selectedMessage.title}
           content={selectedMessage.content}
+          contentId={selectedMessage.id}
+          messageUrl={selectedMessage.url}
           timestamp={formatTimestamp(selectedMessage.timestamp)}
           onClose={() => setSelectedMessage(null)}
+          workspaceId={activeWorkspaceId}
+          type="message"
         />
       )}
       {showConfirmationPopup && (
