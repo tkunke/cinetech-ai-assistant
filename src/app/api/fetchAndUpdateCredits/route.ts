@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const tokenCount = userQuery.rows[0].credits;
-    return NextResponse.json({ tokenCount });
+    const currentCredits = userQuery.rows[0].credits;
+    return NextResponse.json({ currentCredits });
   } catch (error) {
     console.error("Error fetching credit count:", error);
     return NextResponse.json({ error: "Failed to fetch credit count" }, { status: 500 });

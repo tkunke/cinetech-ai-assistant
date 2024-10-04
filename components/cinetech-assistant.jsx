@@ -421,13 +421,13 @@ export default function CinetechAssistant({
       return;
     }
   
-    console.log('Making fetch request to get messages for thread ID:', threadId);
+    //console.log('Making fetch request to get messages for thread ID:', threadId);
 
     try {
       const messagesResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({ threadId }));
       const response = await messagesResponse.json();
 
-      console.log('Fetch response:', response);
+      //console.log('Fetch response:', response);
   
       if (response.status === 'timeout') {
         // Inform the user about the timeout
@@ -467,7 +467,7 @@ export default function CinetechAssistant({
 
                 if (response.runStatus.status === 'completed') {
                     clearInterval(pollInterval);
-                    console.log('Run completed detected during polling');
+                    //console.log('Run completed detected during polling');
                     setRunCompleted(true);
                     setShowLoadingGif(false);
                     setMessagesUpdated(true);
@@ -550,13 +550,9 @@ export default function CinetechAssistant({
     console.log('showLoadingGif state changed:', showLoadingGif);
   }, [showLoadingGif]);
 
-  //useEffect(() => {
-  //  console.log('Messages state updated:', messages);
-  //}, [messages]);
-
   useEffect(() => {
-    console.log('Streaming state updated:', streamingMessage);
-  }, [streamingMessage]);
+    console.log('Messages:', messages);
+  }, [messages]);
 
   return (
     <div className="flex flex-col h-full justify-between">

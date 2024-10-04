@@ -10,6 +10,12 @@ import { alternateImage } from '@/utils/alternateImage';
 import { imageRecognition } from '@/utils/imageRecognition';
 import { addFileToStore } from '@/utils/fileUtils';
 import { AssistantStream } from 'openai/lib/AssistantStream';
+import { Pool } from 'pg';
+
+// Create a new connection pool
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL, // Use the Supabase connection string here
+});
 
 // Define the RunStatus type
 interface RunStatus {
@@ -238,29 +244,36 @@ async function handleRunStatusEvent(event: { status: string, threadId: string, r
 }
 
 async function postTokenCost(runId: string, usage: RunUsage, imageGenerated: boolean) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-  try {
-    const response = await fetch(`${baseUrl}/api/tokenCalc`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        runId,
-        prompt_tokens: usage.prompt_tokens,
-        completion_tokens: usage.completion_tokens,
-        total_tokens: usage.total_tokens,
-        imageGenerated,  // Include the flag in the body
-      }),
-    });
+  const client = await pool.connect();
+  const total_tokens = usage.prompt_tokens + usage.completion_tokens;
+  const prompt_tokens_cost = (usage.prompt_tokens / 1000) * 0.005;
+  const completion_tokens_cost = (usage.completion_tokens / 1000) * 0.015;
+  const total_cost = prompt_tokens_cost + completion_tokens_cost;
+  let total_credits = Math.floor(total_cost / 0.02);
 
-    if (!response.ok) {
-      console.error('Failed to update token cost:', await response.text());
-    } else {
-      console.log('Token cost successfully updated.');
-    }
+  if (imageGenerated) {
+    total_credits += 2; // Add credits if an image was generated
+  }
+
+  try {
+    const query = `
+      INSERT INTO token_usage (run_id, total_tokens, total_credits, prompt_tokens_cost, completion_tokens_cost, total_cost)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      ON CONFLICT (run_id) DO UPDATE SET 
+      total_tokens = EXCLUDED.total_tokens,
+      total_credits = EXCLUDED.total_credits,
+      prompt_tokens_cost = EXCLUDED.prompt_tokens_cost,
+      completion_tokens_cost = EXCLUDED.completion_tokens_cost,
+      total_cost = EXCLUDED.total_cost;
+    `;
+
+    await client.query(query, [runId, total_tokens, total_credits, prompt_tokens_cost, completion_tokens_cost, total_cost]);
+    console.log(`Successfully updated token_usage for runId: ${runId}`); // Optional: Log success
+
   } catch (error) {
-    console.error('Error posting token cost:', error);
+    console.error("Error: Failed to update token_usage:", error);
+  } finally {
+    client.release(); // Ensure the client is always released back to the pool
   }
 }
 

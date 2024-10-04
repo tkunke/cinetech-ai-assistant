@@ -1,5 +1,3 @@
-console.log('TokenCounter component has mounted');
-
 import React, { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 
@@ -10,76 +8,45 @@ interface TokenCounterProps {
   messagesUpdated: boolean;
 }
 
-const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted, messagesUpdated }) => {
+interface TokenUsage {
+  total_tokens: number;
+  total_credits: number;
+  prompt_tokens_cost: string; // Keep as string if you expect it from the database
+  completion_tokens_cost: string; // Keep as string if you expect it from the database
+  total_cost: string; // Keep as string if you expect it from the database
+}
+
+const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted }) => {
   const [credits, setCredits] = useState<number | null>(null);
-  const [localRunId, setLocalRunId] = useState<string | null>(null); // Local state to preserve runId
+  const [currentCredits, setCurrentCredits] = useState<number | null>(null);
+  const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null);
   const { fetchUserStatus } = useUser();
-
-  useEffect(() => {
-    if (runId) {
-      setLocalRunId(runId); // Set localRunId when runId is provided
-    }
-  }, [runId]);
-
-  //console.log('token-counter has this for localRunId:', localRunId);
 
   const fetchCurrentCredits = async () => {
     try {
       const response = await fetch(`/api/fetchAndUpdateCredits?userId=${userId}`);
       const data = await response.json();
-      //console.log('Fetched current credits:', data); // <-- Add this for debugging
+      console.log('Fetched current credits:', data);
       if (!response.ok) throw new Error('Failed to fetch current credits');
-      setCredits(data.tokenCount);
-      console.log('Credits set to:', data.tokenCount);
+      setCredits(data.currentCredits);
     } catch (error) {
       console.error('Error fetching current credits:', error);
     }
-  };  
+  };
 
-  const handleCreditUpdate = async () => {
-    if (!localRunId) return;
-  
-    let attempt = 0;
-    const maxAttempts = 15;
-    const pollInterval = 3000;
-  
-    const pollCredits = async () => {
-      attempt++;
-      try {
-        const response = await fetch(`/api/tokenCalc?runId=${localRunId}`);
-        const data = await response.json();
-        //console.log('TokenCalc API response:', data); // <-- Add this for debugging
-        if (response.ok) {
-          const creditsSpent = data.credits;
-          if (credits !== null && creditsSpent !== null) {
-            let newCredits = credits - creditsSpent;
-  
-            // Ensure credits never go below zero
-            if (newCredits < 0) {
-              newCredits = 0;
-            }
-  
-            console.log('Updating credits:', newCredits); // <-- Add this for debugging
-            await updateCreditsInDatabase(newCredits);
-            fetchCurrentCredits(); // <-- Ensure this is called to fetch the updated credits
-            return;
-          }
-        }
-        if (attempt < maxAttempts) {
-          setTimeout(pollCredits, pollInterval);
-        } else {
-          console.error('Failed to retrieve credits after multiple attempts');
-        }
-      } catch (error) {
-        console.error('Error polling token cost:', error);
-        if (attempt < maxAttempts) {
-          setTimeout(pollCredits, pollInterval);
-        }
-      }
-    };
-  
-    setTimeout(pollCredits, 5000);
-  };    
+  const fetchTokenUsage = async () => {
+    if (!runId) return;
+    try {
+      const response = await fetch(`/api/tokenCalc?runId=${runId}`);
+      const data = await response.json();
+      console.log('Fetched token usage:', data);
+      if (!response.ok) throw new Error('Failed to fetch token usage');
+      setTokenUsage(data.tokenUsage);
+      console.log('Token usage set:', data.tokenUsage);
+    } catch (error) {
+      console.error('Error fetching token usage:', error);
+    }
+  };
 
   const updateCreditsInDatabase = async (newCredits: number) => {
     try {
@@ -90,6 +57,7 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
         },
         body: JSON.stringify({ userId, newCredits }),
       });
+      console.log('Update credits response:', response);
       if (!response.ok) throw new Error('Failed to update credits');
     } catch (error) {
       console.error('Error updating credits in the database:', error);
@@ -97,28 +65,47 @@ const TokenCounter: React.FC<TokenCounterProps> = ({ userId, runId, runCompleted
   };
 
   useEffect(() => {
-    console.log('User ID in TokenCounter:', userId); // Log userId on mount
     if (userId) {
-      console.log('User ID available, fetching current credits for user:', userId);
       fetchCurrentCredits();
     }
-  }, [userId]);    
+  }, [userId]);
 
   useEffect(() => {
-    if (userId && localRunId && runCompleted && messagesUpdated) {
-      handleCreditUpdate();
+    // Only fetch token usage if the run is completed and the runId is available
+    if (runId && runCompleted) {
+      fetchTokenUsage();
     }
-  }, [userId, localRunId, runCompleted, messagesUpdated]);
+  }, [runId, runCompleted]);
 
   useEffect(() => {
-    if (credits !== null && runCompleted && typeof fetchUserStatus === 'function') {
-      fetchUserStatus(userId); // Fetch user status after updating credits
+    if (tokenUsage && runCompleted) {
+        const creditsSpent = tokenUsage.total_credits; // Access total_credits correctly
+
+        // Ensure credits is a number and is not null
+        if (credits === null) return; // Prevent execution if credits are not ready
+
+        const currentCredits = credits;
+
+        console.log('Current Credits:', currentCredits);
+        console.log('Credits Spent:', creditsSpent);
+
+        if (creditsSpent === undefined) {
+            console.error('Credits spent is undefined, tokenUsage:', tokenUsage);
+            return; // Prevent further execution
+        }
+
+        // Calculate new credits
+        const newCredits = Math.max(currentCredits - creditsSpent, 0); // Calculate new credits
+        console.log('New credits calculated:', newCredits);
+
+        updateCreditsInDatabase(newCredits).then(() => {
+          setCredits(newCredits);
+        });
     }
-  }, [credits, runCompleted, fetchUserStatus]);
+  }, [tokenUsage, runCompleted]);
 
   if (!userId) {
-    console.log('User ID not available yet, not rendering TokenCounter.');
-    return null;  // Don't render anything if userId is not available yet
+    return null;
   }
 
   return (
