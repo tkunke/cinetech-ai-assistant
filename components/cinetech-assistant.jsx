@@ -131,16 +131,16 @@ export default function CinetechAssistant({
 
   const handleThreadSelect = (threadId) => {
     setThreadId(threadId);
-    fetchMessages(threadId, false);
+    fetchMessages(threadId);
   };
 
-  const addToMessagesLibrary = useCallback((message) => {
-    setMessagesLibrary((prevLibrary) => [...prevLibrary, message]);
-  }, []);
+  //const addToMessagesLibrary = useCallback((message) => {
+  //  setMessagesLibrary((prevLibrary) => [...prevLibrary, message]);
+  //}, []);
   
-  const addToImageLibrary = useCallback((image) => {
-    setImageLibrary((prevLibrary) => [...prevLibrary, image]);
-  }, []);
+  //const addToImageLibrary = useCallback((image) => {
+  //  setImageLibrary((prevLibrary) => [...prevLibrary, image]);
+  //}, []);
 
   const scrollToBottom = useCallback((smooth = true) => {
     if (messagesEndRef.current) {
@@ -160,11 +160,6 @@ export default function CinetechAssistant({
       console.error('Error initializing thread:', error);
     }
   }
-
-  useEffect(() => {
-    console.log('Messages with status:', messages);
-    messages.forEach((msg, idx) => console.log(`Message ${idx}:`, msg));
-  }, [messages]);
 
   async function handleSubmit(event) {
     if (event && event.preventDefault) {
@@ -298,7 +293,15 @@ export default function CinetechAssistant({
                     };
   
                     setMessages((prevMessages) => [...prevMessages, newImageMessage]);
-                    scrollToBottom();
+
+                    const img = new Image();
+                    img.src = imageUrl;
+                                    
+                    img.onload = () => {
+                      setTimeout(() => {
+                        scrollToBottom();
+                      }, 100);
+                    };
                   }
                   break;
                 case 'thread.run.completed':
@@ -309,8 +312,6 @@ export default function CinetechAssistant({
                       msg.role === 'user' && msg.status === 'pending' ? { ...msg, status: 'replied' } : msg
                     )
                   );
-  
-                  setStreamingMessage(null);  // Clear the streaming message when complete
                   break;
               }
             } catch (error) {
@@ -320,7 +321,8 @@ export default function CinetechAssistant({
         }
       }
   
-      await fetchMessages(currentThreadId, true);
+      console.log('Fetching messages for thread ID:', currentThreadId);
+      await fetchMessages(currentThreadId);
   
     } catch (error) {
       console.error('Error during message submission:', error);
@@ -413,15 +415,19 @@ export default function CinetechAssistant({
     }
   }
 
-  async function fetchMessages(threadId, requireRunId = false) {
-    if (!threadId || (requireRunId && !runId)) {
+  async function fetchMessages(threadId) {
+    if (!threadId) {
       console.error('Cannot fetch messages: threadId or runId is null or undefined');
       return;
     }
   
+    console.log('Making fetch request to get messages for thread ID:', threadId);
+
     try {
       const messagesResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({ threadId }));
       const response = await messagesResponse.json();
+
+      console.log('Fetch response:', response);
   
       if (response.status === 'timeout') {
         // Inform the user about the timeout
@@ -465,7 +471,7 @@ export default function CinetechAssistant({
                     setRunCompleted(true);
                     setShowLoadingGif(false);
                     setMessagesUpdated(true);
-                    await fetchMessages(threadId, true);
+                    await fetchMessages(threadId);
 
                     setRunId(null);
                     setReaderDone(false);
@@ -544,6 +550,14 @@ export default function CinetechAssistant({
     console.log('showLoadingGif state changed:', showLoadingGif);
   }, [showLoadingGif]);
 
+  //useEffect(() => {
+  //  console.log('Messages state updated:', messages);
+  //}, [messages]);
+
+  useEffect(() => {
+    console.log('Streaming state updated:', streamingMessage);
+  }, [streamingMessage]);
+
   return (
     <div className="flex flex-col h-full justify-between">
       <EphemeralGreeting onSelectThread={handleThreadSelect}/>
@@ -556,8 +570,6 @@ export default function CinetechAssistant({
             handleRetry={handleRetry}
             selectedMessages={selectedMessages}
             setSelectedMessages={setSelectedMessages}
-            addToImageLibrary={addToImageLibrary}
-            addToMessagesLibrary={addToMessagesLibrary}
             assistantName={session?.user?.assistant_name}
           />
         ))}

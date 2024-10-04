@@ -194,20 +194,20 @@ export default function EphemeralGreeting({ onSelectThread, onStartUsingApp }) {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  useEffect(() => {
-    console.log('showThreads:', showThreads);
-    console.log('recentThreads:', recentThreads);
-    console.log('threadsShown in sessionStorage:', sessionStorage.getItem('threadsShown'));
-    console.log('Is app used:', appUsed);
-  }, [showThreads, recentThreads]);
+  //useEffect(() => {
+  //  console.log('showThreads:', showThreads);
+  //  console.log('recentThreads:', recentThreads);
+  //  console.log('threadsShown in sessionStorage:', sessionStorage.getItem('threadsShown'));
+  //  console.log('Is app used:', appUsed);
+  //}, [showThreads, recentThreads]);
 
-  useEffect(() => {
-    console.log('Threads:', threads);
-  }, [threads]);
+  //useEffect(() => {
+  //  console.log('Threads:', threads);
+  //}, [threads]);
   
-  useEffect(() => {
-    console.log('Analysis Data:', analysisData);
-  }, [analysisData]);  
+  //useEffect(() => {
+  //  console.log('Analysis Data:', analysisData);
+  //}, [analysisData]);  
 
   return (
     <>
