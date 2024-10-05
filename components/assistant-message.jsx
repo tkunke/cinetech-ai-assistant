@@ -11,7 +11,7 @@ import { upload } from '@vercel/blob/client';
 import { useLibrary } from '@/context/LibraryContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
 
-function CinetechAssistantMessage({ message, status, handleRetry, selectedMessages = [], setSelectedMessages, assistantName }) {
+function CinetechAssistantMessage({ message, status, handleRetry, selectedMessages = [], setSelectedMessages, assistantName, runCompleted }) {
   const tableRef = useRef(null);
   const buttonRef = useRef(null);
   const [showTips, setShowTips] = useState(false);
@@ -313,8 +313,7 @@ function CinetechAssistantMessage({ message, status, handleRetry, selectedMessag
   };
 
   const isImageMessage = hasImages(message.content);
-  const isBreakdownMessage = message.content.includes('Storyboard Breakdown');
-  const isInitialMessage = message.content.trim() === 'Hey there! How can I help?';
+  const isBreakdownMessage = typeof message.content === 'string' && message.content.includes('Storyboard Breakdown');
 
   return (
     <div
@@ -332,7 +331,7 @@ function CinetechAssistantMessage({ message, status, handleRetry, selectedMessag
                 <FaCheckCircle style={{ color: selectedMessages.some(m => m.id === message.id) ? 'red' : 'gray' }} />
               </div>
             )}
-            {!hasImages(message.content) && (  // Conditionally render based on presence of images
+            {runCompleted && !hasImages(message.content) && (
               <div className={styles.iconButton} onClick={() => handleSaveMessage(message.content)} title="Save Message">
                 <FaNewspaper />
               </div>
@@ -341,9 +340,16 @@ function CinetechAssistantMessage({ message, status, handleRetry, selectedMessag
         )}
 
       </div>
-      <ReactMarkdown components={renderers} remarkPlugins={[remarkGfm]}>
-        {message.content}
-      </ReactMarkdown>
+      {/* Conditional rendering for content */}
+      {typeof message.content === 'string' ? (
+        <ReactMarkdown components={renderers} remarkPlugins={[remarkGfm]}>
+          {message.content}
+        </ReactMarkdown>
+      ) : (
+        React.isValidElement(message.content) ? (
+          <div>{message.content}</div> // Render the DancingEllipsis component
+        ) : null // Handle the case where content is neither a string nor a valid React element
+      )}
       {/* Conditionally render based on status */}
       {status === 'failed' && (
           <div>

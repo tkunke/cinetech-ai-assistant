@@ -6,6 +6,7 @@ import CinetechAssistantMessage from './assistant-message';
 import InputForm from './input-form';
 import Sidebar from './sidebar';
 import EphemeralGreeting from './EphemeralGreeting';
+import DancingEllipsis from './DancingEllipsis';
 import styles from '@/styles/cinetech-assistant.module.css';
 import SpinningReels from './spinning-reels';
 import { useThreads } from '@/context/ThreadsContext';
@@ -28,12 +29,10 @@ export default function CinetechAssistant({
   const { appUsed, handleStartUsingApp } = useUser();
   const [prompt, setPrompt] = useState(''); 
   const [messages, setMessages] = useState([]);
-  const [messagesLibrary, setMessagesLibrary] = useState([]);
   const [messagesUpdated, setMessagesUpdated] = useState(false);
-  const [imageLibrary, setImageLibrary] = useState([]);
   const [streamingMessage, setStreamingMessage] = useState({
     role: 'assistant',
-    content: 'Thinking...',
+    content: '',
   });
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -134,14 +133,6 @@ export default function CinetechAssistant({
     fetchMessages(threadId);
   };
 
-  //const addToMessagesLibrary = useCallback((message) => {
-  //  setMessagesLibrary((prevLibrary) => [...prevLibrary, message]);
-  //}, []);
-  
-  //const addToImageLibrary = useCallback((image) => {
-  //  setImageLibrary((prevLibrary) => [...prevLibrary, image]);
-  //}, []);
-
   const scrollToBottom = useCallback((smooth = true) => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'end', inline: 'nearest' });
@@ -177,21 +168,21 @@ export default function CinetechAssistant({
   
     setStreamingMessage({
       role: 'assistant',
-      content: 'Thinking...',
+      content: <DancingEllipsis />,
     });
   
     setIsLoading(true);
     
     const newMessage = {
-      id: `temp_user_${Date.now()}`,  // Unique key
+      id: `temp_user_${Date.now()}`,
       role: 'user',
       content: prompt,
-      status: 'pending',  // Initial status
+      status: 'pending',
     };
   
     setMessages((prevMessages) => [...prevMessages, newMessage]);
     setPrompt('');
-    setSelectedFile(null); // Clear file input after submission
+    setSelectedFile(null);
   
     if (inputRef.current) {
       inputRef.current.style.height = 'auto';
@@ -344,10 +335,7 @@ export default function CinetechAssistant({
       if (!success) {
         // Instead of deleting the message, just leave it in the state with 'failed' status
         console.log('Message retry failed. Leaving message in state as "failed".');
-        
-        // No need to remove the message, the user will see the failed message and retry option
-        // Comment out or remove this:
-        // await deleteMessageFromThread(threadId, newMessage.id);
+
       }
     } finally {
       setIsLoading(false);
@@ -420,17 +408,12 @@ export default function CinetechAssistant({
       console.error('Cannot fetch messages: threadId or runId is null or undefined');
       return;
     }
-  
-    //console.log('Making fetch request to get messages for thread ID:', threadId);
 
     try {
       const messagesResponse = await fetch('/api/cinetech-assistant?' + new URLSearchParams({ threadId }));
       const response = await messagesResponse.json();
-
-      //console.log('Fetch response:', response);
   
       if (response.status === 'timeout') {
-        // Inform the user about the timeout
         setStreamingMessage({
           role: 'assistant',
           content: 'The operation timed out. Please try again later.',
@@ -462,17 +445,12 @@ export default function CinetechAssistant({
                 setShowLoadingGif(true);
                 setMessagesUpdated(false);
 
-                //console.log('Full server response:', response);
-                //console.log('Polling run status:', response.runStatus);
-
                 if (response.runStatus.status === 'completed') {
                     clearInterval(pollInterval);
-                    //console.log('Run completed detected during polling');
                     setRunCompleted(true);
                     setShowLoadingGif(false);
                     setMessagesUpdated(true);
                     await fetchMessages(threadId);
-
                     setRunId(null);
                     setReaderDone(false);
                 }
@@ -563,6 +541,7 @@ export default function CinetechAssistant({
             key={message.id}
             message={message}
             status={message.status}
+            runCompleted={runCompleted}
             handleRetry={handleRetry}
             selectedMessages={selectedMessages}
             setSelectedMessages={setSelectedMessages}
@@ -573,8 +552,6 @@ export default function CinetechAssistant({
         <div ref={messagesEndRef} style={{ height: '1px' }}></div>
       </div>
       <Sidebar
-        imageLibrary={imageLibrary}
-        messagesLibrary={messagesLibrary}
         userId={userId}
         runId={runId}
         runCompleted={runCompleted}

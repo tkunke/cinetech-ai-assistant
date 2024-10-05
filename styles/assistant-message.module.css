@@ -13,6 +13,7 @@
   margin: 0.5rem; /* Add margin for better spacing on small screens */
   word-wrap: break-word; /* Ensure long words break to fit small screens */
   padding-bottom: 2rem;
+  padding-left: 2rem;
   max-width: 60rem;
   width: 90%;
   box-sizing: border-box;
@@ -202,9 +203,8 @@
   display: flex;
   gap: 10px;
   background: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
-  padding: 5px;
   border-radius: 5px;
-  margin-bottom: 10px; /* Add margin to separate from the message content */
+  margin-bottom: 5px;
 }
 
 .download-button {
