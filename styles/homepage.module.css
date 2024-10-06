@@ -49,6 +49,14 @@
   left: 2rem;
 }
 
+.headerButtons {
+  position: absolute;
+  top: 1rem;
+  right: 2rem;
+  display: flex;
+  gap: 1rem;
+}
+
 .featuresSection {
   margin-top: 7rem;
   display: flex;

@@ -9,6 +9,11 @@ const HomePage: React.FC = () => {
       <header className={styles.heroSection}>
         <h1 className={styles.heroTitle}>CineTech AI</h1>
         <p>AI for film production</p>
+        <div className={styles.headerButtons}>
+          <Link href="/login">
+            <button className={styles.loginButton}>Login</button>
+          </Link>
+        </div>
       </header>
 
       {/* Features Overview */}
