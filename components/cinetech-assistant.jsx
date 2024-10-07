@@ -520,23 +520,28 @@ export default function CinetechAssistant({
 
   return (
     <div className="flex flex-col h-full justify-between">
-      <EphemeralGreeting onSelectThread={handleThreadSelect}/>
-      <div className="flex flex-col mb-10 items-center justify-center">
-        {messages.map((message) => (
-          <CinetechAssistantMessage
-            key={message.id}
-            message={message}
-            status={message.status}
-            runCompleted={runCompleted}
-            handleRetry={handleRetry}
-            selectedMessages={selectedMessages}
-            setSelectedMessages={setSelectedMessages}
-            assistantName={session?.user?.assistant_name}
-          />
-        ))}
-        {isLoading && <CinetechAssistantMessage message={streamingMessage} />}
-        <div ref={messagesEndRef} style={{ height: '1px' }}></div>
-      </div>
+      {appUsed ? (
+        <>
+          <div className="flex flex-col mb-10 items-center justify-center">
+            {messages.map((message) => (
+              <CinetechAssistantMessage
+                key={message.id}
+                message={message}
+                status={message.status}
+                runCompleted={runCompleted}
+                handleRetry={handleRetry}
+                selectedMessages={selectedMessages}
+                setSelectedMessages={setSelectedMessages}
+                assistantName={session?.user?.assistant_name}
+              />
+            ))}
+            {isLoading && <CinetechAssistantMessage message={streamingMessage} />}
+            <div ref={messagesEndRef} style={{ height: '1px' }}></div>
+          </div>
+        </>
+      ) : (
+        <EphemeralGreeting onSelectThread={handleThreadSelect} />
+      )}
       <Sidebar
         userId={userId}
         runId={runId}

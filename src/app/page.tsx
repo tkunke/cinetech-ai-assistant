@@ -39,7 +39,7 @@ const HomePage: React.FC = () => {
           <p>Share and edit content in real-time, ensuring seamless collaboration across your projects.</p>
         </div>
         <div className={styles.feature}>
-          <Image src="/dataset_image.png" alt="Industry Dataset" width={100} height={100} />
+          <Image src="/dataset_image2.png" alt="Industry Dataset" width={100} height={100} />
           <h3>Curated Industry-Specific Dataset</h3>
           <p>Utilize a tailored dataset that enhances every facet of the filmmaking process.</p>
         </div>

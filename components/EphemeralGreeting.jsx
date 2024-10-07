@@ -13,6 +13,7 @@ export default function EphemeralGreeting({ onSelectThread, onStartUsingApp }) {
   const { data: session } = useSession();
   const { threads, fetchThreads } = useThreads();
   const { appUsed, handleStartUsingApp } = useUser();
+  const [sessionChecked, setSessionChecked] = useState(false);
 
   const userFirstName = session?.user?.first_name || 'User';
   const [screenWidth, setScreenWidth] = useState(window.innerWidth);
