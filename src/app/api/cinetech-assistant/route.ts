@@ -188,7 +188,8 @@ async function handleRunStatusEvent(event: { status: string, threadId: string, r
               console.log('File store content:', storedFile); // Log file store content
               if (storedFile) {
                 const { filePath, fileType } = storedFile;
-                console.log(`Processing image recognition for file: ${filePath}, type: ${fileType}`); // Log file being processed
+                console.log(`Processing image recognition for file: ${filePath}, type: ${fileType}`);
+                console.log(`Invoking imageRecognition with filePath: ${filePath} and userMessage: ${args.content}`);
                 const imageRecognitionResponse = await imageRecognition(filePath, args.content);
                 output = imageRecognitionResponse ?? undefined;
                 fs.unlinkSync(filePath);

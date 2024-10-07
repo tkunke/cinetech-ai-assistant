@@ -495,26 +495,12 @@ export default function CinetechAssistant({
   );
 
   useEffect(() => {
-    const handleBeforeUnload = async () => {
+    const handleBeforeUnload = (event) => {
       if (runId && threadId) {
-        try {
-          await fetch('/api/cancelRun', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ runId, threadId }),
-          });
-          console.log('Run canceled');
-        } catch (error) {
-          console.error('Failed to cancel the run:', error);
-        }
+        const payload = JSON.stringify({ runId, threadId });
+        navigator.sendBeacon('/api/cancelRun', payload);
+        console.log('Run cancel request sent');
       }
-      setMessages((prevMessages) => {
-        const nonFailedMessages = prevMessages.filter((msg) => msg.status !== 'failed');
-        sessionStorage.setItem('chatMessages', JSON.stringify(nonFailedMessages)); // Sync the session storage
-        return nonFailedMessages;
-      });
     };
   
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -522,7 +508,7 @@ export default function CinetechAssistant({
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [runId, threadId]);
+  }, [runId, threadId]);  
 
   useEffect(() => {
     console.log('showLoadingGif state changed:', showLoadingGif);
