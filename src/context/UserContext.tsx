@@ -97,6 +97,17 @@ export const UserProvider: React.FC<UserProviderProps> = ({ children }) => {
     }
   }, [userId]);
 
+  useEffect(() => {
+    const threadsShown = sessionStorage.getItem('threadsShown');
+    if (threadsShown === 'true') {
+      setAppUsed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log('UserContext, app used:', appUsed);
+  }, [appUsed]);
+
   const value = {
     invitations,
     fetchInvitations: () => {

@@ -518,6 +518,10 @@ export default function CinetechAssistant({
     console.log('Messages:', messages);
   }, [messages]);
 
+  useEffect(() => {
+    console.log('Is app used:', appUsed);
+  }, [appUsed]);
+
   return (
     <div className="flex flex-col h-full justify-between">
       {appUsed ? (
