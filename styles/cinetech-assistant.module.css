@@ -46,6 +46,13 @@
     text-align: center;
     width: calc(100% - 20rem);
   }
+
+  .loadMoreButton {
+    background-color: gray;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+  }
   
   @media (max-width: 768px) {
     .greetingOverlay {

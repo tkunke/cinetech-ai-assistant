@@ -11,7 +11,15 @@ import { upload } from '@vercel/blob/client';
 import { useLibrary } from '@/context/LibraryContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
 
-function CinetechAssistantMessage({ message, status, handleRetry, selectedMessages = [], setSelectedMessages, assistantName, runCompleted }) {
+function CinetechAssistantMessage({ 
+  message, 
+  status, 
+  handleRetry, 
+  selectedMessages = [], 
+  setSelectedMessages, 
+  assistantName, 
+  runCompleted,
+}) {
   const tableRef = useRef(null);
   const buttonRef = useRef(null);
   const [showTips, setShowTips] = useState(false);

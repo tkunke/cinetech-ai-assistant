@@ -42,6 +42,9 @@ export default function CinetechAssistant({
   const [showLoadingGif, setShowLoadingGif] = useState(false);
   const [runId, setRunId] = useState(null);
   const [readerDone, setReaderDone] = useState(false);
+  const [earliestMessageId, setEarliestMessageId] = useState(null);
+  const [showLoadMoreButton, setShowLoadMoreButton] = useState(false);
+
 
   const { saveThread } = useThreads();
 
@@ -128,9 +131,59 @@ export default function CinetechAssistant({
     }
   }, [messages]);  
 
-  const handleThreadSelect = (threadId) => {
-    setThreadId(threadId);
-    fetchMessages(threadId);
+  const handleThreadSelect = async (selectedThreadId) => {
+    setShowLoadMoreButton(false);
+    setThreadId(selectedThreadId);
+    
+    const response = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
+      threadId: selectedThreadId,
+    }));
+    
+    const data = await response.json();
+    setMessages(data.messages);
+    if (data.messages.length > 0) {
+      setEarliestMessageId(data.messages[0].id);
+    }
+  
+    console.log('Messages updated:', data.messages);
+    updateLoadMoreButtonVisibility();
+  };
+
+  const updateLoadMoreButtonVisibility = () => {
+    console.log('Updating load more button visibility. Current message count:', messages.length);
+    if (messages.length >= 100) {
+      setShowLoadMoreButton(true);
+    } else {
+      setShowLoadMoreButton(false);
+    }
+  };
+  
+  const loadMoreMessages = async () => {
+    if (earliestMessageId) {
+        console.log('Fetching messages with afterMessageId:', earliestMessageId);
+
+        const response = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
+            threadId: threadId,
+            afterMessageId: earliestMessageId, // Use 'afterMessageId' to fetch messages after the earliest message
+        }));
+
+        const data = await response.json();
+        console.log('Fetched messages:', data.messages);
+
+        setMessages((prevMessages) => {
+            const existingMessageIds = new Set(prevMessages.map(msg => msg.id));
+            const newMessages = data.messages.filter(msg => !existingMessageIds.has(msg.id));
+            return [...newMessages, ...prevMessages]; // Prepend new messages to the existing ones
+        });
+
+        // Update earliestMessageId to the last message of the newly fetched messages
+        if (data.messages.length > 0) {
+            setEarliestMessageId(data.messages[data.messages.length - 1].id); // Update to the last message in the new set
+        } else {
+            // Hide the button if no new messages are retrieved
+            setShowLoadMoreButton(false);
+        }
+    }
   };
 
   const scrollToBottom = useCallback((smooth = true) => {
@@ -430,7 +483,7 @@ export default function CinetechAssistant({
       setIsLoading(false);
       setShowLoadingGif(false);
     }
-  }  
+  }    
 
   useEffect(() => {
     if (readerDone && runId) {
@@ -469,6 +522,10 @@ export default function CinetechAssistant({
         return () => clearInterval(pollInterval);
     }
   }, [readerDone, runId, threadId]);
+  
+  useEffect(() => {
+    updateLoadMoreButtonVisibility();
+  }, [messages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -519,6 +576,15 @@ export default function CinetechAssistant({
   }, [messages]);
 
   useEffect(() => {
+    console.log('Earliest message ID:', earliestMessageId);
+    console.log('Load more button rendered:', showLoadMoreButton);
+  }, [earliestMessageId]);
+
+  useEffect(() => {
+    console.log('Show load more?', showLoadMoreButton);
+  }, [updateLoadMoreButtonVisibility]);
+
+  useEffect(() => {
     console.log('Is app used:', appUsed);
   }, [appUsed]);
 
@@ -527,6 +593,15 @@ export default function CinetechAssistant({
       {appUsed ? (
         <>
           <div className="flex flex-col mb-10 items-center justify-center">
+            {/* Conditional rendering for Load More Messages button */}
+            {showLoadMoreButton && (
+              <>
+              {console.log('Rendering Load More Messages button')}
+              <button onClick={loadMoreMessages} className="loadMoreButton">
+                Load More Messages
+              </button>
+              </>
+            )}
             {messages.map((message) => (
               <CinetechAssistantMessage
                 key={message.id}

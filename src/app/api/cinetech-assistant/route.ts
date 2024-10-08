@@ -17,6 +17,14 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL, // Use the Supabase connection string here
 });
 
+interface Message {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string; // or Date
+  metadata?: Record<string, any>;
+}
+
 // Define the RunStatus type
 interface RunStatus {
   status: string;
@@ -497,8 +505,11 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const threadId = searchParams.get('threadId');
-  const runId = searchParams.get('runId');  // Get runId from the request
+  const runId = searchParams.get('runId');
   const type = searchParams.get('type');
+  const afterMessageId = searchParams.get('afterMessageId'); // Changed from earliestMessageId
+
+  console.log('Received request to fetch messages. threadId:', threadId, 'afterMessageId:', afterMessageId);
 
   if (type === 'engineInfo') {
     const imageUrl = searchParams.get('imageUrl');
@@ -517,40 +528,56 @@ export async function GET(request: NextRequest) {
   }
 
   const openai = new OpenAI();
+  let allMessages: Message[] = []; // Explicitly typed
+  let after: string | undefined = afterMessageId || undefined; // Ensure after is either a string or undefined
 
   try {
     // First, retrieve the run status directly from OpenAI
     let runStatus;
     if (runId) {
       runStatus = await openai.beta.threads.runs.retrieve(threadId, runId);
-      //console.log('Retrieved run status directly from OpenAI:', runStatus);
     }
 
-    const threadMessages = await openai.beta.threads.messages.list(threadId, {
-      limit: 100,
-    });
+    // Loop to accumulate messages
+    while (true) {
+      const threadMessages = await openai.beta.threads.messages.list(threadId, {
+        limit: 100,
+        after: after, // Use after to paginate through messages
+      });
 
-    const cleanMessages = threadMessages.data.map((m) => {
-      let content = '';
-      if (m.content && Array.isArray(m.content) && m.content.length > 0) {
-        const messageContent = m.content[0] as MessageContent;
-        if (messageContent.type === 'text') {
-          content = messageContent.text.value;
-        } else if (messageContent.type === 'image_file' || messageContent.type === 'image_url') {
-          content = messageContent.image.url;
-        }
+      console.log('Fetched messages from OpenAI:', threadMessages.data.length);
+
+      if (!threadMessages.data.length) {
+        break; // Exit if no more messages are available
       }
 
-      return {
-        id: m.id,
-        role: m.role,
-        content: content,
-        createdAt: m.created_at,
-        metadata: m.metadata || {},
-      };
-    });
+      // Cast the OpenAI messages to your Message type
+      const cleanMessages: Message[] = threadMessages.data.map((m: any) => {
+        let content = '';
+        if (m.content && Array.isArray(m.content) && m.content.length > 0) {
+          const messageContent = m.content[0] as MessageContent;
+          if (messageContent.type === 'text') {
+            content = messageContent.text.value;
+          } else if (messageContent.type === 'image_file' || messageContent.type === 'image_url') {
+            content = messageContent.image.url;
+          }
+        }
 
-    cleanMessages.reverse();
+        return {
+          id: m.id,
+          role: m.role,
+          content: content,
+          createdAt: m.created_at, // Make sure this matches your Message interface
+          metadata: m.metadata || {},
+        };
+      });
+
+      allMessages = allMessages.concat(cleanMessages); // Collect all messages
+      after = threadMessages.data[threadMessages.data.length - 1].id; // Update after for next iteration
+    }
+
+    // Reverse allMessages to maintain chronological order
+    allMessages.reverse();
 
     if (runStatus && (runStatus.status === 'completed' || runStatus.status === 'failed')) {
       const tokenUsage = {
@@ -561,22 +588,23 @@ export async function GET(request: NextRequest) {
 
       console.log('Message usage:', tokenUsage);
       return NextResponse.json({
-        messages: cleanMessages,
-        messageCount: cleanMessages.length,
+        messages: allMessages, // Return all messages
+        messageCount: allMessages.length,
         runStatus: runStatus,
         tokenUsage: tokenUsage,
+        after: allMessages.length > 0 ? allMessages[allMessages.length - 1].id : null,
       });
     }
 
-    //console.log('server message count:', cleanMessages.length);
-
     return NextResponse.json({
-      messages: cleanMessages,
-      messageCount: cleanMessages.length,
-      runStatus: runStatus || runStatusStore[threadId],  // Use retrieved status or fallback to store
+      messages: allMessages, // Return all messages
+      messageCount: allMessages.length,
+      runStatus: runStatus || runStatusStore[threadId],
+      after: allMessages.length > 0 ? allMessages[allMessages.length - 1].id : null,
     });
   } catch (error) {
     console.error('Error fetching messages and run status:', error);
     throw new Error('Failed to fetch messages and run status');
   }
 }
+
