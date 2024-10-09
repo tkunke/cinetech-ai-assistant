@@ -4,6 +4,7 @@ import remarkGfm from 'remark-gfm';
 import ReactDOM from 'react-dom';
 import { FaEnvelope, FaFilePdf, FaFileImage } from 'react-icons/fa';
 import { useLibrary } from '@/context/LibraryContext';
+import { useThreads } from '@/context/ThreadsContext';
 import { useSession } from 'next-auth/react';
 import styles from '@/styles/MessagePopup.module.css';
 import { generatePdfFromMarkdown } from '@/utils/pdfUtils';
@@ -18,17 +19,18 @@ const MessagePopup = ({
   onClose,
   threadId,
   onLoadThread,
-  messageUrl = null,    // Default to null when not passed
-  isImagePopup = false, // Default to false when not passed
-  imageUrl = null,      // Default to null when not passed
-  contentId = null,     // Default to null when not passed
-  workspaceId = null,   // Default to null when not passed
-  type = 'message',     // Default to 'message'
+  messageUrl = null,
+  isImagePopup = false,
+  imageUrl = null,
+  contentId = null,
+  workspaceId = null,
+  type = 'message',
 }) => {
   const { data: session } = useSession();
   const userId = session?.user?.id;
   const { removeImage, removeMessage } = useLibrary();
   const [showConfirmationPopup, setShowConfirmationPopup] = useState(false);
+  const { deleteThread } = useThreads();
   
   // Custom renderers for tables, images, etc.
   const renderers = {
@@ -165,6 +167,19 @@ const MessagePopup = ({
     checkTagsBeforeDelete();
   };
 
+  const handleDeleteThread = async () => {
+    if (threadId) {
+      console.log(`Attempting to delete thread with ID: ${threadId}`);
+      try {
+        await deleteThread(threadId);
+        console.log(`Thread with ID: ${threadId} deleted successfully`);
+        onClose();
+      } catch (error) {
+        console.error('Failed to delete thread:', error);
+      }
+    }
+  };
+
   useEffect(() => {
     console.log('UserId:', userId);
     console.log('WorkspaceId:', workspaceId);
@@ -227,15 +242,25 @@ const MessagePopup = ({
         )}
         {/* Conditionally render "Load Thread" button if threadId is provided */}
         {threadId && onLoadThread && (
-          <button
-            className={styles.loadThreadButton}
-            onClick={() => {
-              onLoadThread(threadId);  // Call the function to load the thread
-              onClose();  // Close the popup
-            }}
-          >
-            Load Conversation
-          </button>
+          <>
+            <button
+              className={styles.loadThreadButton}
+              onClick={() => {
+                onLoadThread(threadId);
+                onClose();
+              }}
+            >
+              Load Conversation
+            </button>
+            <button
+              className={styles.deleteThreadButton}
+              onClick={() => {
+                handleDeleteThread(threadId);
+              }}
+            >
+              Delete Thread
+            </button>
+          </>
         )}
         
         {showConfirmationPopup && (

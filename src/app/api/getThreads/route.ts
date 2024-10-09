@@ -67,3 +67,35 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     client.release();
   }
 }
+
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
+  const client = await pool.connect();
+  const { threadId } = await request.json();
+
+  if (!threadId) {
+    console.error("Error: Thread ID is required");
+    return NextResponse.json({ error: 'Thread ID is required' }, { status: 400 });
+  }
+
+  try {
+    console.log(`Received request to delete thread with ID: ${threadId}`);
+    const result = await client.query(`
+      DELETE FROM user_threads
+      WHERE thread_id = $1`,
+      [threadId]
+    );
+
+    if (result.rowCount === 0) {
+      console.warn(`Warning: No thread found with ID: ${threadId}`); // Log warning if no thread was deleted
+      return NextResponse.json({ error: 'No thread found with the specified ID' }, { status: 404 });
+    }
+
+    console.log(`Successfully deleted thread with ID: ${threadId}`);
+    return NextResponse.json({ message: 'Thread deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting thread:', error);
+    return NextResponse.json({ error: 'Failed to delete thread' }, { status: 500 });
+  } finally {
+    client.release();
+  }
+}

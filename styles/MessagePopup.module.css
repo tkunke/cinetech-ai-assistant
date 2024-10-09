@@ -102,6 +102,21 @@
     border-radius: 50%;
     font-size: 1.5rem;
   }
+
+  .deleteThreadButton {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    color: white !important;
+    font-size: 0.75rem;
+    font-weight: bold;
+    width: auto;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    background-color: red;
+  }
   
   /* Show the icons when hovering over a message */
   .nestedList li:hover .tagIcon,

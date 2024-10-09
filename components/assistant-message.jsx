@@ -371,7 +371,7 @@ function CinetechAssistantMessage({
       {/* Conditionally render based on status */}
       {status === 'failed' && (
           <div>
-            <p className={styles.failedMessage}>I had trouble generating a response for this. Please try again.
+            <p className={styles.failedMessage}>Sorry, I had trouble generating a response for this. Please try again.
               <button
                 onClick={() => handleRetry(message.id)} className={styles.retryButton}>
                 Retry

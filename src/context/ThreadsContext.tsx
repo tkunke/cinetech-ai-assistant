@@ -19,6 +19,7 @@ interface ThreadsContextType {
   saveThreadOnClose: (userId: string, threadId: string, title: string) => void;
   addThread: (thread: Thread) => void;
   updateThread: (userId: string, threadId: string) => Promise<void>;
+  deleteThread: (threadId: string) => Promise<void>;
 }
 
 const ThreadsContext = createContext<ThreadsContextType | undefined>(undefined);
@@ -62,10 +63,10 @@ export const ThreadsProvider: React.FC<ThreadsProviderProps> = ({ children }) =>
         {
           id: threadId,
           title,
-          last_active: new Date().toISOString(), // Or any default value
-          keywords: [], // Default empty array
-          topics: [],   // Default empty array
-          summary: '',  // Default empty string
+          last_active: new Date().toISOString(),
+          keywords: [],
+          topics: [],
+          summary: '',
         },
       ]);
     } catch (error) {
@@ -127,8 +128,35 @@ export const ThreadsProvider: React.FC<ThreadsProviderProps> = ({ children }) =>
     }
   }, []);
 
+  const deleteThread = useCallback(async (threadId: string) => {
+    console.log(`Initiating deletion for thread ID: ${threadId}`);
+    try {
+      const response = await fetch(`/api/getThreads`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ threadId }), // Send the threadId to delete
+      });
+  
+      if (!response.ok) {
+        const errorResult = await response.json();
+        console.error(`Failed to delete thread: ${errorResult.error || 'Unknown error'}`);
+        throw new Error(errorResult.error || 'Failed to delete thread');
+      }
+  
+      // Update the state to remove the deleted thread
+      setThreads((prevThreads) => {
+        const updatedThreads = prevThreads.filter(thread => thread.id !== threadId);
+        console.log(`Updated threads after deletion:`, updatedThreads); // Log updated threads list
+        return updatedThreads;
+      });
+      console.log(`Thread with ID: ${threadId} deleted successfully`);
+    } catch (error) {
+      console.error('Error deleting thread:', error);
+    }
+  }, []);  
+
   return (
-    <ThreadsContext.Provider value={{ threads, fetchThreads, saveThread, saveThreadOnClose, addThread, updateThread }}>
+    <ThreadsContext.Provider value={{ threads, fetchThreads, saveThread, saveThreadOnClose, addThread, updateThread, deleteThread }}>
       {children}
     </ThreadsContext.Provider>
   );

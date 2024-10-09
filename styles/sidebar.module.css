@@ -147,11 +147,20 @@
   margin-bottom: 10px;
 }
 
+.boldText {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
 .threadTimestamp {
   font-size: 0.85rem;
   font-weight: 600;
   color: white;
   text-align: left;
+}
+
+.boldTimestamp {
+  font-weight: 900;
 }
 
 .textLine {

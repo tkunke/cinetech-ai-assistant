@@ -113,34 +113,72 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
   }, [userId, fetchThreads]);
 
   const formatTimestamp = (timestamp: string): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-  
+    // Create a Date object from the UTC timestamp
+    const utcDate = new Date(timestamp);
+    
     // Check if the date is valid
-    if (isNaN(date.getTime())) {
+    if (isNaN(utcDate.getTime())) {
       return 'Invalid date'; // Handle invalid date
     }
   
-    // Get the difference in time (in milliseconds)
-    const diffInTime = now.getTime() - date.getTime();
+    // Convert the UTC date to local time
+    const localDate = new Date(utcDate.getTime() + utcDate.getTimezoneOffset() * 60000);
   
-    // Calculate the difference in days, rounding up to avoid negative days
-    const diffInDays = Math.ceil(diffInTime / (1000 * 60 * 60 * 24));
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
   
-    if (diffInDays === 0) {
+    // Compare the local date with the start of today and yesterday
+    if (localDate >= startOfToday) {
       return 'Today';
-    } else if (diffInDays === 1) {
+    } else if (localDate >= startOfYesterday && localDate < startOfToday) {
       return 'Yesterday';
-    } else if (diffInDays <= 5) {
-      return `${diffInDays} days ago`;
     } else {
-      return date.toLocaleDateString('en-US', {
+      return localDate.toLocaleDateString('en-US', {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
       });
     }
-  };    
+  };
+  
+  const groupThreadsByDate = (threads: Thread[]): { [key: string]: Thread[] } => {
+    const groupedThreads: { [key: string]: Thread[] } = {};
+  
+    // Sort threads by last_active date before grouping
+    const sortedThreads = threads.sort((a, b) => new Date(b.last_active).getTime() - new Date(a.last_active).getTime());
+  
+    sortedThreads.forEach((thread) => {
+      const lastActiveDate = new Date(thread.last_active);
+      const now = new Date();
+      const diffInTime = now.getTime() - lastActiveDate.getTime();
+      const diffInDays = Math.ceil(diffInTime / (1000 * 60 * 60 * 24));
+  
+      let key;
+      if (diffInDays === 0) {
+        key = 'Today';
+      } else if (diffInDays === 1) {
+        key = 'Yesterday';
+      } else if (diffInDays <= 5) {
+        key = `${diffInDays} days ago`;
+      } else {
+        key = lastActiveDate.toLocaleDateString('en-US', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        });
+      }
+  
+      if (!groupedThreads[key]) {
+        groupedThreads[key] = [];
+      }
+      groupedThreads[key].push(thread);
+    });
+  
+    return groupedThreads;
+  };
+  
+  const groupedThreads = groupThreadsByDate(threads);
   
   return (
     <>
@@ -180,43 +218,46 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
           <div className={styles.threadListSection}>
             <h3 className={styles.sectionTitle}>Conversations</h3>
             <ul className={styles.threadList}>
-            {threads.map((thread: Thread) => {
-              const sortedKeywords = (thread.keywords as unknown as KeywordType[])
-                .sort((a: KeywordType, b: KeywordType) => parseFloat(b.weight) - parseFloat(a.weight))
-                .slice(0, 3) // Top 3 keywords
-                .map((keywordObj: KeywordType) => keywordObj.keyword); // Extract the keyword field
-                        
-              const sortedTopics = (thread.topics as unknown as TopicType[])
-                .sort((a: TopicType, b: TopicType) => parseFloat(b.weight) - parseFloat(a.weight))
-                .slice(0, 3) // Top 3 topics
-                .map((topicObj: TopicType) => topicObj.topic); // Extract the topic field
-
-              const hasSynopsis = thread.summary && thread.keywords && thread.topics;
-
-              const displayText = hasSynopsis ? (
-                <>
-                  <div>
-                    <strong>Topics covered:</strong> {sortedTopics.join(', ')}
-                  </div>
-                  <div>
-                    <strong>Keywords:</strong> {sortedKeywords.join(', ')}
-                  </div>
-                </>
-              ) : (
-                <div>{thread.title || 'No synopsis available yet'}</div>
-              );
-                        
-              return (
-                <li key={thread.id} className={styles.threadListItem}>
-                  <div className={styles.threadTimestamp}>
-                    {formatTimestamp(thread.last_active)} {/* This renders the formatted date */}
-                  </div>
-                  <button className={styles.textLine} onClick={() => handleThreadClick(thread)}>
-                    {displayText}
-                  </button>
-                </li>
-              );
-            })}
+              {Object.keys(groupedThreads).map((key) => (
+                <div key={key}>
+                  {/* Render the group heading only once */}
+                  <span className={styles.boldTimestamp}>{key}</span>
+                  {groupedThreads[key].map((thread: Thread) => {
+                    // Sort and prepare keywords and topics
+                    const sortedKeywords = (thread.keywords as unknown as KeywordType[])
+                      .sort((a: KeywordType, b: KeywordType) => parseFloat(b.weight) - parseFloat(a.weight))
+                      .slice(0, 3) // Top 3 keywords
+                      .map((keywordObj: KeywordType) => keywordObj.keyword);
+                  
+                    const sortedTopics = (thread.topics as unknown as TopicType[])
+                      .sort((a: TopicType, b: TopicType) => parseFloat(b.weight) - parseFloat(a.weight))
+                      .slice(0, 3) // Top 3 topics
+                      .map((topicObj: TopicType) => topicObj.topic);
+                  
+                    const hasSynopsis = thread.summary && thread.keywords && thread.topics;
+                  
+                    return (
+                      <li key={thread.id} className={styles.threadListItem}>
+                        {/* Remove individual thread timestamp to avoid duplication */}
+                        <button className={styles.textLine} onClick={() => handleThreadClick(thread)}>
+                          {hasSynopsis ? (
+                            <>
+                              <div>
+                                <strong className={styles.boldText}>Topics covered:</strong> {sortedTopics.join(', ')}
+                              </div>
+                              <div>
+                                <strong className={styles.boldText}>Keywords:</strong> {sortedKeywords.join(', ')}
+                              </div>
+                            </>
+                          ) : (
+                            <div>{thread.title || 'No synopsis available yet'}</div>
+                          )}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </div>
+              ))}
             </ul>
           </div>
         </div>
