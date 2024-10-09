@@ -246,7 +246,7 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
                                 <strong className={styles.boldText}>Topics covered:</strong> {sortedTopics.join(', ')}
                               </div>
                               <div>
-                                <strong className={styles.boldText}>Keywords:</strong> {sortedKeywords.join(', ')}
+                                <strong className={styles.boldTextKeywords}>Keywords:</strong> {sortedKeywords.join(', ')}
                               </div>
                             </>
                           ) : (

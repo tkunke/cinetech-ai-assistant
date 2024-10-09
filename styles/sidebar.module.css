@@ -68,13 +68,14 @@
   padding: 0 0.25rem;
   font-size: 0.9rem;
   font-weight: bold;
-  color: white; /* White for better contrast against the background */
-  background-color: rgb(30, 150, 230); /* A vibrant blue to draw attention */
+  color: lime; /* White for better contrast against the background */
+  /*background-color: rgb(30, 150, 230); /* A vibrant blue to draw attention */
+  border: 1px solid white;
   border-radius: 4px;
   align-items: center;
   justify-content: center;
   width: auto;
-  box-shadow: 0 0 8px rgba(30, 150, 230, 0.7); /* Subtle glow effect */
+  box-shadow: 0 0 8px white; /* Subtle glow effect */
 }
 
 /* Middle section styles */
@@ -150,6 +151,13 @@
 .boldText {
   font-weight: 800;
   font-size: 1rem;
+  color: yellow;
+}
+
+.boldTextKeywords {
+  font-weight: 800;
+  font-size: 1rem;
+  color: limegreen;
 }
 
 .threadTimestamp {
