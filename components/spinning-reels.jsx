@@ -19,11 +19,11 @@ const SpinningReels = () => {
   };
 
   return (
-    <div style={spinnerStyle}>
-      <div style={spinnerIconStyle}>
+    <div className={styles.spinner}>
+      <div className={styles.spinnerIcon}>
       <img src="/spinning_reels2.gif" alt="Loading..." style={{ width: '100%', height: 'auto' }} />
       </div>
-      <p style={spinnerTextStyle}>hang tight...</p>
+      <p className={styles.spinnerText}>hang tight...</p>
     </div>
   );
 };
