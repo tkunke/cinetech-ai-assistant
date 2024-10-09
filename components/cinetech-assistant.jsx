@@ -134,6 +134,7 @@ export default function CinetechAssistant({
   const handleThreadSelect = async (selectedThreadId) => {
     setShowLoadMoreButton(false);
     setThreadId(selectedThreadId);
+    setRunCompleted(true);
     
     const response = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
       threadId: selectedThreadId,

@@ -28,6 +28,7 @@ function CinetechAssistantMessage({
   const userName = session?.user?.name ? session.user.name : 'User';
   const { addImage, addMessage } = useLibrary();
   const { activeWorkspaceId } = useWorkspace();
+  const isHighlighted = selectedMessages.some(m => m.id === message.id);
 
   if (!message) return null;
   if (!message.role) return null;
@@ -247,12 +248,14 @@ function CinetechAssistantMessage({
     }
   };                        
 
-  const handleMessageSelect = (message) => {
-    setSelectedMessages((prevSelectedMessages) =>
-      prevSelectedMessages.some(m => m.id === message.id)
-        ? prevSelectedMessages.filter(m => m.id !== message.id)
-        : [...prevSelectedMessages, message]
-    );
+  const handleMessageSelect = () => {
+    setSelectedMessages(prevSelectedMessages => {
+      if (prevSelectedMessages.some(m => m.id === message.id)) {
+        return prevSelectedMessages.filter(m => m.id !== message.id);
+      } else {
+        return [...prevSelectedMessages, message];
+      }
+    });
   };
 
   const generateTimestamp = () => {
@@ -328,25 +331,32 @@ function CinetechAssistantMessage({
       id={`message-${message.id}`}
       className={`${styles.messageContainer} ${
         message.role === 'user' ? styles.selfStart : isImageMessage ? styles.selfCenter : styles.selfStart
-      } text-gray-700 text-left px-4 py-2 m-2 bg-opacity-100`}
+      } text-gray-700 text-left px-4 py-2 m-2 bg-opacity-100 ${isHighlighted ? styles.highlighted : ''}`}
     >
       <div className="flex flex-col items-start relative">
         <div className="text-4xl" style={{ userSelect: 'text' }}>{displayRole(message.role)}</div>
         {message.role === 'assistant' && message.id !== 'initial_greeting' && (
           <div className={styles.messageSidebar}>
             {(isBreakdownMessage || isImageMessage) && (
-              <div className={styles.iconButton} onClick={() => handleMessageSelect(message)} title="Select Message">
-                <FaCheckCircle style={{ color: selectedMessages.some(m => m.id === message.id) ? 'red' : 'gray' }} />
-              </div>
+              <button
+                className={styles.selectButton}
+                onClick={() => handleMessageSelect(message)}
+                title={isHighlighted ? 'Deselect Message' : 'Select Message'} // Update title dynamically if needed
+              >
+                {isHighlighted ? 'Deselect Message' : 'Select Message'}  {/* Place conditional rendering here */}
+              </button>                                                     
             )}
             {runCompleted && !hasImages(message.content) && (
-              <div className={styles.iconButton} onClick={() => handleSaveMessage(message.content)} title="Save Message">
-                <FaNewspaper />
-              </div>
+              <button 
+                className={styles.selectButton}
+                onClick={() => handleSaveMessage(message.content)}
+                title="Save Message"
+              >
+                Save Message
+              </button>
             )}
           </div>
         )}
-
       </div>
       {/* Conditional rendering for content */}
       {typeof message.content === 'string' ? (

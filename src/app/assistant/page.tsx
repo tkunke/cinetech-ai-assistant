@@ -193,7 +193,7 @@ function Home() {
               {isCreativeToolsExpanded && (
                 <ul className={`${styles.creativeToolsDropdown} creativeToolsDropdown`}>
                   <li onClick={handleGeneratePdfClick} className={styles.creativeToolsButton}>
-                    Generate Shot Sheet
+                    Generate Shot Panels
                   </li>
                 </ul>
               )}

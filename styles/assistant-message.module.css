@@ -13,7 +13,8 @@
   margin: 0.5rem; /* Add margin for better spacing on small screens */
   word-wrap: break-word; /* Ensure long words break to fit small screens */
   padding-bottom: 2rem;
-  padding-left: 2rem;
+  padding-left: 2.5rem;
+  padding-right: 2.5rem;
   max-width: 60rem;
   width: 90%;
   box-sizing: border-box;
@@ -193,6 +194,34 @@
   color: black;
 }
 
+.selectButton {
+  display: inline-block !important;
+  background-color: transparent !important;
+  color: gray !important;
+  max-width: 10rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border: 1px solid gray !important;
+  border-radius: 0.5rem !important;
+  cursor: pointer;
+  padding: 0px;
+  margin-right: 0.5rem !important;
+}
+
+.selectButton:last-child {
+  margin-right: 0;
+}
+
+.selectButton:hover {
+  background-color: dodgerblue !important;
+  color: white !important;
+}
+
+.highlighted {
+  border: 2px solid dodgerblue; /* Or any color you prefer */
+  border-radius: 0.5rem; /* Optional for rounded corners */
+}
+
 .relative-container {
   position: relative;
   display: inline-block;
@@ -200,11 +229,11 @@
 
 /* Styles for Message Sidebar */
 .messageSidebar {
-  display: flex;
-  gap: 10px;
-  background: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
-  border-radius: 5px;
+  text-align: left;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.8);
   margin-bottom: 5px;
+  padding: 5px;
 }
 
 .download-button {
