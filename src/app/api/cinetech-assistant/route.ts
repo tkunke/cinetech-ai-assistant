@@ -252,7 +252,7 @@ async function handleRunStatusEvent(event: { status: string, threadId: string, r
   }
 }
 
-async function postTokenCost(runId: string, usage: RunUsage, imageGenerated: boolean) {
+async function postTokenCost(runId: string, usage: RunUsage, imageGenerated: boolean, assistantId: string) {
   const client = await pool.connect();
   const total_tokens = usage.prompt_tokens + usage.completion_tokens;
   const prompt_tokens_cost = (usage.prompt_tokens / 1000) * 0.005;
@@ -265,29 +265,69 @@ async function postTokenCost(runId: string, usage: RunUsage, imageGenerated: boo
   }
 
   try {
-    const query = `
-      INSERT INTO token_usage (run_id, total_tokens, total_credits, prompt_tokens_cost, completion_tokens_cost, total_cost)
-      VALUES ($1, $2, $3, $4, $5, $6)
+    console.log(`Starting transaction for runId: ${runId} and assistantId: ${assistantId}`);
+    console.log(`Total tokens: ${total_tokens}, Total cost: ${total_cost}, Total credits: ${total_credits}`);
+    // Start a transaction to handle multiple table updates atomically
+    await client.query('BEGIN');
+
+    // Fetch the user's credits based on the assistant_id
+    console.log(`Fetching credits for assistant_id: ${assistantId}`);
+    const creditsQuery = `
+      SELECT credits FROM users WHERE assistant_ids->>'openai' = $1 OR assistant_ids->>'anthropic' = $1
+    `;
+    const result = await client.query(creditsQuery, [assistantId]);
+
+    if (result.rows.length === 0) {
+      console.error(`No user found with assistant_id: ${assistantId}`);
+      throw new Error(`No user found with assistant_id: ${assistantId}`);
+    }
+
+    const currentCredits = result.rows[0].credits;
+    console.log(`Current credits for assistant_id ${assistantId}: ${currentCredits}`);
+
+    // Calculate the new credits balance
+    const newCreditsBalance = currentCredits - total_credits;
+    console.log(`New credits balance for assistant_id ${assistantId}: ${newCreditsBalance}`);
+
+    // Update the users table with the new credits balance
+    const updateCreditsQuery = `UPDATE users SET credits = $1 WHERE assistant_ids->>'openai' = $2 OR assistant_ids->>'anthropic' = $2`;
+    await client.query(updateCreditsQuery, [newCreditsBalance, assistantId]);
+
+    console.log(`Credits updated successfully for assistant_id: ${assistantId}`);
+
+    // Update the token_usage table with the assistant_id and other usage details
+    const tokenUsageQuery = `
+      INSERT INTO token_usage (run_id, total_tokens, total_credits, prompt_tokens_cost, completion_tokens_cost, total_cost, assistant_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       ON CONFLICT (run_id) DO UPDATE SET 
       total_tokens = EXCLUDED.total_tokens,
       total_credits = EXCLUDED.total_credits,
       prompt_tokens_cost = EXCLUDED.prompt_tokens_cost,
       completion_tokens_cost = EXCLUDED.completion_tokens_cost,
-      total_cost = EXCLUDED.total_cost;
+      total_cost = EXCLUDED.total_cost,
+      assistant_id = EXCLUDED.assistant_id;
     `;
+    
+    await client.query(tokenUsageQuery, [runId, total_tokens, total_credits, prompt_tokens_cost, completion_tokens_cost, total_cost, assistantId]);
 
-    await client.query(query, [runId, total_tokens, total_credits, prompt_tokens_cost, completion_tokens_cost, total_cost]);
-    console.log(`Successfully updated token_usage for runId: ${runId}`); // Optional: Log success
+    console.log(`Token usage updated successfully for runId: ${runId} and assistant_id: ${assistantId}`);
 
+    // Commit the transaction
+    await client.query('COMMIT');
+    console.log(`Transaction committed for runId: ${runId} and assistant_id: ${assistantId}`);
+
+    console.log(`Successfully updated token_usage and user credits for assistant_id: ${assistantId}, runId: ${runId}`);
+    
   } catch (error) {
-    console.error("Error: Failed to update token_usage:", error);
+    await client.query('ROLLBACK'); // Rollback the transaction in case of an error
+    console.error("Error: Failed to update token_usage or user credits:", error);
   } finally {
     client.release(); // Ensure the client is always released back to the pool
   }
 }
 
 // Simulate event subscription
-async function simulateEventSubscription(threadId: string, runId: string) {
+async function simulateEventSubscription(threadId: string, runId: string, assistantId: string) {
   const openai = new OpenAI();
   let finalRunStatus: RunStatus | null = null;
 
@@ -323,7 +363,7 @@ async function simulateEventSubscription(threadId: string, runId: string) {
 
       // Call the tokenCalc API to update the token cost
       if (finalRunStatus.usage) {
-        await postTokenCost(runId, finalRunStatus.usage, imageGenerated);
+        await postTokenCost(runId, finalRunStatus.usage, imageGenerated, assistantId);
       }
 
       break;
@@ -483,7 +523,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call the simulateEventSubscription function with the threadId and initialRunId
-    simulateEventSubscription(threadId, initialRunId).then(() => {
+    simulateEventSubscription(threadId, initialRunId, assistantId).then(() => {
       console.log('Event subscription simulation completed.');
     }).catch((error) => {
       console.error('Error during event subscription simulation:', error);

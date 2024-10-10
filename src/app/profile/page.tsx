@@ -2,303 +2,181 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUser } from '@/context/UserContext';
 import { useSession } from 'next-auth/react';
 import styles from '@/styles/profile.module.css';
 
 const UserProfileSettings = () => {
   const { data: session } = useSession();
   const userId = session?.user?.id;
-  const [username, setUsername] = useState('currentUsername');
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [isResetSuccess, setIsResetSuccess] = useState(false);
-  const [preferredName, setPreferredName] = useState('');
-  const [assistantName, setAssistantName] = useState('currentAssistantName');
-  const [status, setStatus] = useState('');
-  const [creditAllotment, setCreditAllotment] = useState(0);
-  const [defaultModel, setDefaultModel] = useState('chatgpt-4o');  // Default value
+  const [assistantName, setAssistantName] = useState('chatgpt-4o'); // Default value
+  const [verbosityLevel, setVerbosityLevel] = useState(2); // Default to Medium
+  const [accountStatus, setAccountStatus] = useState('');
   const [subscriptionType, setSubscriptionType] = useState('');
-  const { cancelMembership } = useUser();
+  const [creditsBalance, setCreditsBalance] = useState(0);
+  const [creditAllotment, setCreditAllotment] = useState(0);
+  const [activePanel, setActivePanel] = useState('profile'); // Default to profile settings
+
   const router = useRouter();
 
-  const [isProfileExpanded, setIsProfileExpanded] = useState(false);
-  const [isAssistantExpanded, setIsAssistantExpanded] = useState(false);
-  const [isAccountExpanded, setIsAccountExpanded] = useState(false);
-  const [isEditingPreferredName, setIsEditingPreferredName] = useState(false);
-  const [isEditingAssistantName, setIsEditingAssistantName] = useState(false);
-  const [verbosityLevel, setVerbosityLevel] = useState(2); // Default to Medium
+  useEffect(() => {
+    // Simulated fetching of user data
+    const fetchProfileData = async () => {
+      if (!userId) return; // Only fetch if userId is defined
 
-
-  const toggleProfileSection = () => {
-    setIsProfileExpanded(!isProfileExpanded);
-  };
-
-  const toggleAssistantSection = () => {
-    setIsAssistantExpanded(!isAssistantExpanded);
-  };
-
-  const toggleAccountSection = () => {
-    setIsAccountExpanded(!isAccountExpanded);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const updatedData = {
-      preferredName,
-      assistantName,
+      const response = await fetch(`/api/getProfileData?userId=${userId}`);
+      const data = await response.json();
+      if (response.ok) {
+        setUsername(data.user.username);
+        setEmail(data.user.email);
+        setAssistantName(data.user.assistantName || 'chatgpt-4o');
+        setAccountStatus(data.user.accountStatus);
+        setSubscriptionType(data.user.planType);
+        setCreditsBalance(data.user.creditsBalance);
+        setCreditAllotment(data.user.creditAllotment);
+      }
     };
 
-    const response = await fetch(`/api/getProfileData?userId=${userId}`, {
-      method: 'PUT',
+    fetchProfileData(); // Fetch when userId is available
+  }, [userId]);
+
+  const handlePasswordReset = async () => {
+    const response = await fetch('/api/resetPassword', {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(updatedData),
+      body: JSON.stringify({ email }),
     });
 
     if (response.ok) {
-      alert('Profile updated successfully.');
+      alert('Password reset email has been sent.');
     } else {
-      const data = await response.json();
-      alert(data.message || 'Failed to update profile.');
+      alert('Failed to send reset email.');
     }
   };
 
-  const handlePasswordReset = async () => {
-    setIsResettingPassword(true); // Show that the process has started
-
+  const fetchCredits = async (userId: string) => {
     try {
-      const response = await fetch('/api/resetPassword', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
+      const response = await fetch(`/api/fetchAndUpdateCredits?userId=${userId}`, {
+        method: 'GET',
       });
-
+      const data = await response.json();
       if (response.ok) {
-        setIsResetSuccess(true); // Mark success
-        alert('Password reset email has been sent.');
+        console.log('Current Credits:', data.currentCredits);
+        return data.currentCredits;
       } else {
-        const data = await response.json();
-        alert(data.message || 'Failed to send reset email.');
+        throw new Error(data.error || 'Failed to fetch credits');
       }
     } catch (error) {
-      console.error('Error sending reset email:', error);
-      alert('An error occurred while sending the reset email.');
-    } finally {
-      setIsResettingPassword(false); // End the reset process
+      console.error('Error fetching credits:', error);
+      return null;
     }
   };
-
-  const handleBackToAssistant = () => {
-    router.push('/assistant');
-  };
-
-  const handleCancelMembership = async () => {
-    if (userId) {
-      try {
-        await cancelMembership(userId);
-        alert('Membership canceled successfully');
-      } catch (error) {
-        console.error('Error canceling membership:', error);
-        alert('There was a problem canceling your membership.');
-      }
-    }
-  };
-
-  const verbosityMap = {
-    1: 'Low',
-    2: 'Medium',
-    3: 'High',
-  };
-
+  
+  // When the user selects "Account Settings"
   useEffect(() => {
-    const fetchProfileData = async () => {
-      try {
-        const response = await fetch(`/api/getProfileData?userId=${userId}`);
-        const data = await response.json();
-        if (response.ok) {
-          setUsername(data.user.username);
-          setEmail(data.user.email);
-          setPreferredName(data.user.preferredName);
-          setAssistantName(data.user.assistantName);
-          setStatus(data.user.status);
-          setCreditAllotment(data.user.creditAllotment);
-          setDefaultModel(data.user.defaultModel || 'chatgpt-4o');
-          setSubscriptionType(data.user.planType);
-        } else {
-          console.error('Failed to fetch profile data:', data.error);
-        }
-      } catch (error) {
-        console.error('Error fetching profile data:', error);
-      }
-    };
-  
-    if (userId) {
-      fetchProfileData();
+    if (activePanel === 'account' && userId) {
+      fetchCredits(userId).then((credits) => {
+        setCreditsBalance(credits);
+      });
     }
-  }, [userId]);  
-  
+  }, [activePanel, userId]);  
+
+  const renderPanel = () => {
+    switch (activePanel) {
+      case 'profile':
+        return (
+          <div className={styles.panel}>
+            <h3>Profile Settings</h3>
+            <div className={styles.infoItem}>
+              <span>Username:</span>
+              <input type="text" value={username} readOnly />
+            </div>
+            <div className={styles.infoItem}>
+              <span>Email:</span>
+              <input type="text" value={email} readOnly />
+            </div>
+            <button className={styles.resetButton} onClick={handlePasswordReset}>
+              Reset Password
+            </button>
+          </div>
+        );
+      case 'assistant':
+        return (
+          <div className={styles.panel}>
+            <h3>Assistant Settings</h3>
+            <div className={styles.infoItem}>
+              <span>Assistant Name:</span>
+              <input
+                type="text"
+                value={assistantName}
+                onChange={(e) => setAssistantName(e.target.value)}
+              />
+            </div>
+            <div className={styles.infoItem}>
+              <span>Default Model:</span>
+              <input type="text" value="chatgpt-4o" readOnly />
+            </div>
+            <div className={styles.infoItem}>
+              <span>Verbosity Level:</span>
+              <input
+                type="range"
+                min="1"
+                max="3"
+                value={verbosityLevel}
+                onChange={(e) => setVerbosityLevel(Number(e.target.value))}
+              />
+              <span>{verbosityLevel === 1 ? 'Low' : verbosityLevel === 2 ? 'Medium' : 'High'}</span>
+            </div>
+          </div>
+        );
+      case 'account':
+        return (
+          <div className={styles.panel}>
+            <h3>Account Settings</h3>
+            <div className={styles.infoItem}>
+              <span>Account Status:</span>
+              <input type="text" value={accountStatus} readOnly />
+            </div>
+            <div className={styles.infoItem}>
+              <span>Subscription Plan:</span>
+              <input type="text" value={subscriptionType} readOnly />
+            </div>
+            <div className={styles.infoItem}>
+              <span>Current Credits Balance:</span>
+              <input type="text" value={creditsBalance} readOnly />
+            </div>
+            <div className={styles.infoItem}>
+              <span>Credit Allotment:</span>
+              <input type="text" value={creditAllotment} readOnly />
+            </div>
+            <button className={styles.cancelMembershipButton} onClick={() => alert('Cancel membership')}>
+              Cancel Membership
+            </button>
+          </div>
+        );
+      case 'notifications':
+        return <div className={styles.panel}><h3>Notifications Settings</h3></div>;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className={styles.pageContainer}>
-      <button onClick={handleBackToAssistant} className={styles.customButton}>
-        Back to Assistant
-      </button>
-
-      {/* Profile Information Panel */}
-      <div className={styles.panelContainer}>
-        <div className={styles.panelHeader} onClick={toggleProfileSection}>
-          <h3 className={styles.sectionTitle}>Profile Information</h3>
-        </div>
-        {isProfileExpanded && (
-          <form className={styles.profileForm} onSubmit={handleSubmit}>
-            <div className={styles.profileSection}>
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>Preferred Name:</label>
-                {isEditingPreferredName ? (
-                  <input
-                    type="text"
-                    className={styles.inputField}
-                    value={preferredName}
-                    onChange={(e) => setPreferredName(e.target.value)}
-                    onBlur={() => setIsEditingPreferredName(false)} // Exit edit mode when focus is lost
-                    autoFocus
-                  />
-                ) : (
-                  <span onClick={() => setIsEditingPreferredName(true)} className={styles.displayField}>
-                    {preferredName || 'Add a preferred name'}
-                  </span>
-                )}
-              </div>
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>Username:</label>
-                <input type="text" disabled className={styles.inputField} value={username} readOnly />
-              </div>
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>Email:</label>
-                <input type="text" disabled className={styles.inputField} value={email} readOnly />
-              </div>
-              <div className={styles.inputGroup}>
-                <button 
-                  type="button" 
-                  onClick={handlePasswordReset} 
-                  className={styles.resetButton}
-                  disabled={isResettingPassword}
-                >
-                  {isResettingPassword ? 'Sending Reset Email...' : 'Reset Password'}
-                </button>
-              </div>
-              {/* Add more input fields as needed */}
-            </div>
-            <div className={styles.submitSection}>
-              <button type="submit" className={styles.submitButton}>
-                Save
-              </button>
-            </div>
-          </form>    
-        )}
+    <div className={styles.pageWrapper}>
+      <div className={styles.sidebar}>
+        <h2>Settings</h2>
+        <ul>
+          <li onClick={() => setActivePanel('profile')}>Profile Settings</li>
+          <li onClick={() => setActivePanel('assistant')}>Assistant Settings</li>
+          <li onClick={() => setActivePanel('account')}>Account Settings</li>
+          <li onClick={() => setActivePanel('notifications')}>Notifications</li>
+        </ul>
       </div>
-
-      {/* Assistant Settings Panel */}
-      <div className={styles.panelContainer}>
-        <div className={styles.panelHeader} onClick={toggleAssistantSection}>
-          <h3 className={styles.sectionTitle}>Assistant Settings</h3>
-        </div>
-        {isAssistantExpanded && (
-          <form className={styles.profileForm} onSubmit={handleSubmit}>
-            <div className={styles.profileSection}>
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>Assistant Name:</label>
-                {isEditingAssistantName ? (
-                  <input
-                    type="text"
-                    className={styles.inputField}
-                    value={assistantName}
-                    onChange={(e) => setAssistantName(e.target.value)}
-                    onBlur={() => setIsEditingAssistantName(false)} // Exit edit mode when focus is lost
-                    autoFocus
-                  />
-                ) : (
-                  <span onClick={() => setIsEditingAssistantName(true)} className={styles.displayField}>
-                    {assistantName || 'Click to edit'}
-                  </span>
-                )}
-              </div>
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>Default Model:</label>
-                <input type="text" disabled className={styles.inputField} value={defaultModel} />
-              </div>
-              <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>Verbosity:</label>
-                <div className={styles.sliderContainer}>
-                  <input
-                    type="range"
-                    className={styles.slider}
-                    min="1"
-                    max="3"
-                    value={verbosityLevel}
-                    onChange={(e) => setVerbosityLevel(Number(e.target.value))}
-                  />
-                  <div className={styles.sliderLabels}>
-                    <span>Low</span>
-                    <span>Medium</span>
-                    <span>High</span>
-                  </div>
-                </div>
-              </div>
-              {/* Add more input fields as needed */}
-            </div>
-            <div className={styles.submitSection}>
-              <button type="submit" className={styles.submitButton}>
-                Save
-              </button>
-            </div>
-          </form>
-        )}
-      </div>
-
-      {/* Account Settings Panel */}
-      <div className={styles.panelContainer}>
-        <div className={styles.panelHeader} onClick={toggleAccountSection}>
-          <h3 className={styles.sectionTitle}>Account Settings</h3>
-        </div>
-        {isAccountExpanded && (
-          <>
-            <form className={styles.profileForm} onSubmit={handleSubmit}>
-              <div className={styles.profileSection}>
-                <div className={styles.inputGroup}>
-                  <label className={styles.inputLabel}>Account Status:</label>
-                  <input type="text" disabled className={styles.inputField} value={status} readOnly/>
-                </div>
-                <div className={styles.inputGroup}>
-                  <label className={styles.inputLabel}>Credit Allotment:</label>
-                  <input type="text" disabled className={styles.inputField} value={creditAllotment} readOnly/>
-                </div>
-                <div className={styles.inputGroup}>
-                  <label className={styles.inputLabel}>Subscription Plan:</label>
-                  <input type="text" disabled className={styles.inputField} value={subscriptionType} readOnly/>
-                </div>
-                {/* Add more input fields as needed */}
-              </div>
-              <div className={styles.submitSection}>
-                <button type="submit" className={styles.submitButton}>
-                  Save
-                </button>
-              </div>
-            </form>
-
-            {/* Cancel Membership Button below the form */}
-            <div className={styles.cancelSection}>
-              <button type="button" onClick={handleCancelMembership} className={styles.cancelMembershipButton}>
-                Cancel Membership
-              </button>
-            </div>
-          </>
-        )}
+      <div className={styles.content}>
+        {renderPanel()}
       </div>
     </div>
   );
