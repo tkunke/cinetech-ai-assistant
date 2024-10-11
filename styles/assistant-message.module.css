@@ -194,6 +194,11 @@
   color: black;
 }
 
+.saveButton {
+  cursor: pointer;
+  font-size: 1.5rem;
+}
+
 .selectButton {
   display: inline-block !important;
   background-color: transparent !important;

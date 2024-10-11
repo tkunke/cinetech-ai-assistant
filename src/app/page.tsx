@@ -1,8 +1,20 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from '@/styles/homepage.module.css';
 
 const HomePage: React.FC = () => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 0.5; // Slows down the video to half speed
+    }
+  }, []);
+
   return (
     <div className={styles.pageWrapper}>
       {/* Hero Section */}
@@ -48,6 +60,7 @@ const HomePage: React.FC = () => {
       {/* Video Section */}
       <section className={styles.videoSection}>
         <video
+          ref={videoRef}
           autoPlay
           loop
           muted

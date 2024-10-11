@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { AiFillQuestionCircle } from 'react-icons/ai';
 import styles from '@/styles/sidebar.module.css';
 import { useWorkspace, WorkspaceDetails } from '@/context/WorkspaceContext';
 import { useUser } from '@/context/UserContext';
@@ -39,6 +41,8 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
   const [currentThread, setCurrentThread] = useState<Thread | null>(null);
   const { threads, fetchThreads, updateThread } = useThreads();
   const { handleStartUsingApp } = useUser();
+  const [ showTokenCounter, setShowTokenCounter ] = useState(false);
+  const router = useRouter();
 
   const toggleSidebar = () => {
     setIsSidebarVisible(!isSidebarVisible);
@@ -179,6 +183,10 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
   };
   
   const groupedThreads = groupThreadsByDate(threads);
+
+  const handleFaqClick = () => {
+    router.push('/faq');
+  };
   
   return (
     <>
@@ -280,12 +288,23 @@ const Sidebar: React.FC<SidebarProps> = ({ userId, runId, runCompleted, messages
   
         {/* Bottom Section: Conversations and Token Counter */}
         <div className={styles.bottomSection}>
-          <TokenCounter
-            userId={userId}
-            runId={runId}
-            runCompleted={runCompleted}
-            messagesUpdated={messagesUpdated}
-          />
+          <div className={styles.buttonContainer}>
+            <button className={styles.helpButton} onClick={handleFaqClick}>
+              <AiFillQuestionCircle className={styles.helpIcon} />
+              Help
+            </button>
+            <button className={styles.supportButton}>
+              Support
+            </button>
+          </div>
+          {showTokenCounter && (
+            <TokenCounter
+              userId={userId}
+              runId={runId}
+              runCompleted={runCompleted}
+              messagesUpdated={messagesUpdated}
+            />
+          )}
         </div>
       </div>
     </>

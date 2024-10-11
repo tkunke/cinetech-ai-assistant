@@ -61,7 +61,7 @@
   display: block;
   margin: 0;
   max-width: 100%;
-  padding: 0;
+  padding-bottom: 1rem;
 }
 
 .activeWorkspaceDisplay {
@@ -126,11 +126,35 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 20px;
   background-color: transparent;
   flex-shrink: 0;
-  padding-top: 1rem;
 }
+
+/* Align the buttons in a row */
+.buttonContainer {
+  display: flex;
+  gap: 20px; /* Space between the Help and Support buttons */
+  align-items: center; /* Vertically center buttons */
+  padding-bottom: 1rem;
+}
+
+/* Button styles */
+.helpButton, .supportButton {
+  display: flex;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  color: white;
+}
+
+/* Icon next to the Help button */
+.helpIcon {
+  margin-right: 8px;
+}
+
 
 .threadListSection {
   margin-top: 1.5rem;
@@ -183,6 +207,10 @@
 
 .textLine:hover {
   background-color: rgba(255, 255, 255, 0.1);
+}
+
+.textLine.selected {
+  background-color: rgba(255, 255, 255, 0.2); /* Change to a more distinct color when selected */
 }
 
 .popup {

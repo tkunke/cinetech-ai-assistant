@@ -4,6 +4,9 @@
 .pageWrapper {
   position: relative;
   overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   background: linear-gradient(to bottom, rgb(70, 90, 110), rgb(50, 70, 90));
 }
 
@@ -146,10 +149,12 @@
 }
 
 .videoSection {
-  width: 100%; /* Full width */
-  height: 20rem; /* Adjust height as needed */
-  overflow: hidden; /* Hide overflow */
-  position: relative; /* Positioning context for the video */
+  position: relative;
+  margin: 0 auto;
+  border-radius: 0.25rem;
+  width: 90%;
+  height: 40rem;
+  overflow: hidden;
 }
 
 .backgroundVideo {

@@ -4,7 +4,7 @@ import remarkGfm from 'remark-gfm';
 import styles from '@/styles/assistant-message.module.css';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { AiOutlineDownload } from 'react-icons/ai';
+import { AiOutlineDownload, AiFillSave } from 'react-icons/ai';
 import { FaFilm, FaImages, FaAsterisk, FaNewspaper, FaCheckCircle } from 'react-icons/fa';
 import { useSession } from 'next-auth/react';
 import { upload } from '@vercel/blob/client';
@@ -331,29 +331,18 @@ function CinetechAssistantMessage({
       id={`message-${message.id}`}
       className={`${styles.messageContainer} ${
         message.role === 'user' ? styles.selfStart : isImageMessage ? styles.selfCenter : styles.selfStart
-      } text-gray-700 text-left px-4 py-2 m-2 bg-opacity-100 ${isHighlighted ? styles.highlighted : ''}`}
+      } text-gray-700 text-left px-4 py-2 m-2 bg-opacity-100`}
     >
       <div className="flex flex-col items-start relative">
         <div className="text-4xl" style={{ userSelect: 'text' }}>{displayRole(message.role)}</div>
         {message.role === 'assistant' && message.id !== 'initial_greeting' && (
           <div className={styles.messageSidebar}>
-            {(isBreakdownMessage || isImageMessage) && (
-              <button
-                className={styles.selectButton}
-                onClick={() => handleMessageSelect(message)}
-                title={isHighlighted ? 'Deselect Message' : 'Select Message'} // Update title dynamically if needed
-              >
-                {isHighlighted ? 'Deselect Message' : 'Select Message'}  {/* Place conditional rendering here */}
-              </button>                                                     
-            )}
             {runCompleted && !hasImages(message.content) && (
-              <button 
-                className={styles.selectButton}
+              <AiFillSave
+                className={styles.saveButton}
                 onClick={() => handleSaveMessage(message.content)}
                 title="Save Message"
-              >
-                Save Message
-              </button>
+              />
             )}
           </div>
         )}

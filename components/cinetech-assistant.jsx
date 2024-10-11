@@ -51,6 +51,7 @@ export default function CinetechAssistant({
   const { saveThread } = useThreads();
 
   const userName = session?.user?.name || 'User';
+  const messagesAdded = sessionStorage.getItem('messagesAdded') === 'true';
 
   useEffect(() => {
     const generateSynopsis = async () => {
@@ -58,23 +59,24 @@ export default function CinetechAssistant({
         const response = await fetch(`/api/generateThreadSynopsis?threadId=${threadId}`, {
           method: 'GET',
         });
-
+  
         if (!response.ok) {
           throw new Error('Failed to generate synopsis');
         }
-
+  
         const data = await response.json();
         console.log('Generated Synopsis:', data.synopsis);
       } catch (error) {
         console.error('Error generating synopsis:', error);
       }
     };
-
-    if (messages.length > 0 && messages.length % 10 === 0) {
-      console.log('Messages array length is divisible by 10. Generating synopsis...');
+  
+    // Only run the effect if messagesAdded is true
+    if (messagesAdded && messages.length > 0 && messages.length % 15 === 0) {
+      console.log('Messages array length is divisible by 15. Generating synopsis...');
       generateSynopsis();
     }
-  }, [messages.length, threadId]);
+  }, [messages.length, threadId, messagesAdded]);
   
   const saveCurrentThreadIfNeeded = useCallback(async () => {
     if (threadId && userId) {
@@ -135,8 +137,8 @@ export default function CinetechAssistant({
 
   const handleThreadSelect = async (selectedThreadId) => {
     setShowLoadMoreButton(false);
-    setThreadId(selectedThreadId);
     setRunCompleted(true);
+    setThreadId(selectedThreadId);
     
     const response = await fetch('/api/cinetech-assistant?' + new URLSearchParams({
       threadId: selectedThreadId,
@@ -216,8 +218,7 @@ export default function CinetechAssistant({
     if (!appUsed) {
       handleStartUsingApp();
     }
-  
-    const messagesAdded = sessionStorage.getItem('messagesAdded') === 'true';
+
     if (!messagesAdded) {
       sessionStorage.setItem('messagesAdded', 'true');
     }
@@ -554,17 +555,17 @@ export default function CinetechAssistant({
           metadata: { ...m.metadata }, // Ensure we don't overwrite existing metadata
         };
   
-        // Check for "Storyboard Breakdown" as plain text
-        if (m.content.includes('Storyboard Breakdown')) {
-          updatedMessage.metadata.breakdownMessage = true;
-        }
-  
         // Regex to match "Panel X:" pattern (X being any number) in plain text
         const panelMatch = m.content.match(/Panel \d+:/);
         
         // Regex to find image URLs in Markdown
         const imagePattern = /!\[.*?\]\((.*?)\)/g;
         const imageMatches = [...m.content.matchAll(imagePattern)];
+
+        // Check for "Storyboard Breakdown" as plain text
+        if (m.content.includes('Storyboard Breakdown') && imageMatches.length === 0) {
+          updatedMessage.metadata.breakdownMessage = true;
+        }
   
         // If we find a "Panel X:" and an image is present in the message, add the metadata
         if (panelMatch && imageMatches.length > 0) {

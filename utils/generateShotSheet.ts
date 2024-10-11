@@ -132,6 +132,8 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
   // Save the PDF using the storyboard name
   const sanitizedFileName = storyboardName.replace(/[^\w\s-]/g, '').trim(); // Remove invalid characters
   pdf.save(`${sanitizedFileName}.pdf`);
+
+  return sanitizedFileName;
 }
 
 // Function to fetch image as data URL

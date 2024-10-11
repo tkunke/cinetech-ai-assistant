@@ -1,0 +1,51 @@
+{
+    "aboutCineTech": {
+      "heading": "About CineTech",
+      "questions": [
+        {
+          "question": "What is CineTech?",
+          "answer": "CineTech is an AI-powered assistant tailored for filmmakers. It provides advanced tools for organizing production tasks, generating images, and assisting in creative processes such as storyboards, shot sheets, and scene descriptions. It can also summarize conversations and offers support for downloading documents as PDFs or exporting tables to Excel."
+        },
+        {
+          "question": "What can I use CineTech for?",
+          "answer": "CineTech is both a creative and organizational tool. It helps filmmakers streamline tasks like creating tables and spreadsheets, generates images from prompts, organizes scene descriptions, and enables the export of documents and tables. You can also generate shot sheets, storyboards, and organize them into projects ready to be shared with collaborators."
+        }
+      ]
+    },
+    "featuresAndTools": {
+      "heading": "Features and Tools",
+      "questions": [
+        {
+          "question": "What are some of CineTech's standout features?",
+          "answer": "ShotSheets, Tagging, Generate Synopsis, and the Image Library are some of the standout features that help filmmakers manage their projects efficiently. CineTech assists in creating storyboards, organizing content, and managing visual assets."
+        }
+      ]
+    },
+    "imageLibrary": {
+      "heading": "Image Library",
+      "questions": [
+        {
+          "question": "How do I save an image in CineTech?",
+          "answer": "To save an image, click the Image Icon, then navigate to the Image Library under the Workspaces tab. From there, you can either tag the image for a project or delete it. You can also click on the image to view it in full size."
+        },
+        {
+          "question": "How do I download an image?",
+          "answer": "To download an image, click the Download Icon. A \"save as\" dialogue box will prompt you to save the image to your device."
+        }
+      ]
+    },
+    "storyboarding": {
+      "heading": "Using CineTech for Storyboarding",
+      "questions": [
+        {
+          "question": "How can I use CineTech for creating storyboards?",
+          "answer": "You can upload simple storyboards, and CineTech will provide descriptions for use as prompts to generate final images. These images can be used for projects like animated videos."
+        },
+        {
+          "question": "Can you provide an example prompt?",
+          "answer": "Example: \"Create an establishing shot of a post-apocalyptic dystopian Los Angeles. The skyline is filled with destroyed buildings with broken windows. The streets are littered with burning cars and debris. The atmosphere is dark and eerie, with a dreamlike quality.\""
+        }
+      ]
+    }
+  }
+  

@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { useRouter } from 'next/navigation';
 import styles from '@/styles/shotpanels.module.css';
-import {generatePdfWithSelectedMessages} from '@/utils/generateShotSheet';
+import { generatePdfWithSelectedMessages } from '@/utils/generateShotSheet';
+import { AiOutlineFilePdf, AiOutlineArrowLeft } from 'react-icons/ai';
 
 interface Message {
   id: string;
@@ -20,6 +21,9 @@ const ShotPanels = () => {
   const [panelMessages, setPanelMessages] = useState<Message[]>([]);
   const [selectedBreakdownMessage, setSelectedBreakdownMessage] = useState<Message | null>(null);
   const [selectedPanelMessages, setSelectedPanelMessages] = useState<Message[]>([]);
+  const [pdfGenerated, setPdfGenerated] = useState<boolean>(false); // State to track PDF generation
+  const [pdfThumbnail, setPdfThumbnail] = useState<string>(''); // State to track PDF thumbnail
+  const [pdfName, setPdfName] = useState<string>('');
   const router = useRouter();
 
   useEffect(() => {
@@ -30,7 +34,6 @@ const ShotPanels = () => {
       setBreakdownMessages(JSON.parse(storedBreakdownMessages));
       setPanelMessages(JSON.parse(storedPanelMessages));
     } else {
-      // Handle case where no messages are found
       console.error('No breakdown or panel messages found.');
     }
   }, []);
@@ -49,32 +52,43 @@ const ShotPanels = () => {
     }
   };
 
+  // Simulate PDF thumbnail creation (replace this with actual logic if available)
+  const createPdfThumbnail = () => {
+    // Simulate setting a thumbnail image for the PDF (you can customize this)
+    setPdfThumbnail('/pdf_thumbnail.png'); // Assuming you have a placeholder image for the PDF
+  };
+
   const handleCreatePanelSheetClick = async () => {
-    // Filter out null values from the selected breakdown message
     const selectedMessages = [
-      ...(selectedBreakdownMessage ? [selectedBreakdownMessage] : []), // Add breakdown message if it's not null
+      ...(selectedBreakdownMessage ? [selectedBreakdownMessage] : []),
       ...selectedPanelMessages,
     ];
-  
+
     if (selectedMessages.length > 0) {
-      await generatePdfWithSelectedMessages(selectedMessages); // Call the utility function
+      const pdfFileName = await generatePdfWithSelectedMessages(selectedMessages); // Call the utility function
+      if (pdfFileName) {
+        setPdfGenerated(true); // Set PDF as generated
+        setPdfName(pdfFileName); // Store the PDF name
+      }
     } else {
       alert("Please select a breakdown message and at least one panel message.");
     }
+
     setSelectedBreakdownMessage(null);
     setSelectedPanelMessages([]);
-};
+  };
 
-    const handleBackToAssistantClick = () => {
-        router.push('/assistant'); // Navigate back to the assistant page
-    };
+  const handleBackToAssistantClick = () => {
+    router.push('/assistant'); // Navigate back to the assistant page
+  };
 
   return (
     <div className={styles.shotpanelsPage}>
       {/* Header Section */}
       <header className={styles.header}>
-        <button className={styles.backButton} onClick={handleBackToAssistantClick}>
-          Back to Assistant
+        <button onClick={handleBackToAssistantClick} className={styles.backButton} title="Back to Assistant">
+          <AiOutlineArrowLeft className={styles.arrowIcon}/>
+          <span>Assistant</span>
         </button>
         <button className={styles.createButton} onClick={handleCreatePanelSheetClick}>
           Create Panel Sheet
@@ -116,6 +130,16 @@ const ShotPanels = () => {
           ))}
         </div>
       </div>
+
+      {/* Footer Section (conditionally rendered) */}
+      {pdfGenerated && (
+        <footer className={styles.footer}>
+          <div className={styles.pdfThumbnail}>
+            <AiOutlineFilePdf size={35} />
+            <p>{pdfName}.pdf</p>
+          </div>
+        </footer>
+      )}
     </div>
   );
 };
