@@ -556,19 +556,22 @@ export default function CinetechAssistant({
         };
   
         // Regex to match "Panel X:" pattern (X being any number) in plain text
-        const panelMatch = m.content.match(/Panel \d+:/);
+        const panelOrSceneMatch = m.content.match(/(Panel|Scene) \d+:/);
         
         // Regex to find image URLs in Markdown
         const imagePattern = /!\[.*?\]\((.*?)\)/g;
         const imageMatches = [...m.content.matchAll(imagePattern)];
 
-        // Check for "Storyboard Breakdown" as plain text
-        if (m.content.includes('Storyboard Breakdown') && imageMatches.length === 0) {
+        // Check for "Storyboard Breakdown" or "Script Breakdown" as plain text
+        if (
+          (m.content.includes('Storyboard Breakdown') || m.content.includes('Script Breakdown')) 
+          && imageMatches.length === 0
+        ) {
           updatedMessage.metadata.breakdownMessage = true;
         }
   
         // If we find a "Panel X:" and an image is present in the message, add the metadata
-        if (panelMatch && imageMatches.length > 0) {
+        if (panelOrSceneMatch && imageMatches.length > 0) {
           updatedMessage.metadata.panelMessage = true;
         }
   
