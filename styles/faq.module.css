@@ -1,0 +1,38 @@
+@import url('https://fonts.googleapis.com/css2?family=Limelight&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&display=swap');
+
+.faqContainer {
+  background: linear-gradient(to bottom, rgb(70, 90, 110), rgb(50, 70, 90));
+  color: white;
+  padding: 40px;
+  font-family: 'Lato', 'Montserrat', 'Raleway', sans-serif;
+  min-height: 100vh;
+}
+
+.faqTitle {
+  text-align: center;
+  font-size: 36px;
+  font-family: 'Limelight', sans-serif;
+  margin-bottom: 20px;
+}
+
+.faqSection {
+  margin-bottom: 30px;
+}
+
+.sectionHeading {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 15px;
+}
+
+.question {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 10px 0;
+}
+
+.answer {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.6;
+}
