@@ -54,7 +54,7 @@ const HomePage: React.FC = () => {
           playsInline
           className={styles.backgroundVideo}
         >
-          <source src="/banana_grab.mp4" type="video/mp4" />
+          <source src="/promo_video.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
       </section>

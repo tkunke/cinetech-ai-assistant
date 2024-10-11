@@ -11,6 +11,7 @@ import styles from '@/styles/cinetech-assistant.module.css';
 import SpinningReels from './spinning-reels';
 import { useThreads } from '@/context/ThreadsContext';
 import { useUser } from '@/context/UserContext';
+import { parse } from 'node-html-parser';
 
 function containsMarkdown(content) {
   return /(\*\*|__|`|#|\*|-|\||\n[\-=\*]{3,}\s*$)/.test(content.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, ''));
@@ -21,6 +22,7 @@ export default function CinetechAssistant({
   selectedMessages,
   setSelectedMessages,
   resetMessagesRef,
+  passFilteredMessagesToParent,
 }) {
   const { data: session } = useSession();
   const userId = session?.user?.id ? String(session.user.id) : '';
@@ -544,13 +546,62 @@ export default function CinetechAssistant({
 
   const memoizedMessages = useMemo(
     () =>
-      messages.map((m) => ({
-        ...m,
-        isMarkdown: containsMarkdown(m.content),
-        imageUrl: m.imageUrl,
-      })),
+      messages.map((m) => {
+        // Clone the message and preserve existing properties
+        const updatedMessage = {
+          ...m,
+          isMarkdown: containsMarkdown(m.content),
+          metadata: { ...m.metadata }, // Ensure we don't overwrite existing metadata
+        };
+  
+        // Check for "Storyboard Breakdown" as plain text
+        if (m.content.includes('Storyboard Breakdown')) {
+          updatedMessage.metadata.breakdownMessage = true;
+        }
+  
+        // Regex to match "Panel X:" pattern (X being any number) in plain text
+        const panelMatch = m.content.match(/Panel \d+:/);
+        
+        // Regex to find image URLs in Markdown
+        const imagePattern = /!\[.*?\]\((.*?)\)/g;
+        const imageMatches = [...m.content.matchAll(imagePattern)];
+  
+        // If we find a "Panel X:" and an image is present in the message, add the metadata
+        if (panelMatch && imageMatches.length > 0) {
+          updatedMessage.metadata.panelMessage = true;
+        }
+  
+        // Log the updated message for debugging purposes
+        console.log('Updated Message:', updatedMessage);
+        return updatedMessage;
+      }),
     [messages]
   );
+
+  // Define refs at the top level of the component, not inside useEffect
+  const prevBreakdownMessages = useRef([]);
+  const prevPanelMessages = useRef([]);
+
+  useEffect(() => {
+    if (passFilteredMessagesToParent) {
+      const breakdownMessages = memoizedMessages.filter(
+        (message) => message.metadata?.breakdownMessage
+      );
+      const panelMessages = memoizedMessages.filter(
+        (message) => message.metadata?.panelMessage
+      );
+
+      // Check if filtered messages actually changed before passing them
+      const hasBreakdownChanged = JSON.stringify(breakdownMessages) !== JSON.stringify(prevBreakdownMessages.current);
+      const hasPanelChanged = JSON.stringify(panelMessages) !== JSON.stringify(prevPanelMessages.current);
+
+      if (hasBreakdownChanged || hasPanelChanged) {
+        passFilteredMessagesToParent({ breakdownMessages, panelMessages });
+        prevBreakdownMessages.current = breakdownMessages; // Store the current breakdown messages
+        prevPanelMessages.current = panelMessages; // Store the current panel messages
+      }
+    }
+  }, [memoizedMessages, passFilteredMessagesToParent]);
 
   useEffect(() => {
     const handleBeforeUnload = (event) => {
@@ -566,28 +617,11 @@ export default function CinetechAssistant({
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [runId, threadId]);  
-
-  useEffect(() => {
-    console.log('showLoadingGif state changed:', showLoadingGif);
-  }, [showLoadingGif]);
+  }, [runId, threadId]);
 
   useEffect(() => {
     console.log('Messages:', messages);
   }, [messages]);
-
-  useEffect(() => {
-    console.log('Earliest message ID:', earliestMessageId);
-    console.log('Load more button rendered:', showLoadMoreButton);
-  }, [earliestMessageId]);
-
-  useEffect(() => {
-    console.log('Show load more?', showLoadMoreButton);
-  }, [updateLoadMoreButtonVisibility]);
-
-  useEffect(() => {
-    console.log('Is app used:', appUsed);
-  }, [appUsed]);
 
   return (
     <div className="flex flex-col h-full justify-between">

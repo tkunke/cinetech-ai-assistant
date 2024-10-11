@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 
 interface Message {
   id: string;
-  role: string;
+  role?: string;
   content: string;
 }
 
@@ -24,28 +24,24 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
     return imagePattern.test(content);
   };
 
+  // Assuming there's one breakdown message and multiple panel messages
   let breakdownMessage: Message | undefined;
-  const imageMessages: Message[] = [];
+  const selectedPanelMessages: Message[] = [];
   let storyboardName = "Shot Sheet"; // Default name
 
-  messages.forEach(message => {
+  // Separate the breakdown message and panel messages
+  messages.forEach((message) => {
     if (hasImages(message.content)) {
-      imageMessages.push(message);
-
-      // Extract storyboard name from the message content if available
-      const nameMatch = message.content.match(/Storyboard:\s*(.*)/);
-      if (nameMatch && nameMatch[1]) {
-        storyboardName = nameMatch[1].trim();
-      }
+      selectedPanelMessages.push(message);
     } else {
       breakdownMessage = message;
     }
   });
 
-  if (!breakdownMessage || imageMessages.length === 0) {
+  if (!breakdownMessage || selectedPanelMessages.length === 0) {
     console.error('Required messages not found');
     console.log('Breakdown Message Found:', !!breakdownMessage);
-    console.log('Image Messages Found:', imageMessages.length);
+    console.log('Panel Messages Found:', selectedPanelMessages.length);
     return;
   }
 
@@ -54,9 +50,10 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
   const imagePattern = /!\[.*\]\((.*)\)/g;
   const imageUrls: string[] = [];
 
-  imageMessages.forEach(imageMessage => {
+  // Extract the image URLs from the selected panel messages
+  selectedPanelMessages.forEach((panelMessage) => {
     let match;
-    while ((match = imagePattern.exec(imageMessage.content)) !== null) {
+    while ((match = imagePattern.exec(panelMessage.content)) !== null) {
       imageUrls.push(match[1]);
     }
   });
@@ -73,19 +70,21 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
   const imageHeight = imageWidth / 1.5;
   const textWidth = pageWidth / 2 - 2 * margin;
 
+  // Ensure we are connecting the correct images with their respective panel descriptions
   for (let i = 0; i < storyboard.panels.length; i++) {
     const panel = storyboard.panels[i];
+    const imageUrl = imageUrls[i]; // This will match the order of the panels
 
     // Combine the label and content for each heading into one block
     const combinedText = [
       `Title: ${panel.title}`,
       `Description: ${panel.description}`,
       `Notes: ${panel.notes}`,
-      `Shot Type: ${panel.shotType}`
+      `Shot Type: ${panel.shotType}`,
     ];
 
     // Split and wrap the text within the available width
-    const wrappedText = combinedText.flatMap(text => pdf.splitTextToSize(text, textWidth));
+    const wrappedText = combinedText.flatMap((text) => pdf.splitTextToSize(text, textWidth));
 
     const textHeight = wrappedText.length * (pdf.getTextDimensions('Text').h + 2);
     const totalRowHeight = Math.max(textHeight, imageHeight) + 2 * margin;
@@ -115,9 +114,10 @@ export async function generatePdfWithSelectedMessages(messages: Message[]) {
       textY += pdf.getTextDimensions('Text').h + 2;
     });
 
-    if (imageUrls[i]) {
+    // Add the image corresponding to the panel
+    if (imageUrl) {
       try {
-        const imageData = await fetchImageAsDataUrl(imageUrls[i]);
+        const imageData = await fetchImageAsDataUrl(imageUrl);
         const imageX = pageWidth / 2 + margin / 2 + 2;
         const imageY = y + margin;
         pdf.addImage(imageData, "PNG", imageX, imageY, imageWidth - 4, imageHeight - 4);

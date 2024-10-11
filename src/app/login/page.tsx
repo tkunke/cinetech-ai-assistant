@@ -33,7 +33,7 @@ const LoginPage = () => {
           if (assistantId) {
             // Store assistantId and redirect
             sessionStorage.setItem('assistantId', assistantId);
-            router.push(`/assistant?assistantId=${assistantId}`); // Pass assistantId to assistant page
+            router.push('/assistant');
           } else {
             console.error('No assistant found for the user.');
           }

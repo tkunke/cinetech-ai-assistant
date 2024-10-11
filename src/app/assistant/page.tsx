@@ -14,6 +14,11 @@ interface Message {
   id: string;
   role: string;
   content: string;
+  metadata?: {
+    breakdownMessage?: boolean;
+    panelMessage?: boolean;
+  };
+  imageUrl?: string;
 }
 
 function Home() {
@@ -31,6 +36,8 @@ function Home() {
   const [isCreativeToolsExpanded, setIsCreativeToolsExpanded] = useState(false);
   const [isUserMenuExpanded, setIsUserMenuExpanded] = useState(false);
   const resetMessagesRef = useRef<(() => void) | null>(null);
+  const [breakdownMessages, setBreakdownMessages] = useState<Message[]>([]);
+  const [panelMessages, setPanelMessages] = useState<Message[]>([]);
   const { updateThread } = useThreads();
 
   const userId = session?.user?.id ? String(session.user.id) : ''; // Ensure userId is available
@@ -44,19 +51,42 @@ function Home() {
   // Load assistantId from session storage or URL parameters
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const queryParams = new URLSearchParams(window.location.search);
-      const assistantIdFromUrl = queryParams.get('assistantId');
       const assistantIdFromSession = sessionStorage.getItem('assistantId');
-  
-      if (assistantIdFromUrl) {
-        setAssistantId(assistantIdFromUrl);
-      } else if (assistantIdFromSession) {
+    
+      if (assistantIdFromSession) {
         setAssistantId(assistantIdFromSession);
       } else {
-        console.error('No assistant ID found');
+        console.error('No assistant ID found in session storage. Redirecting to login.');
+        router.push('/login'); // Redirect to login if assistantId is not found
       }
     }
   }, [session]);
+
+  const handleFilteredMessages = ({
+    breakdownMessages,
+    panelMessages,
+  }: {
+    breakdownMessages: Message[];
+    panelMessages: Message[];
+  }) => {
+    setBreakdownMessages(breakdownMessages);
+    setPanelMessages(panelMessages);
+  };
+  
+
+  const handleGenerateShotPanelsClick = () => {
+    if (breakdownMessages.length === 0 || panelMessages.length === 0) {
+      alert("No breakdown or panel messages found in the current thread.");
+      return;
+    }
+  
+    // Save the filtered messages in session storage (or use another method)
+    sessionStorage.setItem('breakdownMessages', JSON.stringify(breakdownMessages));
+    sessionStorage.setItem('panelMessages', JSON.stringify(panelMessages));
+  
+    // Redirect to the shotpanels page
+    router.push('/shotpanels'); // Navigate to shotpanels
+  };  
 
   const toggleCreativeToolsExpand = () => {
     setIsCreativeToolsExpanded(!isCreativeToolsExpanded);
@@ -192,7 +222,7 @@ function Home() {
               </button>
               {isCreativeToolsExpanded && (
                 <ul className={`${styles.creativeToolsDropdown} creativeToolsDropdown`}>
-                  <li onClick={handleGeneratePdfClick} className={styles.creativeToolsButton}>
+                  <li onClick={handleGenerateShotPanelsClick} className={styles.creativeToolsButton}>
                     Generate Shot Panels
                   </li>
                 </ul>
@@ -223,6 +253,7 @@ function Home() {
             setSelectedMessages={setSelectedMessages}
             selectedMessages={selectedMessages}
             resetMessagesRef={resetMessagesRef}
+            passFilteredMessagesToParent={handleFilteredMessages}
           />
         </main>
       </div>
