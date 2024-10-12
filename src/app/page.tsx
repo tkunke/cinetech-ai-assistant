@@ -8,10 +8,9 @@ import styles from '@/styles/homepage.module.css';
 const HomePage: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
 
-
   useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.playbackRate = 0.5; // Slows down the video to half speed
+      videoRef.current.playbackRate = 0.5;
     }
   }, []);
 
@@ -19,8 +18,10 @@ const HomePage: React.FC = () => {
     <div className={styles.pageWrapper}>
       {/* Hero Section */}
       <header className={styles.heroSection}>
-        <h1 className={styles.heroTitle}>CineTech AI</h1>
-        <p>AI for film production</p>
+        <div className={styles.heroText}>
+          <h1 className={styles.heroTitle}>CineTech AI</h1>
+          <p className={styles.heroDescription}>AI for film production</p>
+        </div>
         <div className={styles.headerButtons}>
           <Link href="/login">
             <button className={styles.loginButton}>Login</button>
@@ -28,94 +29,71 @@ const HomePage: React.FC = () => {
         </div>
       </header>
 
-      {/* Features Overview */}
-      <section className={styles.featuresSection}>
-      <section className={styles.feature}>
+      {/* AI Partner Section */}
+      <section className={styles.aiPartnerSection}>
+        <h2>Powered by Industry Leaders</h2>
         <div className={styles.logoGrid}>
-          <Image src="/openai_logo.svg" alt="OpenAI" width={100} height={50} />
-          <Image src="/anthropic_logo.svg" alt="Anthropic" width={100} height={50} />
-          <Image src="/google_logo.png" alt="Google" width={100} height={50} />
-          <Image src="/meta_logo.png" alt="Meta" width={100} height={50} />
-        </div>
-        <h3>Industry LLMs</h3>
-        <p>Access advanced AI models from industry leaders to enhance your creativity and efficiency.</p>
-      </section>
-        <div className={styles.feature}>
-          <Image src="/ai-assistant_image.png" alt="Intelligent Assistant" width={100} height={100} />
-          <h3>Intelligent Assistant</h3>
-          <p>Get immediate insights and creative inputs, empowering you to produce exceptional content.</p>
-        </div>
-        <div className={styles.feature}>
-          <Image src="/collaboration_image2.png" alt="Collaboration" width={100} height={100} />
-          <h3>Collaborative Workspaces</h3>
-          <p>Share and edit content in real-time, ensuring seamless collaboration across your projects.</p>
-        </div>
-        <div className={styles.feature}>
-          <Image src="/dataset_image2.png" alt="Industry Dataset" width={100} height={100} />
-          <h3>Curated Industry-Specific Dataset</h3>
-          <p>Utilize a tailored dataset that enhances every facet of the filmmaking process.</p>
+          <div className={styles.logoItem}>
+            <Image src="/openai_logo.svg" alt="OpenAI" width={100} height={50} />
+            <p>Advanced language models from OpenAI.</p>
+          </div>
+          <div className={styles.logoItem}>
+            <Image src="/anthropic_logo.svg" alt="Anthropic" width={100} height={50} />
+            <p>Safety-driven AI from Anthropic.</p>
+          </div>
+          <div className={styles.logoItem}>
+            <Image src="/google_logo.png" alt="Google" width={100} height={50} />
+            <p>Cutting-edge AI from Google Cloud.</p>
+          </div>
+          <div className={styles.logoItem}>
+            <Image src="/meta_logo.png" alt="Meta" width={100} height={50} />
+            <p>AI advancements from Meta AI.</p>
+          </div>
         </div>
       </section>
 
-      {/* Video Section */}
-      <section className={styles.videoSection}>
-        <video
-          ref={videoRef}
-          autoPlay
-          loop
-          muted
-          playsInline
-          className={styles.backgroundVideo}
-        >
-          <source src="/promo_video.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+      {/* Section 1: AI & Collaboration */}
+      <section className={styles.featureSection}>
+        <div className={styles.mediaContainer}>
+          <Image src="/ai-assistant_noback.png" alt="Intelligent Assistant" width={400} height={400} />
+        </div>
+        <div className={styles.textContainer}>
+          <h2>AI Empowering Your Production</h2>
+          <p>Utilize advanced AI to streamline your entire filmmaking process, from pre-production to post.</p>
+          <p>Collaborate seamlessly in real-time with our team-focused workspace tools, built for filmmakers.</p>
+        </div>
       </section>
 
-      <div className={styles.featuresText}>
-        <h2>Leverage AI across all phases of production</h2>
-      </div>
-
-      {/* Collaboration Tools */}
-      <section className={styles.collaborationSection}>
-        <h2>Designed for Teamwork</h2>
-        <p>Effortlessly manage your production calendar, shot lists, and call sheets with our intelligent tools.</p>
-        <Link href="/freetrial">
-          <button className={styles.signupButton}>Experience Collaboration</button>
-        </Link>
+      {/* Section 2: Content Generation & Marketing */}
+      <section className={styles.featureSection}>
+        <div className={styles.mediaContainer}>
+          <video
+            ref={videoRef}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className={styles.featureVideo}
+          >
+            <source src="/promo_video.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+        <div className={styles.textContainer}>
+          <h2>Generate and Promote</h2>
+          <p>Our platform offers multi-media content generation to create stunning visuals, scripts, and more.</p>
+          <p>Easily integrate your projects with Canva and other marketing tools to elevate your promotional efforts.</p>
+        </div>
       </section>
 
-      {/* Industry-Specific Insights */}
-      <section className={styles.insightsSection}>
-        <h2>Tailored for Every Role</h2>
-        <p>From line producers to screenwriters, Cinetech enhances workflows for all filmmakers, improving efficiency and creativity.</p>
-      </section>
-
-      {/* Multi-Media Content Generation */}
-      <section className={styles.contentGenerationSection}>
-        <h2>Create Across Multiple Media Formats</h2>
-        <p>Generate compelling text, stunning visuals, and immersive audio all in one platform.</p>
-      </section>
-
-      {/* Storyboarding and Script Tools */}
-      <section className={styles.storyboardingSection}>
-        <h2>Advanced Storyboarding and Script Tools</h2>
-        <p>Visualize your screenplay, analyze scripts, and craft compelling narratives with ease.</p>
-      </section>
-
-      {/* Marketing Empowerment */}
-      <section className={styles.marketingSection}>
-        <h2>Empower Your Film Marketing</h2>
-        <p>Integrate with Canva and social media to effortlessly design marketing materials and promote your film.</p>
-      </section>
-
-      {/* Final Call to Action */}
-      <footer className={styles.finalCTA}>
-        <h2>Join the Cinetech Revolution</h2>
-        <p>Transform how films are made and marketed with the power of AI.</p>
-        <Link href="/freetrial">
-          <button className={styles.signupButton}>Join Us Today</button>
-        </Link>
+      {/* Footer */}
+      <footer className={styles.footer}>
+        <Image src="/bw_logo.png" alt="CineTech Logo" width={500} height={500} />
+        <div className={styles.footerLinks}>
+          <Link href="/faq">FAQ</Link>
+          <Link href="/contact">Contact Us</Link>
+          <Link href="/company-info">Company Information</Link>
+        </div>
       </footer>
     </div>
   );

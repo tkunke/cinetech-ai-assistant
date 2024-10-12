@@ -585,7 +585,7 @@ export async function GET(request: NextRequest) {
         after: after, // Use after to paginate through messages
       });
 
-      console.log('Fetched messages from OpenAI:', threadMessages.data.length);
+      //console.log('Fetched messages from OpenAI:', threadMessages.data.length);
 
       if (!threadMessages.data.length) {
         break; // Exit if no more messages are available

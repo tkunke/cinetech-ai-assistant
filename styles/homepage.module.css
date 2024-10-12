@@ -3,163 +3,161 @@
 
 .pageWrapper {
   position: relative;
-  overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background: linear-gradient(to bottom, rgb(70, 90, 110), rgb(50, 70, 90));
+  background-color: white;
+  color: black;
+  font-family: 'Raleway', sans-serif;
 }
 
 .heroSection {
-  position: fixed; /* Fix the position at the top */
   display: flex;
-  flex-direction: column;
-  top: 0; /* Align to the top */
-  left: 0; /* Align to the left */
-  width: 100%; /* Full width */
-  height: 7rem; /* Fixed height for the hero section */
-  background-color: rgba(0, 0, 0, 0.5);
+  align-items: center;
+  justify-content: space-between;
+  position: fixed;
+  top: 0;
+  height: 8rem;
+  width: 100%;
+  background-color: black;
   color: white;
-  z-index: 10; /* Ensure it's above other elements */
-  box-sizing: border-box; /* Include padding in total width */
+  padding: 1rem 2rem;
+  box-sizing: border-box;
+  z-index: 1000;
 }
 
-.headerLogo {
-  position: relative;
-  transform: translateX(50%);
-  left: 0;
+.heroText {
+  text-align: center;
+  flex-grow: 1;
 }
 
 .heroTitle {
-  position: absolute;
-  font-size: 3rem; /* Adjust size as needed */
-  font-family: 'Raleway', sans-serif; /* Use Raleway font */
-  left: 2rem;
-  margin-bottom: 1rem;
-}
-
-.heroSection h2 {
-  font-size: 2rem;
-  margin: 1rem 0;
-}
-
-.heroSection p {
-  position: absolute;
-  font-size: 1.25rem; /* Adjust size for description */
-  bottom: 0;
-  padding-top: 1rem;
-  padding-bottom: 1rem;
-  left: 2rem;
-}
-
-.headerButtons {
-  position: absolute;
-  top: 1rem;
-  right: 2rem;
-  display: flex;
-  gap: 1rem;
-}
-
-.featuresSection {
-  margin-top: 7rem;
-  display: flex;
-  justify-content: space-around;
-  padding: 3rem 0;
-  font-family: 'Raleway' sans-serif;
+  font-size: 3.5rem;
+  font-family: 'Raleway', sans-serif;
   font-weight: 400;
-  color: white;
-}
-
-.feature {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: left;
-  padding-top: 0.25rem;
-  width: 20%; /* Adjust based on your layout */
-}
-
-.feature h3 {
-  font-weight: 700;
-  padding-bottom: 1rem;
-}
-
-.feature p {
-  text-align: left;
   margin: 0;
 }
 
-.feature img {
-  max-width: 100%;
-  height: auto;
-  padding-bottom: 0.25rem;
+.heroDescription {
+  font-size: 1.25rem;
+  margin-top: 0.5rem;
 }
 
-.featuresText {
-  color: white;
-  font-family: 'Raleway' sans-serif;
-  font-size: 2rem;
-  font-weight: 400;
-  display: flex;
-  position: relative;
-  align-items: center;
-  justify-content: center;
-  margin-top: 5rem;
-  padding-bottom: 0.25rem;
+.headerButtons {
+  margin-left: auto;
 }
 
-.collaborationSection,
-.insightsSection,
-.contentGenerationSection,
-.storyboardingSection,
-.marketingSection {
-  padding: 3rem 2rem;
-  background-color: rgba(0, 0, 0, 0.5);
-  margin: 2rem 0;
-  border-radius: 10px;
-  color: white;
-  font-family: 'Raleway' sans-serif;
+.loginButton {
+  background-color: white;
+  color: black;
+  border: none;
+  border-radius: 0.75rem;
+  padding: 0.5rem 1.5rem;
+  cursor: pointer;
 }
 
-.finalCTA {
+/* AI Partner Section */
+.aiPartnerSection {
+  position: relative; /* Change from fixed to relative */
+  width: 100%;
+  padding-left: 2rem;
+  padding-right: 2rem;
+  margin-top: 8rem;
+  background-color: white;
+  color: black;
   text-align: center;
-  padding: 4rem 2rem;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: white;
+  z-index: 1; /* Lower z-index to sit behind the feature sections */
+}
+
+.aiPartnerSection h2 {
+  font-size: 2rem;
+  padding-top: 1rem;
+  margin-bottom: 2rem;
 }
 
 .logoGrid {
-  display: grid; /* Use grid layout */
-  grid-template-columns: repeat(2, 1fr); /* 2-column layout */
-  gap: 1rem; /* Space between logos */
-  justify-items: center; /* Center logos horizontally within each grid cell */
-  align-items: center; /* Center logos vertically within each grid cell */
-  margin-bottom: 1rem; /* Space between logos and text */
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  flex-wrap: wrap;
 }
 
-.logoGrid img {
-  max-width: 100%; /* Make images responsive */
-  height: auto; /* Maintain aspect ratio */
-  max-height: 80px; /* Set a maximum height for consistency */
-  transition: transform 0.3s; /* Smooth transition for hover effect */
+.logoItem {
+  width: 150px;
+  margin: 1rem;
+  text-align: center;
 }
 
-.logoGrid img:hover {
-  transform: scale(1.05); /* Slightly scale up on hover */
+.logoItem p {
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
 }
 
-.videoSection {
-  position: relative;
-  margin: 0 auto;
-  border-radius: 0.25rem;
-  width: 90%;
-  height: 40rem;
-  overflow: hidden;
+.logoItem img {
+  max-width: 100%;
+  height: auto;
 }
 
-.backgroundVideo {
-  width: 100%; /* Full width of the section */
-  height: 100%; /* Full height of the section */
-  object-fit: cover; /* Cover the area without distorting the aspect ratio */
+/* Feature Sections */
+.featureSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4rem 2rem;
+  background-color: black;
+  color: white;
+  margin-top: 8rem;
+  margin-bottom: 16rem;
+  z-index: 10; /* Ensure these sections appear above the partner section */
+}
+
+.mediaContainer {
+  flex: 1;
+  margin-right: 2rem;
+}
+
+.featureVideo {
+  max-width: 100%;
+  border-radius: 0.5rem;
+}
+
+.textContainer {
+  flex: 1;
+}
+
+.textContainer h2 {
+  font-size: 2rem;
+  margin-bottom: 1rem;
+}
+
+.textContainer p {
+  margin-bottom: 1.5rem;
+}
+
+/* Footer */
+.footer {
+  width: 100%;
+  background-color: black;
+  color: white;
+  text-align: center;
+  padding-bottom: 0.25rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logoWrapper {
+  flex: 1; /* Flexbox item for logo */
+}
+
+.footerLinks {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.footerLinks a {
+  color: white;
+  text-decoration: none;
+  font-weight: bold;
 }
 
