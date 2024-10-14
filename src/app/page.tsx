@@ -4,6 +4,8 @@ import { useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from '@/styles/homepage.module.css';
+import AiPartnerSection from '@/components/AiPartners';
+import ImageCarousel from '@/components/ImageCarousel';
 
 const HomePage: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -19,7 +21,7 @@ const HomePage: React.FC = () => {
       {/* Hero Section */}
       <header className={styles.heroSection}>
         <div className={styles.heroText}>
-          <h1 className={styles.heroTitle}>CineTech AI</h1>
+          <h1 className={styles.heroTitle}>CineTech</h1>
           <p className={styles.heroDescription}>AI for film production</p>
         </div>
         <div className={styles.headerButtons}>
@@ -29,38 +31,26 @@ const HomePage: React.FC = () => {
         </div>
       </header>
 
-      {/* AI Partner Section */}
-      <section className={styles.aiPartnerSection}>
-        <h2>Powered by Industry Leaders</h2>
-        <div className={styles.logoGrid}>
-          <div className={styles.logoItem}>
-            <Image src="/openai_logo.svg" alt="OpenAI" width={100} height={50} />
-            <p>Advanced language models from OpenAI.</p>
-          </div>
-          <div className={styles.logoItem}>
-            <Image src="/anthropic_logo.svg" alt="Anthropic" width={100} height={50} />
-            <p>Safety-driven AI from Anthropic.</p>
-          </div>
-          <div className={styles.logoItem}>
-            <Image src="/google_logo.png" alt="Google" width={100} height={50} />
-            <p>Cutting-edge AI from Google Cloud.</p>
-          </div>
-          <div className={styles.logoItem}>
-            <Image src="/meta_logo.png" alt="Meta" width={100} height={50} />
-            <p>AI advancements from Meta AI.</p>
-          </div>
-        </div>
-      </section>
+      {/* Render the AI Partner Section */}
+      <AiPartnerSection />
 
-      {/* Section 1: AI & Collaboration */}
+      {/* Section 1: Assistant and Dataset */}
       <section className={styles.featureSection}>
         <div className={styles.mediaContainer}>
+          <h2>Intelligent Assistance</h2>
           <Image src="/ai-assistant_noback.png" alt="Intelligent Assistant" width={400} height={400} />
         </div>
         <div className={styles.textContainer}>
-          <h2>AI Empowering Your Production</h2>
-          <p>Utilize advanced AI to streamline your entire filmmaking process, from pre-production to post.</p>
-          <p>Collaborate seamlessly in real-time with our team-focused workspace tools, built for filmmakers.</p>
+          <h3>The power of an intelligent assistant</h3>
+          <p>Cinetech gives you access to leading GenAI models, like OpenAI&apos;s ChatGPT and Anthropic&apos;s Claude to help you generate original content.</p>
+        </div>
+        <div className={styles.mediaContainer}>
+          <h2>Industry-specific data</h2>
+          <Image src="/dataset_image2.png" alt="Industry-specific data" width={400} height={400} />
+        </div>
+        <div className={styles.textContainer}>
+          <h3>The efficiency of an AI-powered answer engine</h3>
+          <p>Our industry-focused specially curated dataset means the power of these AI models is enhanced specifically for your needs as a filmmaker.</p>
         </div>
       </section>
 
@@ -80,9 +70,36 @@ const HomePage: React.FC = () => {
           </video>
         </div>
         <div className={styles.textContainer}>
-          <h2>Generate and Promote</h2>
-          <p>Our platform offers multi-media content generation to create stunning visuals, scripts, and more.</p>
-          <p>Easily integrate your projects with Canva and other marketing tools to elevate your promotional efforts.</p>
+          <h2>Take ideas from concept to reality</h2>
+          <ul>
+            <li>Script-to-Storyboard or Storyboard-to-Script</li>
+            <li>Script Breakdown analysis</li>
+            <li>Scene and Shot breakdown analysis</li>
+            <li>Quickly generate scene/shot panels</li>
+          </ul>
+          <h2>Manage production workflows</h2>
+          <ul>
+            <li>Create dynamic production schedules your assistant manages</li>
+            <li>Instantly create/update daily call sheets</li>
+            <li>Create/Update shot lists with ease</li>
+          </ul>
+        </div>
+      </section>
+
+      {/* Section 1: Assistant and Dataset */}
+      <section className={styles.featureSection}>
+        <div className={styles.mediaContainer}>
+          <h2>Real-time Shared Workspaces</h2>
+          <Image src="/collaboration_noback.png" alt="Collaboration" width={400} height={400} />
+        </div>
+        <div className={styles.textContainer}>
+          <h3>Collaborate in real-time with our team-focused workspace tools.</h3>
+          <p>Cinetech gives you access to leading GenAI models, like OpenAI&apos;s ChatGPT and Anthropic&apos;s Claude to help you generate original content.</p>
+        </div>
+          <ImageCarousel />
+        <div className={styles.textContainer}>
+          <h3>The efficiency of an AI-powered answer engine</h3>
+          <p>Our industry-focused specially curated dataset means the power of these AI models is enhanced specifically for your needs as a filmmaker.</p>
         </div>
       </section>
 

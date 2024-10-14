@@ -35,9 +35,8 @@
   margin: 0;
 }
 
-.heroDescription {
+.heroDescription p {
   font-size: 1.25rem;
-  margin-top: 0.5rem;
 }
 
 .headerButtons {
@@ -53,82 +52,71 @@
   cursor: pointer;
 }
 
-/* AI Partner Section */
-.aiPartnerSection {
-  position: relative; /* Change from fixed to relative */
-  width: 100%;
-  padding-left: 2rem;
-  padding-right: 2rem;
-  margin-top: 8rem;
-  background-color: white;
-  color: black;
-  text-align: center;
-  z-index: 1; /* Lower z-index to sit behind the feature sections */
-}
-
-.aiPartnerSection h2 {
-  font-size: 2rem;
-  padding-top: 1rem;
-  margin-bottom: 2rem;
-}
-
-.logoGrid {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.logoItem {
-  width: 150px;
-  margin: 1rem;
-  text-align: center;
-}
-
-.logoItem p {
-  font-size: 0.9rem;
-  margin-top: 0.5rem;
-}
-
-.logoItem img {
-  max-width: 100%;
-  height: auto;
-}
-
 /* Feature Sections */
 .featureSection {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 4rem 2rem;
   background-color: black;
   color: white;
-  margin-top: 8rem;
-  margin-bottom: 16rem;
-  z-index: 10; /* Ensure these sections appear above the partner section */
+  gap: 2rem;
+  flex-wrap: nowrap;
+  margin-bottom: 5rem;
 }
 
 .mediaContainer {
   flex: 1;
-  margin-right: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%; /* Ensure full width */
 }
 
-.featureVideo {
-  max-width: 100%;
-  border-radius: 0.5rem;
+.mediaContainer h2 {
+  font-size: 2rem;
+}
+
+.mediaContainer img {
+  width: 100%; /* Make sure the images take full width of the container */
+  height: auto; /* Maintain aspect ratio */
+  object-fit: cover; /* Ensure the image covers its container without distortion */
 }
 
 .textContainer {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding-left: 2rem;
+  padding-top: 2rem;
 }
 
-.textContainer h2 {
+.textContainer h2{
   font-size: 2rem;
-  margin-bottom: 1rem;
+}
+
+.textContainer h3 {
+  font-size: 1.5rem;
+  margin-top: 0;
 }
 
 .textContainer p {
+  padding-top: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.textContainer ul {
+  list-style-type: disc; /* Default bullet style */
+  padding-left: 1.5rem; /* Indent the list a bit */
+  margin-top: 1rem; /* Add some space above the list */
+}
+
+.textContainer li {
+  margin-bottom: 0.5rem; /* Space between list items */
+  font-size: 1rem;
+  color: white; /* Ensure text color matches your design */
 }
 
 /* Footer */

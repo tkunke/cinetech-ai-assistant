@@ -1,0 +1,84 @@
+/* AI Partner Section */
+.aiPartnerSection {
+  padding: 4rem 2rem;
+  margin-top: 8rem;
+  background-color: white;
+  text-align: center;
+  z-index: 1;
+}
+
+.aiPartnerSection h2 {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* Horizontal Logo Scroller */
+.horizontalScrollerContainer {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.logoScroller {
+  display: flex; /* Horizontal flex layout for scrolling */
+  flex-direction: row; /* Ensure scrolling happens horizontally */
+  gap: 3rem; /* Space between logos */
+  animation: scrollLogos 30s linear infinite; /* Horizontal scrolling animation */
+  align-items: center;
+}
+
+.logoList {
+  display: flex; /* Ensure logos are in a row */
+  flex-direction: row; /* Horizontal alignment */
+}
+
+.logoContainer {
+  background-color: white; /* White background for all other logos */
+  padding: 0.5rem;
+  border-radius: 8px;
+  margin-right: 5rem;
+}
+
+/* Special container for Stability AI logo */
+.stabilityLogoContainer {
+  background-color: black; /* Black background only for Stability AI */
+  padding: 0.5rem;
+  border-radius: 8px;
+  margin-right: 5rem;
+}
+
+.logoList img {
+  height: 3rem;
+  width: auto;
+  object-fit: contain;
+  margin-right: 5rem;
+}
+
+@keyframes scrollLogos {
+  0% {
+    transform: translateX(100%); /* Start from the right */
+  }
+  100% {
+    transform: translateX(-100%); /* Move to the left */
+  }
+}
+
+/* Flexbox layout for the content below logos */
+.partnerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 2rem;
+}
+
+.blurb {
+  flex: 1;
+  text-align: left;
+}
+
+.blurb p {
+  font-size: 1.2rem;
+  margin: 0;
+}

@@ -1,0 +1,44 @@
+/* Media Container */
+.mediaContainer {
+  text-align: center;
+  position: relative;
+}
+
+.mediaContainer h2 {
+    font-size: 2rem;
+}
+
+/* Image Wrapper */
+.imageWrapper {
+  position: relative;
+  width: 400px;
+  height: 400px;
+}
+
+/* Fade Effect for Image */
+.fadeImage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  animation: fadeInOut 6s infinite; /* 6s to cover both fade-in and fade-out */
+}
+
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+  
