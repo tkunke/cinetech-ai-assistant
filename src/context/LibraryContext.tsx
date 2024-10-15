@@ -7,7 +7,7 @@ interface Tag {
   name: string;
 }
 
-interface Image {
+export interface Image {
   id: string;
   imageUrl: string;
   thumbnailUrl: string;
@@ -15,7 +15,7 @@ interface Image {
   workspaceId: string;
 }
 
-interface Message {
+export interface Message {
   id: string;
   content: string;
   preview: string;
@@ -31,11 +31,13 @@ interface Payload<T> {
 }
 
 interface LibraryContextType {
+  workspaceImages: { [workspaceId: string]: Image[] };
+  workspaceMessages: { [workspaceId: string]: Message[] };
   fetchedImages: Image[];
   fetchedMessages: Message[];
   fetchedTags: Tag[];
-  fetchImages: (userId: string, workspaceId: string) => Promise<void>;
-  fetchMessages: (userId: string, workspaceId: string) => Promise<Message[]>;
+  fetchImages: (workspaceId: string) => Promise<void>;
+  fetchMessages: (workspaceId: string) => Promise<Message[]>;
   fetchTags: (userId: string, workspaceId: string) => Promise<void>;
   createTag: (userId: string, workspaceId: string, tagName: string) => Promise<void>;
   updateTag: (userId: string, workspaceId: string, tagId: string, newTagName: string) => Promise<void>;
@@ -402,7 +404,7 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
       supabase.removeChannel(tagUpdateListener);
       supabase.removeChannel(tagDeleteListener);
     };
-  }, [workspaces]);  
+  }, [workspaces.length]);
 
   const removeImage = (imageUrl: string) => {
     if (!activeWorkspaceId) return;
@@ -426,7 +428,24 @@ export const LibraryProvider: React.FC<LibraryProviderProps> = ({ children }) =>
   const fetchedMessages = activeWorkspaceId ? workspaceMessages[activeWorkspaceId] || [] : [];
 
   return (
-    <LibraryContext.Provider value={{ fetchedImages, fetchedMessages, fetchedTags, fetchImages, fetchMessages, fetchTags, createTag, updateTag, deleteTag, untagContent, addImage, addMessage, removeImage, removeMessage }}>
+    <LibraryContext.Provider value={{ 
+      workspaceImages,
+      workspaceMessages,
+      fetchedImages, 
+      fetchedMessages, 
+      fetchedTags, 
+      fetchImages, 
+      fetchMessages, 
+      fetchTags, 
+      createTag, 
+      updateTag, 
+      deleteTag, 
+      untagContent, 
+      addImage, 
+      addMessage, 
+      removeImage, 
+      removeMessage 
+    }}>
       {children}
     </LibraryContext.Provider>
   );

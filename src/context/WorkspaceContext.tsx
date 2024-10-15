@@ -15,7 +15,7 @@ interface AddableMember {
   role: 'viewer' | 'contributor';  // Only allow these two roles
 }
 
-interface Workspace {
+export interface Workspace {
   id: string;
   name: string;
   type: 'private' | 'public';
@@ -76,12 +76,17 @@ export const WorkspaceProvider: React.FC<WorkspaceProviderProps> = ({ children }
       const data = await response.json();
 
       if (response.ok && data.workspaces.length > 0) {
-        setWorkspaces(data.workspaces);
-        console.log('Workspaces available:', data.workspaces);
+        const isDifferent = JSON.stringify(data.workspaces) !== JSON.stringify(workspaces);
+        if (isDifferent) {
+          console.log('Workspaces available:', data.workspaces);
+          setWorkspaces(data.workspaces);
 
-        // Find the private "My Workspace" and set it as active
-        const privateWorkspace = data.workspaces.find((ws: Workspace) => ws.name === 'My Workspace');
-        setActiveWorkspaceId(privateWorkspace?.id || data.workspaces[0].id);
+          // Optionally, set the active workspace if not already set
+          if (!activeWorkspaceId) {
+            const privateWorkspace = data.workspaces.find((ws: Workspace) => ws.name === 'My Workspace');
+            setActiveWorkspaceId(privateWorkspace?.id || data.workspaces[0].id);
+          }
+        }
       } else {
         setWorkspaces([]);
       }

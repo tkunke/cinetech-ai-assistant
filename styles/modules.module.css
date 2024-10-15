@@ -1,0 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Limelight&family=Lato:wght@400;700&family=Montserrat:wght@400;700&family=Raleway:wght@400;700&display=swap');
+
+.container {
+  text-align: center;
+  font-family: 'Raleway' sans-serif;
+  font-weight: 400;
+  padding: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.heading {
+  font-size: 2.5rem;
+  margin-bottom: 40px;
+}
+
+.iconRow {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 10rem;
+}
+
+.iconButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.3s ease;
+  padding: 30px;
+}
+
+.iconButton:hover {
+  transform: scale(1.1);
+}
+
+.icon {
+  background-color: #f0f0f0;
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+}
+
+.iconButton:hover .icon {
+  background-color: #e0e0e0;
+}
+
+.iconImage {
+  width: 80px;
+  height: 80px;
+}
+
+.iconLabel {
+  margin-top: 10px;
+  font-size: 1rem;
+  color: #333;
+}
+  
