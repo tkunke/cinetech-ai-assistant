@@ -9,12 +9,14 @@ import { generateImage } from '@/utils/generateImage';
 import { alternateImage } from '@/utils/alternateImage';
 import { imageRecognition } from '@/utils/imageRecognition';
 import { addFileToStore } from '@/utils/fileUtils';
+import { getProductionSchedule } from '@/utils/getProductionSchedule';
+import { updateProductionSchedule } from '@/utils/updateProductionSchedule';
 import { AssistantStream } from 'openai/lib/AssistantStream';
 import { Pool } from 'pg';
 
 // Create a new connection pool
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // Use the Supabase connection string here
+  connectionString: process.env.DATABASE_URL,
 });
 
 interface Message {
@@ -193,7 +195,7 @@ async function handleRunStatusEvent(event: { status: string, threadId: string, r
               imageEngineStore[imageUrl] = engine;
             } else if (functionName === 'imageRecognition') {
               const storedFile = fileStore[threadId];
-              console.log('File store content:', storedFile); // Log file store content
+              console.log('File store content:', storedFile);
               if (storedFile) {
                 const { filePath, fileType } = storedFile;
                 console.log(`Processing image recognition for file: ${filePath}, type: ${fileType}`);
@@ -206,15 +208,36 @@ async function handleRunStatusEvent(event: { status: string, threadId: string, r
                 console.error('No file provided for image recognition');
                 output = undefined;
               }
-            }
-
+            } else if (functionName === 'getProductionSchedule') {
+              // Get the assistantId from the run or thread context
+              const assistantId = runStatus.assistant_id;
+              console.log(`Fetching production schedule for assistant ID: ${assistantId}`);
+        
+              const scheduleData = await getProductionSchedule(assistantId);
+              if (scheduleData) {
+                output = `Here is the production schedule: ${scheduleData}`;
+              } else {
+                output = `No production schedule found for assistant ID: ${assistantId}`;
+              }
+            } else if (functionName === 'updateProductionSchedule') {
+              const assistantId = runStatus.assistant_id;
+              const updates = args; // The updates will come from the assistant's function call
+            
+              const updateSuccess = await updateProductionSchedule(assistantId, updates);
+              if (updateSuccess) {
+                output = 'The production schedule has been successfully updated.';
+              } else {
+                output = 'There was an issue updating the production schedule.';
+              }
+            }            
+        
             if (output !== undefined) {
               const toolOutput: ToolOutput = { tool_call_id: toolCall.id, output: output };
               toolOutputs.push(toolOutput);
             }
-
+        
             break;
-
+        
           } catch (error) {
             attemptCount++;
             console.error(`Attempt ${attemptCount} failed for ${functionName}:`, error);
@@ -223,7 +246,7 @@ async function handleRunStatusEvent(event: { status: string, threadId: string, r
             }
             await new Promise((resolve) => setTimeout(resolve, 1000));
           }
-        }
+        }        
       }
 
       if (toolOutputs.length > 0) {

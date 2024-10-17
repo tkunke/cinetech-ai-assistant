@@ -1,0 +1,66 @@
+/* ScheduleWithGantt.module.css */
+
+/* styles for the text breakdown panel */
+.breakdown {
+  margin-bottom: 20px;
+  padding: 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+/* styles for the Gantt chart container */
+.ganttContainer {
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+/* Divider between text breakdown and Gantt chart */
+.divider {
+  height: 2px;
+  background-color: #ddd;
+  margin: 20px 0;
+}
+
+.viewModeToggle {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.viewModeToggle button {
+  padding: 10px 20px;
+  margin: 0 10px;
+  border: 1px solid #0070f3;
+  background-color: #fff;
+  color: #0070f3;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.viewModeToggle button:hover {
+  background-color: #0070f3;
+  color: #fff;
+}
+
+.viewModeToggle button.active {
+  background-color: #0070f3;
+  color: #fff;
+}
+
+.schedulerContainer {
+  border: 1px solid #ddd;
+  padding: 20px;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  margin-top: 30px;
+}
+
+.projectName h2 {
+  font-size: 2rem;
+}
+  
